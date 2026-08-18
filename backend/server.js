@@ -34,6 +34,12 @@ app.get('/api/socket/state', (req, res) => {
     rooms,
   });
 });
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        service: 'think-ai-backend'
+    });
+});
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
