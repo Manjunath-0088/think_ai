@@ -1,28 +1,61 @@
-const service = require("../services/enrollmentService");
+const service =
+    require("../services/enrollmentService");
 
 
-const getEnrollments = async (req, res) => {
+/*
+ * ----------------------------------------------------
+ * Get all enrollments
+ * ----------------------------------------------------
+ */
+
+const getEnrollments = async (
+    req,
+    res
+) => {
+
     try {
 
         const enrollments =
             await service.getAllEnrollments();
 
-        res.status(200).json({
+
+        return res.status(200).json({
+
             success: true,
+
             data: enrollments
         });
 
     } catch (error) {
 
-        res.status(500).json({
+        console.error(
+            "Get enrollments error:",
+            error
+        );
+
+
+        return res.status(500).json({
+
             success: false,
-            message: error.message
+
+            message:
+                "Failed to retrieve enrollments"
         });
     }
 };
 
 
-const getEnrollmentById = async (req, res) => {
+/*
+ * ----------------------------------------------------
+ * Get enrollment by ID
+ * ----------------------------------------------------
+ */
+
+const getEnrollmentById = async (
+    req,
+    res
+) => {
+
     try {
 
         const enrollment =
@@ -30,30 +63,72 @@ const getEnrollmentById = async (req, res) => {
                 req.params.id
             );
 
+
         if (!enrollment) {
 
             return res.status(404).json({
+
                 success: false,
-                message: "Enrollment not found"
+
+                message:
+                    "Enrollment not found"
             });
         }
 
-        res.status(200).json({
+
+        return res.status(200).json({
+
             success: true,
+
             data: enrollment
         });
 
     } catch (error) {
 
-        res.status(500).json({
+        console.error(
+            "Get enrollment error:",
+            error
+        );
+
+
+        if (
+            error.message.includes(
+                "must be a positive integer"
+            )
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    error.message
+            });
+        }
+
+
+        return res.status(500).json({
+
             success: false,
-            message: error.message
+
+            message:
+                "Failed to retrieve enrollment"
         });
     }
 };
 
 
-const createEnrollment = async (req, res) => {
+/*
+ * ----------------------------------------------------
+ * Create enrollment
+ * ----------------------------------------------------
+ */
+
+const createEnrollment = async (
+    req,
+    res
+) => {
+
     try {
 
         const enrollment =
@@ -61,10 +136,14 @@ const createEnrollment = async (req, res) => {
                 req.body
             );
 
-        res.status(201).json({
+
+        return res.status(201).json({
+
             success: true,
+
             message:
                 "Enrollment created successfully",
+
             data: enrollment
         });
 
@@ -75,29 +154,96 @@ const createEnrollment = async (req, res) => {
             error
         );
 
-        const businessErrors = [
-            "Selected batch not found",
-            "Selected batch is full and no other available batch exists",
-            "No available batch exists for this course",
-            "Batch ID or Course ID is required",
-            "Cannot enroll into an archived course",
-            "Cannot enroll into an inactive batch"
-        ];
+
+        /*
+         * Duplicate enrollment
+         */
 
         if (
-            businessErrors.includes(
+            error.message ===
+            "Student is already enrolled in this batch"
+        ) {
+
+            return res.status(409).json({
+
+                success: false,
+
+                message:
+                    error.message
+            });
+        }
+
+
+        /*
+         * Validation / business errors
+         */
+
+        const badRequestMessages = [
+
+            "Enrollment data is required",
+
+            "Batch ID must be a positive integer",
+
+            "Student name is required",
+
+            "Student email is required",
+
+            "Enrollment status is invalid",
+
+            "Selected batch not found",
+
+            "Cannot enroll into an inactive course",
+
+            "Cannot enroll into an inactive batch",
+
+            "Selected batch is full and no other available batch exists",
+
+            "No active batches available for this course",
+
+            "All batches for this course are full",
+
+            "No alternative batch available"
+        ];
+
+
+        if (
+            badRequestMessages.includes(
                 error.message
             )
         ) {
 
             return res.status(400).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
-        res.status(500).json({
+
+        /*
+         * Prisma foreign-key error
+         */
+
+        if (
+            error.code === "P2003"
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Invalid batch or related record"
+            });
+        }
+
+
+        return res.status(500).json({
+
             success: false,
+
             message:
                 "Failed to create enrollment"
         });
@@ -105,38 +251,168 @@ const createEnrollment = async (req, res) => {
 };
 
 
+/*
+ * ----------------------------------------------------
+ * Update enrollment
+ * ----------------------------------------------------
+ */
+
 const updateEnrollment = async (
     req,
     res
 ) => {
+
     try {
 
         const enrollment =
             await service.updateEnrollment(
+
                 req.params.id,
+
                 req.body
             );
 
-        res.status(200).json({
+
+        return res.status(200).json({
+
             success: true,
+
+            message:
+                "Enrollment updated successfully",
+
             data: enrollment
         });
 
     } catch (error) {
 
-        res.status(500).json({
+        console.error(
+            "Update enrollment error:",
+            error
+        );
+
+
+        /*
+         * Enrollment not found
+         */
+
+        if (
+            error.message ===
+            "Enrollment not found"
+        ) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    error.message
+            });
+        }
+
+
+        /*
+         * Validation / business errors
+         */
+
+        const badRequestMessages = [
+
+            "Enrollment ID must be a positive integer",
+
+            "Enrollment update data is required",
+
+            "At least one field is required for update",
+
+            "Student name is required",
+
+            "Student email is required",
+
+            "Enrollment status is invalid",
+
+            "Batch ID must be a positive integer",
+
+            "Selected batch not found",
+
+            "Cannot move enrollment to an inactive batch",
+
+            "Cannot move enrollment to an inactive course",
+
+            "Selected batch is full"
+        ];
+
+
+        if (
+            badRequestMessages.includes(
+                error.message
+            )
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    error.message
+            });
+        }
+
+
+        /*
+         * Prisma record not found
+         */
+
+        if (
+            error.code === "P2025"
+        ) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "Enrollment not found"
+            });
+        }
+
+
+        /*
+         * Prisma foreign-key error
+         */
+
+        if (
+            error.code === "P2003"
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Invalid batch or related record"
+            });
+        }
+
+
+        return res.status(500).json({
+
             success: false,
-            message: error.message
+
+            message:
+                "Failed to update enrollment"
         });
     }
 };
 
 
 /*
+ * ----------------------------------------------------
  * Unlock course access
+ * ----------------------------------------------------
  *
- * Called after payment verification.
+ * Called after successful payment verification.
+ *
+ * Requires `courseAccess` in Prisma Enrollment model.
  */
+
 const unlockCourseAccess = async (
     req,
     res
@@ -149,12 +425,16 @@ const unlockCourseAccess = async (
                 req.params.id
             );
 
-        res.status(200).json({
+
+        return res.status(200).json({
+
             success: true,
+
             message:
                 "Course access unlocked successfully",
 
             data: {
+
                 enrollmentId:
                     enrollment.id,
 
@@ -173,56 +453,188 @@ const unlockCourseAccess = async (
             error
         );
 
+
         if (
             error.message ===
             "Enrollment not found"
         ) {
 
             return res.status(404).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
-        res.status(500).json({
+
+        if (
+            error.message.includes(
+                "must be a positive integer"
+            )
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    error.message
+            });
+        }
+
+
+        /*
+         * Prisma errors
+         */
+
+        if (
+            error.code === "P2025"
+        ) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "Enrollment not found"
+            });
+        }
+
+
+        return res.status(500).json({
+
             success: false,
-            message: error.message
+
+            message:
+                "Failed to unlock course access"
         });
     }
 };
 
 
+/*
+ * ----------------------------------------------------
+ * Delete enrollment
+ * ----------------------------------------------------
+ */
+
 const deleteEnrollment = async (
     req,
     res
 ) => {
+
     try {
 
         await service.deleteEnrollment(
             req.params.id
         );
 
-        res.status(200).json({
+
+        return res.status(200).json({
+
             success: true,
+
             message:
                 "Enrollment deleted successfully"
         });
 
     } catch (error) {
 
-        res.status(500).json({
+        console.error(
+            "Delete enrollment error:",
+            error
+        );
+
+
+        if (
+            error.message ===
+            "Enrollment not found"
+        ) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    error.message
+            });
+        }
+
+
+        if (
+            error.message.includes(
+                "must be a positive integer"
+            )
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    error.message
+            });
+        }
+
+
+        if (
+            error.code === "P2025"
+        ) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "Enrollment not found"
+            });
+        }
+
+
+        if (
+            error.code === "P2003"
+        ) {
+
+            return res.status(409).json({
+
+                success: false,
+
+                message:
+                    "Enrollment cannot be deleted because related data exists"
+            });
+        }
+
+
+        return res.status(500).json({
+
             success: false,
-            message: error.message
+
+            message:
+                "Failed to delete enrollment"
         });
     }
 };
 
 
+/*
+ * ----------------------------------------------------
+ * Exports
+ * ----------------------------------------------------
+ */
+
 module.exports = {
+
     getEnrollments,
+
     getEnrollmentById,
+
     createEnrollment,
+
     updateEnrollment,
+
     unlockCourseAccess,
+
     deleteEnrollment
 };

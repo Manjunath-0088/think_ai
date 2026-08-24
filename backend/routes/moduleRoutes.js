@@ -2,6 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
+
 const {
     getAllModules,
     getModuleById,
@@ -11,7 +12,7 @@ const {
     deleteModule
 } = require("../controllers/moduleController");
 
-// Module validations
+
 const {
     validateModuleCreate,
     validateModuleUpdate,
@@ -19,6 +20,10 @@ const {
     validateCourseId
 } = require("../validations/moduleValidation");
 
+
+// ----------------------------------------------------
+// Swagger
+// ----------------------------------------------------
 
 /**
  * @swagger
@@ -33,10 +38,13 @@ const {
  * /api/modules:
  *   get:
  *     summary: Get all modules
+ *     description: Returns all modules with their associated course and lessons.
  *     tags: [Modules]
  *     responses:
  *       200:
- *         description: List of modules
+ *         description: Modules retrieved successfully
+ *       500:
+ *         description: Internal server error
  */
 router.get(
     "/",
@@ -49,20 +57,26 @@ router.get(
  * /api/modules/{id}:
  *   get:
  *     summary: Get module by ID
+ *     description: Returns a specific module with its course and lessons.
  *     tags: [Modules]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Module ID
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *         example: 1
  *     responses:
  *       200:
- *         description: Module found
+ *         description: Module retrieved successfully
  *       400:
  *         description: Invalid module ID
  *       404:
  *         description: Module not found
+ *       500:
+ *         description: Internal server error
  */
 router.get(
     "/:id",
@@ -76,18 +90,24 @@ router.get(
  * /api/modules/course/{courseId}:
  *   get:
  *     summary: Get modules by course
+ *     description: Returns all modules belonging to a specific course.
  *     tags: [Modules]
  *     parameters:
  *       - in: path
  *         name: courseId
  *         required: true
+ *         description: Course ID
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *         example: 1
  *     responses:
  *       200:
- *         description: List of modules
+ *         description: Course modules retrieved successfully
  *       400:
  *         description: Invalid course ID
+ *       500:
+ *         description: Internal server error
  */
 router.get(
     "/course/:courseId",
@@ -100,7 +120,8 @@ router.get(
  * @swagger
  * /api/modules:
  *   post:
- *     summary: Create a module
+ *     summary: Create a new module
+ *     description: Creates a module under an existing course.
  *     tags: [Modules]
  *     requestBody:
  *       required: true
@@ -117,15 +138,19 @@ router.get(
  *                 example: Java Basics
  *               description:
  *                 type: string
- *                 example: Introduction to Java
+ *                 nullable: true
+ *                 example: Introduction to Java programming
  *               courseId:
  *                 type: integer
+ *                 minimum: 1
  *                 example: 1
  *     responses:
  *       201:
  *         description: Module created successfully
  *       400:
  *         description: Module validation failed
+ *       500:
+ *         description: Internal server error
  */
 router.post(
     "/",
@@ -138,14 +163,18 @@ router.post(
  * @swagger
  * /api/modules/{id}:
  *   put:
- *     summary: Update module
+ *     summary: Update a module
+ *     description: Updates the title and/or description of an existing module.
  *     tags: [Modules]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Module ID
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *         example: 1
  *     requestBody:
  *       required: true
  *       content:
@@ -155,13 +184,19 @@ router.post(
  *             properties:
  *               title:
  *                 type: string
+ *                 example: Advanced Java
  *               description:
  *                 type: string
+ *                 example: Advanced Java concepts
  *     responses:
  *       200:
  *         description: Module updated successfully
  *       400:
  *         description: Module validation failed
+ *       404:
+ *         description: Module not found
+ *       500:
+ *         description: Internal server error
  */
 router.put(
     "/:id",
@@ -175,14 +210,18 @@ router.put(
  * @swagger
  * /api/modules/{id}:
  *   delete:
- *     summary: Delete module
+ *     summary: Delete a module
+ *     description: Deletes an existing module.
  *     tags: [Modules]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Module ID
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *         example: 1
  *     responses:
  *       200:
  *         description: Module deleted successfully
@@ -190,6 +229,8 @@ router.put(
  *         description: Invalid module ID
  *       404:
  *         description: Module not found
+ *       500:
+ *         description: Internal server error
  */
 router.delete(
     "/:id",

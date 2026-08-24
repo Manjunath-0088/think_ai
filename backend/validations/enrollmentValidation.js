@@ -1,197 +1,387 @@
-const validateEnrollmentCreate = (req, res, next) => {
+/*
+ * ----------------------------------------------------
+ * Constants
+ * ----------------------------------------------------
+ */
 
-    const {
-        studentName,
-        studentEmail,
-        batchId
-    } = req.body;
+const VALID_ENROLLMENT_STATUSES = new Set([
+    "ENROLLED",
+    "COMPLETED",
+    "CANCELLED"
+]);
 
-    const errors = [];
 
-    if (
-        !studentName ||
-        typeof studentName !== "string" ||
-        !studentName.trim()
-    ) {
-        errors.push("studentName is required");
-    }
+/*
+ * ----------------------------------------------------
+ * Helper functions
+ * ----------------------------------------------------
+ */
 
-    if (
-        !studentEmail ||
-        typeof studentEmail !== "string" ||
-        !studentEmail.trim()
-    ) {
-        errors.push("studentEmail is required");
-    } else {
+const isPositiveInteger = (value) => {
 
-        const emailRegex =
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const number = Number(value);
 
-        if (!emailRegex.test(studentEmail)) {
-            errors.push(
-                "studentEmail must be a valid email"
-            );
-        }
-    }
-
-    if (
-        !Number.isInteger(Number(batchId)) ||
-        Number(batchId) <= 0
-    ) {
-        errors.push(
-            "batchId must be a positive integer"
-        );
-    }
-
-    if (
-        req.body.enrollmentStatus !== undefined &&
-        ![
-            "ENROLLED",
-            "COMPLETED",
-            "CANCELLED"
-        ].includes(req.body.enrollmentStatus)
-    ) {
-        errors.push(
-            "enrollmentStatus must be ENROLLED, COMPLETED, or CANCELLED"
-        );
-    }
-
-    if (errors.length > 0) {
-        return res.status(400).json({
-            success: false,
-            message: "Enrollment validation failed",
-            errors
-        });
-    }
-
-    next();
+    return (
+        Number.isInteger(number) &&
+        number > 0
+    );
 };
 
 
-const validateEnrollmentUpdate = (req, res, next) => {
+const isNonEmptyString = (value) => {
+
+    return (
+        typeof value === "string" &&
+        value.trim().length > 0
+    );
+};
+
+
+const isValidEmail = (value) => {
+
+    if (!isNonEmptyString(value)) {
+        return false;
+    }
+
+    const email =
+        value.trim();
+
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        email
+    );
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Validate enrollment creation
+ * ----------------------------------------------------
+ */
+
+const validateEnrollmentCreate = (
+    req,
+    res,
+    next
+) => {
 
     const {
         studentName,
         studentEmail,
         batchId,
         enrollmentStatus
-    } = req.body;
+    } = req.body || {};
+
 
     const errors = [];
 
+
+    /*
+     * Student name
+     */
+
     if (
-        studentName !== undefined &&
-        (
-            typeof studentName !== "string" ||
-            !studentName.trim()
-        )
+        !isNonEmptyString(studentName)
     ) {
+
         errors.push(
-            "studentName must be a non-empty string"
+            "studentName is required"
         );
     }
 
-    if (studentEmail !== undefined) {
 
-        if (
-            typeof studentEmail !== "string" ||
-            !studentEmail.trim()
-        ) {
-            errors.push(
-                "studentEmail must be a non-empty string"
-            );
-        } else {
-
-            const emailRegex =
-                /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-            if (!emailRegex.test(studentEmail)) {
-                errors.push(
-                    "studentEmail must be a valid email"
-                );
-            }
-        }
-    }
+    /*
+     * Student email
+     */
 
     if (
-        batchId !== undefined &&
-        (
-            !Number.isInteger(Number(batchId)) ||
-            Number(batchId) <= 0
-        )
+        !isNonEmptyString(studentEmail)
     ) {
+
+        errors.push(
+            "studentEmail is required"
+        );
+
+    } else if (
+        !isValidEmail(studentEmail)
+    ) {
+
+        errors.push(
+            "studentEmail must be a valid email"
+        );
+    }
+
+
+    /*
+     * Batch ID
+     */
+
+    if (
+        !isPositiveInteger(batchId)
+    ) {
+
         errors.push(
             "batchId must be a positive integer"
         );
     }
 
+
+    /*
+     * Enrollment status
+     */
+
     if (
         enrollmentStatus !== undefined &&
-        ![
-            "ENROLLED",
-            "COMPLETED",
-            "CANCELLED"
-        ].includes(enrollmentStatus)
+        !VALID_ENROLLMENT_STATUSES.has(
+            enrollmentStatus
+        )
     ) {
+
         errors.push(
             "enrollmentStatus must be ENROLLED, COMPLETED, or CANCELLED"
         );
     }
 
+
+    /*
+     * Return validation errors
+     */
+
     if (errors.length > 0) {
+
         return res.status(400).json({
+
             success: false,
-            message: "Enrollment validation failed",
+
+            message:
+                "Enrollment validation failed",
+
             errors
         });
     }
 
+
     next();
 };
 
 
-const validateEnrollmentId = (req, res, next) => {
+/*
+ * ----------------------------------------------------
+ * Validate enrollment update
+ * ----------------------------------------------------
+ */
 
-    const id = Number(req.params.id);
+const validateEnrollmentUpdate = (
+    req,
+    res,
+    next
+) => {
+
+    const {
+        studentName,
+        studentEmail,
+        batchId,
+        enrollmentStatus
+    } = req.body || {};
+
+
+    const errors = [];
+
+
+    /*
+     * Prevent empty update
+     */
 
     if (
-        !Number.isInteger(id) ||
-        id <= 0
+        !req.body ||
+        Object.keys(req.body).length === 0
     ) {
+
         return res.status(400).json({
+
             success: false,
+
+            message:
+                "At least one field is required for update"
+        });
+    }
+
+
+    /*
+     * Student name
+     */
+
+    if (
+        studentName !== undefined &&
+        !isNonEmptyString(studentName)
+    ) {
+
+        errors.push(
+            "studentName must be a non-empty string"
+        );
+    }
+
+
+    /*
+     * Student email
+     */
+
+    if (
+        studentEmail !== undefined
+    ) {
+
+        if (
+            !isNonEmptyString(studentEmail)
+        ) {
+
+            errors.push(
+                "studentEmail must be a non-empty string"
+            );
+
+        } else if (
+            !isValidEmail(studentEmail)
+        ) {
+
+            errors.push(
+                "studentEmail must be a valid email"
+            );
+        }
+    }
+
+
+    /*
+     * Batch ID
+     */
+
+    if (
+        batchId !== undefined &&
+        !isPositiveInteger(batchId)
+    ) {
+
+        errors.push(
+            "batchId must be a positive integer"
+        );
+    }
+
+
+    /*
+     * Enrollment status
+     */
+
+    if (
+        enrollmentStatus !== undefined &&
+        !VALID_ENROLLMENT_STATUSES.has(
+            enrollmentStatus
+        )
+    ) {
+
+        errors.push(
+            "enrollmentStatus must be ENROLLED, COMPLETED, or CANCELLED"
+        );
+    }
+
+
+    /*
+     * Return validation errors
+     */
+
+    if (errors.length > 0) {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message:
+                "Enrollment validation failed",
+
+            errors
+        });
+    }
+
+
+    next();
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Validate enrollment ID
+ * ----------------------------------------------------
+ */
+
+const validateEnrollmentId = (
+    req,
+    res,
+    next
+) => {
+
+    if (
+        !isPositiveInteger(
+            req.params.id
+        )
+    ) {
+
+        return res.status(400).json({
+
+            success: false,
+
             message:
                 "Enrollment ID must be a positive integer"
         });
     }
 
+
     next();
 };
 
 
-const validateEnrollmentParam = (req, res, next) => {
+/*
+ * ----------------------------------------------------
+ * Validate enrollment route parameter
+ *
+ * Used for routes such as:
+ * /enrollments/:enrollmentId
+ * ----------------------------------------------------
+ */
 
-    const id =
-        Number(req.params.enrollmentId);
+const validateEnrollmentParam = (
+    req,
+    res,
+    next
+) => {
 
     if (
-        !Number.isInteger(id) ||
-        id <= 0
+        !isPositiveInteger(
+            req.params.enrollmentId
+        )
     ) {
+
         return res.status(400).json({
+
             success: false,
+
             message:
                 "Enrollment ID must be a positive integer"
         });
     }
 
+
     next();
 };
 
+
+/*
+ * ----------------------------------------------------
+ * Exports
+ * ----------------------------------------------------
+ */
 
 module.exports = {
+
     validateEnrollmentCreate,
+
     validateEnrollmentUpdate,
+
     validateEnrollmentId,
+
     validateEnrollmentParam
 };

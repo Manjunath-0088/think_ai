@@ -2,14 +2,12 @@ const express = require("express");
 
 const router = express.Router();
 
-
 const {
     createAssessment,
     getAssessmentById,
     submitAssessment,
     getAssessmentAnalytics
 } = require("../controllers/assessmentController");
-
 
 const {
     validateAssessmentCreate,

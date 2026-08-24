@@ -2,6 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
+
 const {
     getAllLessons,
     getLessonById,
@@ -11,7 +12,7 @@ const {
     deleteLesson
 } = require("../controllers/lessonController");
 
-// Lesson validations
+
 const {
     validateLessonCreate,
     validateLessonUpdate,
@@ -19,6 +20,10 @@ const {
     validateModuleLessonId
 } = require("../validations/lessonValidation");
 
+
+// ----------------------------------------------------
+// Swagger
+// ----------------------------------------------------
 
 /**
  * @swagger
@@ -33,39 +38,17 @@ const {
  * /api/lessons:
  *   get:
  *     summary: Get all lessons
+ *     description: Returns all lessons ordered by module and lesson order.
  *     tags: [Lessons]
  *     responses:
  *       200:
- *         description: List of lessons
- */
-router.get("/", getAllLessons);
-
-
-/**
- * @swagger
- * /api/lessons/{id}:
- *   get:
- *     summary: Get lesson by ID
- *     tags: [Lessons]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Lesson found
- *       400:
- *         description: Invalid lesson ID
- *       404:
- *         description: Lesson not found
+ *         description: Lessons retrieved successfully
+ *       500:
+ *         description: Internal server error
  */
 router.get(
-    "/:id",
-    validateLessonId,
-    getLessonById
+    "/",
+    getAllLessons
 );
 
 
@@ -74,6 +57,7 @@ router.get(
  * /api/lessons/module/{moduleId}:
  *   get:
  *     summary: Get lessons by module
+ *     description: Returns all lessons belonging to a specific module.
  *     tags: [Lessons]
  *     parameters:
  *       - in: path
@@ -81,12 +65,15 @@ router.get(
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         example: 1
  *     responses:
  *       200:
- *         description: List of lessons
+ *         description: Lessons retrieved successfully
  *       400:
  *         description: Invalid module ID
+ *       500:
+ *         description: Internal server error
  */
 router.get(
     "/module/:moduleId",
@@ -116,21 +103,28 @@ router.get(
  *                 example: Introduction to Java
  *               description:
  *                 type: string
+ *                 nullable: true
  *                 example: Learn the basics of Java
  *               content:
  *                 type: string
+ *                 nullable: true
  *                 example: Java is a programming language...
  *               videoUrl:
  *                 type: string
+ *                 nullable: true
  *                 example: https://example.com/videos/java-introduction.mp4
  *               duration:
  *                 type: string
+ *                 nullable: true
  *                 example: 30 minutes
  *               order:
  *                 type: integer
+ *                 minimum: 0
+ *                 default: 0
  *                 example: 1
  *               moduleId:
  *                 type: integer
+ *                 minimum: 1
  *                 example: 1
  *     responses:
  *       201:
@@ -150,8 +144,8 @@ router.post(
 /**
  * @swagger
  * /api/lessons/{id}:
- *   put:
- *     summary: Update lesson
+ *   get:
+ *     summary: Get lesson by ID
  *     tags: [Lessons]
  *     parameters:
  *       - in: path
@@ -159,6 +153,38 @@ router.post(
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Lesson retrieved successfully
+ *       400:
+ *         description: Invalid lesson ID
+ *       404:
+ *         description: Lesson not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+    "/:id",
+    validateLessonId,
+    getLessonById
+);
+
+
+/**
+ * @swagger
+ * /api/lessons/{id}:
+ *   put:
+ *     summary: Update a lesson
+ *     tags: [Lessons]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
  *         example: 1
  *     requestBody:
  *       required: true
@@ -172,19 +198,28 @@ router.post(
  *                 example: Advanced Java
  *               description:
  *                 type: string
+ *                 nullable: true
  *                 example: Advanced Java concepts
  *               content:
  *                 type: string
+ *                 nullable: true
  *                 example: Learn advanced Java concepts...
  *               videoUrl:
  *                 type: string
+ *                 nullable: true
  *                 example: https://example.com/videos/advanced-java.mp4
  *               duration:
  *                 type: string
+ *                 nullable: true
  *                 example: 45 minutes
  *               order:
  *                 type: integer
+ *                 minimum: 0
  *                 example: 2
+ *               moduleId:
+ *                 type: integer
+ *                 minimum: 1
+ *                 example: 1
  *     responses:
  *       200:
  *         description: Lesson updated successfully
@@ -207,7 +242,7 @@ router.put(
  * @swagger
  * /api/lessons/{id}:
  *   delete:
- *     summary: Delete lesson
+ *     summary: Delete a lesson
  *     tags: [Lessons]
  *     parameters:
  *       - in: path
@@ -215,6 +250,7 @@ router.put(
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         example: 1
  *     responses:
  *       200:
@@ -223,6 +259,10 @@ router.put(
  *         description: Invalid lesson ID
  *       404:
  *         description: Lesson not found
+ *       409:
+ *         description: Lesson cannot be deleted because related data exists
+ *       500:
+ *         description: Internal server error
  */
 router.delete(
     "/:id",

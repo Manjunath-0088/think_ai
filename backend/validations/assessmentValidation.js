@@ -8,12 +8,12 @@ const validateAssessmentCreate = (req, res, next) => {
         status,
         moduleId,
         questions
-    } = req.body;
+    } = req.body || {};
 
     const errors = [];
 
 
-    // Validate title
+    // Title
     if (
         !title ||
         typeof title !== "string" ||
@@ -23,7 +23,7 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
-    // Validate description
+    // Description
     if (
         description !== undefined &&
         description !== null &&
@@ -38,7 +38,7 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
-    // Validate total marks
+    // Total marks
     if (
         totalMarks === undefined ||
         totalMarks === null ||
@@ -51,7 +51,7 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
-    // Validate duration
+    // Duration
     if (
         duration !== undefined &&
         duration !== null &&
@@ -66,7 +66,7 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
-    // Validate status
+    // Status
     if (
         status !== undefined &&
         !["ACTIVE", "INACTIVE"].includes(status)
@@ -77,7 +77,7 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
-    // Validate module ID
+    // Module ID
     if (
         moduleId === undefined ||
         moduleId === null ||
@@ -90,17 +90,31 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
-    // Validate questions
+    // Questions
     if (
         !Array.isArray(questions) ||
         questions.length === 0
     ) {
+
         errors.push(
             "questions must contain at least one question"
         );
+
     } else {
 
         questions.forEach((question, index) => {
+
+            if (
+                !question ||
+                typeof question !== "object" ||
+                Array.isArray(question)
+            ) {
+                errors.push(
+                    `questions[${index}] must be a valid object`
+                );
+                return;
+            }
+
 
             // Question text
             if (
@@ -115,10 +129,12 @@ const validateAssessmentCreate = (req, res, next) => {
 
 
             // Question type
+            const questionType =
+                question.questionType || "MCQ";
+
             if (
-                question.questionType !== undefined &&
                 !["MCQ", "CODING"].includes(
-                    question.questionType
+                    questionType
                 )
             ) {
                 errors.push(
@@ -158,27 +174,40 @@ const validateAssessmentCreate = (req, res, next) => {
             }
 
 
-            // MCQ validation
-            if (
-                question.questionType === undefined ||
-                question.questionType === "MCQ"
-            ) {
+            /*
+             * MCQ validation
+             */
+            if (questionType === "MCQ") {
 
                 if (
                     !Array.isArray(question.options) ||
                     question.options.length < 2
                 ) {
+
                     errors.push(
                         `questions[${index}].options must contain at least 2 options`
                     );
+
                 } else {
 
                     let correctOptionCount = 0;
 
-
                     question.options.forEach(
                         (option, optionIndex) => {
 
+                            if (
+                                !option ||
+                                typeof option !== "object" ||
+                                Array.isArray(option)
+                            ) {
+                                errors.push(
+                                    `questions[${index}].options[${optionIndex}] must be a valid object`
+                                );
+                                return;
+                            }
+
+
+                            // Option text
                             if (
                                 !option.optionText ||
                                 typeof option.optionText !== "string" ||
@@ -190,22 +219,53 @@ const validateAssessmentCreate = (req, res, next) => {
                             }
 
 
+                            // isCorrect
+                            if (
+                                option.isCorrect !== undefined &&
+                                typeof option.isCorrect !== "boolean"
+                            ) {
+                                errors.push(
+                                    `questions[${index}].options[${optionIndex}].isCorrect must be a boolean`
+                                );
+                            }
+
+
                             if (
                                 option.isCorrect === true
                             ) {
                                 correctOptionCount++;
                             }
+
                         }
                     );
 
 
-                    if (correctOptionCount !== 1) {
+                    if (
+                        correctOptionCount !== 1
+                    ) {
                         errors.push(
                             `questions[${index}] must have exactly one correct option`
                         );
                     }
                 }
             }
+
+
+            /*
+             * Coding question validation
+             */
+            if (questionType === "CODING") {
+
+                if (
+                    question.options !== undefined &&
+                    !Array.isArray(question.options)
+                ) {
+                    errors.push(
+                        `questions[${index}].options must be an array`
+                    );
+                }
+            }
+
         });
     }
 
@@ -214,7 +274,8 @@ const validateAssessmentCreate = (req, res, next) => {
 
         return res.status(400).json({
             success: false,
-            message: "Assessment validation failed",
+            message:
+                "Assessment validation failed",
             errors
         });
 
@@ -225,11 +286,17 @@ const validateAssessmentCreate = (req, res, next) => {
 };
 
 
-// Validate /assessments/:id
-const validateAssessmentId = (req, res, next) => {
+/*
+ * Validate /assessments/:id
+ */
+const validateAssessmentId = (
+    req,
+    res,
+    next
+) => {
 
-    const id = Number(req.params.id);
-
+    const id =
+        Number(req.params.id);
 
     if (
         !Number.isInteger(id) ||
@@ -244,23 +311,28 @@ const validateAssessmentId = (req, res, next) => {
 
     }
 
-
     next();
 };
 
 
-// Validate assessment submission
-const validateAssessmentSubmit = (req, res, next) => {
+/*
+ * Validate assessment submission
+ */
+const validateAssessmentSubmit = (
+    req,
+    res,
+    next
+) => {
 
     const {
         enrollmentId,
         answers
-    } = req.body;
+    } = req.body || {};
 
     const errors = [];
 
 
-    // Validate enrollment ID
+    // Enrollment ID
     if (
         enrollmentId === undefined ||
         enrollmentId === null ||
@@ -275,7 +347,7 @@ const validateAssessmentSubmit = (req, res, next) => {
     }
 
 
-    // Validate answers
+    // Answers
     if (
         !Array.isArray(answers) ||
         answers.length === 0
@@ -287,34 +359,54 @@ const validateAssessmentSubmit = (req, res, next) => {
 
     } else {
 
-        answers.forEach((answer, index) => {
+        answers.forEach(
+            (answer, index) => {
 
-            if (
-                answer.questionId === undefined ||
-                !Number.isInteger(
-                    Number(answer.questionId)
-                ) ||
-                Number(answer.questionId) <= 0
-            ) {
-                errors.push(
-                    `answers[${index}].questionId must be a positive integer`
-                );
+                if (
+                    !answer ||
+                    typeof answer !== "object" ||
+                    Array.isArray(answer)
+                ) {
+                    errors.push(
+                        `answers[${index}] must be a valid object`
+                    );
+                    return;
+                }
+
+
+                // Question ID
+                if (
+                    answer.questionId === undefined ||
+                    !Number.isInteger(
+                        Number(answer.questionId)
+                    ) ||
+                    Number(answer.questionId) <= 0
+                ) {
+                    errors.push(
+                        `answers[${index}].questionId must be a positive integer`
+                    );
+                }
+
+
+                // Selected option ID
+                if (
+                    answer.selectedOptionId === undefined ||
+                    !Number.isInteger(
+                        Number(
+                            answer.selectedOptionId
+                        )
+                    ) ||
+                    Number(
+                        answer.selectedOptionId
+                    ) <= 0
+                ) {
+                    errors.push(
+                        `answers[${index}].selectedOptionId must be a positive integer`
+                    );
+                }
+
             }
-
-
-            if (
-                answer.selectedOptionId === undefined ||
-                !Number.isInteger(
-                    Number(answer.selectedOptionId)
-                ) ||
-                Number(answer.selectedOptionId) <= 0
-            ) {
-                errors.push(
-                    `answers[${index}].selectedOptionId must be a positive integer`
-                );
-            }
-
-        });
+        );
     }
 
 
@@ -335,7 +427,10 @@ const validateAssessmentSubmit = (req, res, next) => {
 
 
 module.exports = {
+
     validateAssessmentCreate,
+
     validateAssessmentId,
+
     validateAssessmentSubmit
 };

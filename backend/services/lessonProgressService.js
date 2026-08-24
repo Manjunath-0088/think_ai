@@ -6,14 +6,39 @@ const automationService =
 
 
 /*
+ * Validate a positive integer ID
+ */
+const validateId = (value, name) => {
+
+    const id = Number(value);
+
+    if (
+        !Number.isInteger(id) ||
+        id <= 0
+    ) {
+        throw new Error(
+            `${name} must be a positive integer`
+        );
+    }
+
+    return id;
+};
+
+
+/*
  * Get all lesson progress for an enrollment
  */
-const getProgressByEnrollment = async (
+const getProgressByEnrollment = (
     enrollmentId
 ) => {
 
-    return await repository.getProgressByEnrollment(
-        Number(enrollmentId)
+    const id = validateId(
+        enrollmentId,
+        "Enrollment ID"
+    );
+
+    return repository.getProgressByEnrollment(
+        id
     );
 };
 
@@ -21,14 +46,26 @@ const getProgressByEnrollment = async (
 /*
  * Get progress for a specific lesson
  */
-const getLessonProgress = async (
+const getLessonProgress = (
     enrollmentId,
     lessonId
 ) => {
 
-    return await repository.getLessonProgress(
-        Number(enrollmentId),
-        Number(lessonId)
+    const enrollmentIdNumber =
+        validateId(
+            enrollmentId,
+            "Enrollment ID"
+        );
+
+    const lessonIdNumber =
+        validateId(
+            lessonId,
+            "Lesson ID"
+        );
+
+    return repository.getLessonProgress(
+        enrollmentIdNumber,
+        lessonIdNumber
     );
 };
 
@@ -36,45 +73,97 @@ const getLessonProgress = async (
 /*
  * Complete a lesson
  *
- * After completing the lesson,
- * trigger the Automation Engine.
+ * 1. Validate IDs
+ * 2. Complete lesson
+ * 3. Trigger automation
+ *
+ * Automation failure does NOT
+ * rollback successful lesson completion.
  */
 const completeLesson = async (
     enrollmentId,
     lessonId
 ) => {
 
-    const progress =
-        await repository.completeLesson(
-            Number(enrollmentId),
-            Number(lessonId)
+    const enrollmentIdNumber =
+        validateId(
+            enrollmentId,
+            "Enrollment ID"
+        );
+
+    const lessonIdNumber =
+        validateId(
+            lessonId,
+            "Lesson ID"
         );
 
 
     /*
-     * Trigger Automation Engine
-     *
-     * Automation checks:
-     *
-     * 1. Course completion >= 80%
-     * 2. All required assessments >= 40%
-     *
-     * If both conditions are satisfied,
-     * certificate generation is triggered.
+     * Complete lesson first.
      */
-    const automationResult =
-        await automationService
-            .processLessonCompletion(
-                Number(enrollmentId)
-            );
+    const progress =
+        await repository.completeLesson(
+            enrollmentIdNumber,
+            lessonIdNumber
+        );
+
+
+    /*
+     * Default automation response.
+     */
+    let automation = {
+        success: false,
+        processed: false,
+        message:
+            "Automation was not processed"
+    };
+
+
+    /*
+     * Process automation only after
+     * successful lesson completion.
+     */
+    try {
+
+        const result =
+            await automationService
+                .processLessonCompletion(
+                    enrollmentIdNumber
+                );
+
+
+        automation = {
+            success: true,
+            processed: true,
+            data: result
+        };
+
+    } catch (error) {
+
+        /*
+         * Do not rollback lesson progress.
+         *
+         * The student's lesson completion
+         * has already been saved successfully.
+         */
+        console.error(
+            "Automation processing failed:",
+            error
+        );
+
+
+        automation = {
+            success: false,
+            processed: false,
+            message:
+                "Lesson completed, but automation processing failed"
+        };
+    }
 
 
     return {
-
         progress,
-
-        automation:
-            automationResult
+        automation
     };
 };
 
@@ -86,54 +175,33 @@ const getProgressSummary = async (
     enrollmentId
 ) => {
 
-    const summary =
-        await repository.getProgressSummary(
-            Number(enrollmentId)
+    const id =
+        validateId(
+            enrollmentId,
+            "Enrollment ID"
         );
 
 
-    const {
-        totalLessons,
-        completedLessons
-    } = summary;
-
-
-    /*
-     * Calculate course completion percentage
-     */
-    const completionPercentage =
-        totalLessons === 0
-            ? 0
-            : Number(
-                (
-                    (
-                        completedLessons /
-                        totalLessons
-                    ) * 100
-                ).toFixed(2)
-            );
+    const summary =
+        await repository.getProgressSummary(
+            id
+        );
 
 
     return {
+        enrollmentId: id,
 
-        enrollmentId:
-            Number(enrollmentId),
+        totalLessons:
+            summary.totalLessons,
 
-        totalLessons,
+        completedLessons:
+            summary.completedLessons,
 
-        completedLessons,
+        completionPercentage:
+            summary.completionPercentage,
 
-        completionPercentage,
-
-        /*
-         * This only represents the course
-         * completion requirement.
-         *
-         * Assessment eligibility is checked
-         * separately by the Automation Engine.
-         */
         courseCompletionRequirementMet:
-            completionPercentage >= 80
+            summary.completionPercentage >= 80
     };
 };
 
