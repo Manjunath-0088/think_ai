@@ -15,7 +15,7 @@ function EditEnrollment() {
     studentName: "",
     studentEmail: "",
     batchId: "",
-    enrollmentStatus: "ACTIVE",
+    enrollmentStatus: "ENROLLED",
   });
 
   useEffect(() => {
@@ -155,8 +155,9 @@ function EditEnrollment() {
           onChange={handleChange}
           className="bg-[#0B0F19] border border-gray-700 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500"
         >
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="INACTIVE">INACTIVE</option>
+          <option value="ENROLLED">ENROLLED</option>
+          <option value="COMPLETED">COMPLETED</option>
+          <option value="CANCELLED">CANCELLED</option>
         </select>
 
         <div className="col-span-2 flex justify-center pt-2">

@@ -1,10 +1,11 @@
-export default function VoteButtons({ upvotes, downvotes, onVote, disabled }) {
+export default function VoteButtons({ upvotes, downvotes, onVote, disabled, userVote }) {
   return (
     <div className="vote-buttons" aria-label="Post votes">
       <button
-        className="vote-btn vote-up"
+        className={`vote-btn vote-up${userVote === 'up' ? ' is-active' : ''}`}
         type="button"
         aria-label="Upvote"
+        aria-pressed={userVote === 'up'}
         title="Upvote"
         disabled={disabled}
         onClick={() => onVote('up')}
@@ -16,9 +17,10 @@ export default function VoteButtons({ upvotes, downvotes, onVote, disabled }) {
       </button>
       <span className="vote-divider" aria-hidden="true" />
       <button
-        className="vote-btn vote-down"
+        className={`vote-btn vote-down${userVote === 'down' ? ' is-active' : ''}`}
         type="button"
         aria-label="Downvote"
+        aria-pressed={userVote === 'down'}
         title="Downvote"
         disabled={disabled}
         onClick={() => onVote('down')}

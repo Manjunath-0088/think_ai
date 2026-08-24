@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { useTheme } from '../../../components/ThemeContext';
-import { runCode } from '../../../api/codeExecutionApi';
+import { executeCode  } from '../../../api/codeExecutionApi';
 
 const LANGUAGES = [
   { id: 'javascript', label: 'JavaScript', monacoId: 'javascript' },
@@ -41,13 +41,12 @@ export default function CodePlayground() {
   const [status, setStatus] = useState('idle'); // idle | running | success | error
   const [output, setOutput] = useState('');
 
-
   const handleRun = useCallback(async () => {
     setStatus('running');
     setOutput('');
 
     try {
-      const result = await runCode({ language, code });
+     const result = await executeCode({ language, code });
       const combined = [result.stdout, result.stderr].filter(Boolean).join('\n');
       setStatus(result.exitCode === 0 ? 'success' : 'error');
       setOutput(combined || (result.exitCode === 0 ? '(no output)' : 'Execution failed.'));
@@ -106,7 +105,7 @@ export default function CodePlayground() {
 
       {/* editor + output */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="min-h-0 overflow-hidden rounded-xl border border-[var(--border)]">
+        <div className="min-h-[320px] lg:min-h-0 overflow-hidden rounded-xl border border-[var(--border)]">
           <Editor
             height="100%"
             language={LANGUAGES.find((l) => l.id === language)?.monacoId}
@@ -122,20 +121,21 @@ export default function CodePlayground() {
           />
         </div>
 
-        <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+        <div className="min-h-[240px] lg:min-h-0 flex flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-glass)] backdrop-blur-xl">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5">
             <span className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
               Output
             </span>
             <span
-              className={`rounded-full px-2 py-0.5 font-mono text-[11px] ${status === 'success'
-                ? 'bg-[var(--success)]/15 text-[var(--success)]'
-                : status === 'error'
-                  ? 'bg-[var(--danger)]/15 text-[var(--danger)]'
-                  : status === 'running'
-                    ? 'bg-[var(--accent-to)]/15 text-[var(--accent-to)]'
-                    : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'
-                }`}
+              className={`rounded-full px-2 py-0.5 font-mono text-[11px] ${
+                status === 'success'
+                  ? 'bg-[var(--success)]/15 text-[var(--success)]'
+                  : status === 'error'
+                    ? 'bg-[var(--danger)]/15 text-[var(--danger)]'
+                    : status === 'running'
+                      ? 'bg-[var(--accent-to)]/15 text-[var(--accent-to)]'
+                      : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'
+              }`}
             >
               {status}
             </span>

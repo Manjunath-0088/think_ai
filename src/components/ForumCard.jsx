@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
 import VoteButtons from './VoteButtons.jsx';
 import UserProfile from './UserProfile.jsx';
+import { BookmarkService } from '../services/bookmarkService.js';
+import { NotificationService } from '../services/notificationService.js';
 
 function timeAgo(dateString) {
   const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
@@ -20,8 +23,40 @@ function timeAgo(dateString) {
   return 'just now';
 }
 
-export default function ForumCard({ post, author, voting, onVote, onToggleSolved }) {
+export default function ForumCard({ post, author, voting, onVote, onToggleSolved, userVote }) {
   const disabled = voting;
+  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
+
+  useEffect(() => {
+    BookmarkService.isBookmarked(post.id).then(setBookmarked);
+  }, [post.id]);
+
+  const handleBookmarkToggle = async () => {
+    if (bookmarkBusy) return;
+    setBookmarkBusy(true);
+    try {
+      const result = await BookmarkService.toggleBookmark(post.id);
+      setBookmarked(result.bookmarked);
+      if (result.bookmarked) {
+        NotificationService.pushNotification({
+          type: 'bookmark',
+          title: 'Post bookmarked',
+          message: `"${post.title}" was added to your bookmarks.`,
+          postId: post.id,
+        });
+      } else {
+        NotificationService.pushNotification({
+          type: 'bookmark',
+          title: 'Bookmark removed',
+          message: `"${post.title}" was removed from your bookmarks.`,
+          postId: post.id,
+        });
+      }
+    } finally {
+      setBookmarkBusy(false);
+    }
+  };
 
   return (
     <article className={post.isSolved ? 'forum-card is-solved' : 'forum-card'}>
@@ -32,6 +67,7 @@ export default function ForumCard({ post, author, voting, onVote, onToggleSolved
             downvotes={post.downvotes}
             onVote={onVote}
             disabled={disabled}
+            userVote={userVote}
           />
         </div>
 
@@ -71,14 +107,29 @@ export default function ForumCard({ post, author, voting, onVote, onToggleSolved
             </div>
           </div>
 
-          <button
-            className={post.isSolved ? 'solve-btn is-solved' : 'solve-btn'}
-            type="button"
-            disabled={disabled}
-            onClick={onToggleSolved}
-          >
-            {post.isSolved ? 'Mark as Unsolved' : 'Mark as Solved'}
-          </button>
+          <div className="forum-card-actions-row">
+            <button
+              className={post.isSolved ? 'solve-btn is-solved' : 'solve-btn'}
+              type="button"
+              disabled={disabled}
+              onClick={onToggleSolved}
+            >
+              {post.isSolved ? 'Mark as Unsolved' : 'Mark as Solved'}
+            </button>
+            <button
+              className={`bookmark-btn ${bookmarked ? 'is-bookmarked' : ''}`}
+              type="button"
+              disabled={bookmarkBusy}
+              onClick={handleBookmarkToggle}
+              aria-label={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
+              aria-pressed={bookmarked}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill={bookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5Z" />
+              </svg>
+              {bookmarked ? 'Bookmarked' : 'Bookmark'}
+            </button>
+          </div>
         </div>
       </div>
     </article>

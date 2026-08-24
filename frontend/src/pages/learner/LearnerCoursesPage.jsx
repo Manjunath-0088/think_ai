@@ -42,7 +42,7 @@ export default function LearnerCoursesPage() {
 
   const handleViewCourse = (course) => {
     const courseId = course.id || course._id;
-    navigate(`/learner/courses/${courseId}`);
+    navigate(`/learner/courses/${courseId}/courseDetails`);
   };
 
   const hasNextPage = currentCourses.length === ITEMS_PER_PAGE;
@@ -51,7 +51,7 @@ export default function LearnerCoursesPage() {
  <div className="flex flex-col h-[calc(100vh-8rem)] space-y-4">
       <div className="shrink-0">
         {/* Switches between white text in dark mode and black text in light mode */}
-       <h1 className="text-2xl font-bold tracking-tight text-purple-400 dark:text-purple-900">All Courses</h1>
+       <h1 className="text-2xl font-semibold dark:text-purple-400">All Courses</h1>
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col">

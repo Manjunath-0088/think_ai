@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const {
-    generateCertificate,
+    getCertificateEligibility,
     getCertificateByEnrollment,
     downloadCertificate,
     verifyCertificate
@@ -17,20 +17,29 @@ const {
 } = require("../validations/certificateValidation");
 
 
+// ----------------------------------------------------
+// Swagger
+// ----------------------------------------------------
+
 /**
  * @swagger
  * tags:
  *   name: Certificates
- *   description: Certificate Management APIs
+ *   description: Automatic Certificate Management APIs
  */
 
 
 /**
  * @swagger
- * /api/certificates/generate/{enrollmentId}:
- *   post:
- *     summary: Generate course completion certificate
- *     description: Generates a certificate when the student has completed at least 80% of the course.
+ * /api/certificates/eligibility/{enrollmentId}:
+ *   get:
+ *     summary: Check certificate eligibility
+ *     description: >
+ *       Checks whether a student is eligible for a certificate.
+ *       Eligibility requires at least 80% course completion and
+ *       passing all required assessments.
+ *       Certificate generation is handled automatically by the
+ *       Automation Engine when eligibility is satisfied.
  *     tags: [Certificates]
  *     parameters:
  *       - in: path
@@ -40,15 +49,19 @@ const {
  *           type: integer
  *         example: 1
  *     responses:
- *       201:
- *         description: Certificate generated successfully
+ *       200:
+ *         description: Certificate eligibility checked successfully
  *       400:
- *         description: Student has not completed 80% of the course
+ *         description: Invalid enrollment ID
+ *       404:
+ *         description: Enrollment not found
+ *       500:
+ *         description: Failed to check certificate eligibility
  */
-router.post(
-    "/generate/:enrollmentId",
+router.get(
+    "/eligibility/:enrollmentId",
     validateCertificateEnrollmentId,
-    generateCertificate
+    getCertificateEligibility
 );
 
 
@@ -57,6 +70,9 @@ router.post(
  * /api/certificates/enrollment/{enrollmentId}:
  *   get:
  *     summary: Get certificate by enrollment
+ *     description: >
+ *       Returns the automatically generated certificate for an enrollment.
+ *       Returns 404 when the student has not yet received a certificate.
  *     tags: [Certificates]
  *     parameters:
  *       - in: path
@@ -68,8 +84,12 @@ router.post(
  *     responses:
  *       200:
  *         description: Certificate found
+ *       400:
+ *         description: Invalid enrollment ID
  *       404:
  *         description: Certificate not found
+ *       500:
+ *         description: Failed to retrieve certificate
  */
 router.get(
     "/enrollment/:enrollmentId",
@@ -83,7 +103,7 @@ router.get(
  * /api/certificates/{certificateNo}/download:
  *   get:
  *     summary: Download certificate PDF
- *     description: Downloads the generated certificate PDF.
+ *     description: Downloads the automatically generated certificate PDF.
  *     tags: [Certificates]
  *     parameters:
  *       - in: path
@@ -100,8 +120,12 @@ router.get(
  *             schema:
  *               type: string
  *               format: binary
+ *       400:
+ *         description: Certificate number is required
  *       404:
  *         description: Certificate or PDF not found
+ *       500:
+ *         description: Failed to download certificate
  */
 router.get(
     "/:certificateNo/download",
@@ -114,8 +138,10 @@ router.get(
  * @swagger
  * /api/certificates/verify/{certificateNo}:
  *   get:
- *     summary: Verify a certificate
- *     description: Public certificate verification endpoint. No login is required.
+ *     summary: Verify certificate
+ *     description: >
+ *       Public certificate verification endpoint.
+ *       No authentication is required.
  *     tags: [Certificates]
  *     parameters:
  *       - in: path
@@ -127,8 +153,12 @@ router.get(
  *     responses:
  *       200:
  *         description: Valid certificate
+ *       400:
+ *         description: Certificate number is required
  *       404:
  *         description: Certificate not found
+ *       500:
+ *         description: Certificate verification failed
  */
 router.get(
     "/verify/:certificateNo",

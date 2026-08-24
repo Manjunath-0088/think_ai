@@ -2,27 +2,64 @@ const express = require("express");
 const router = express.Router();
 const { users } = require("../data/users");
 const { roles } = require("../data/roles");
-const { successResponse, errorResponse } = require("../utils/response");
-const { validateUserIdParam, validateRoleBody } = require("../validations/roleValidation");
-const {logAction} = require('../utils/auditlogger');
-router.get("/users", (req, res) => {
-  return successResponse(res, 200, "Users fetched", users);
+const requireRole = require("../middleware/requireRole");
+const { logRoleChange } = require("../services/auditLogService");
+/**
+ * GET /admin/users
+ * Lists every user, with their current role.
+ * Used by the Admin Users Page to populate the users table.
+ */
+router.get("/users", requireRole(["Admin"]), (req, res) => {
+  res.status(200).json({
+    success: true,
+    count: users.length,
+    data: users,
+  });
 });
 
-router.get("/roles", (req, res) => {
-  return successResponse(res, 200, "Roles fetched", roles);
+/**
+ * GET /admin/roles
+ * Lists every role that exists in the system.
+ * Used to populate a dropdown when an admin wants to assign/change someone's role.
+ */
+router.get("/roles", requireRole(["Admin"]), (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: roles,
+  });
 });
 
-router.post("/users/:id/assign-role", validateUserIdParam, validateRoleBody, (req, res) => {
+/**
+ * POST /admin/users/:id/assign-role
+ * Assigns a role to a user for the first time (e.g. a brand-new signup with no role yet).
+ * Body: { "role": "Instructor" }
+ */
+router.post("/users/:id/assign-role", requireRole(["Admin"]), (req, res) => {
   const userId = parseInt(req.params.id);
   const { role } = req.body;
   const user = users.find((u) => u.id === userId);
-  if (!user) return errorResponse(res, 404, "User not found");
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+logRoleChange({
+    actorRole: req.user.role,
+    targetUserId: userId,
+    targetUserName: user.name,
+    oldRole: null,
+    newRole: role,
+  });
+
   user.role = role;
-  return successResponse(res, 200, "Role assigned", user);
+  res.status(200).json({ success: true, message: "Role assigned" });
+  
 });
 
-router.put("/users/:id/role", validateUserIdParam, validateRoleBody, (req, res) => {
+/**
+ * PUT /admin/users/:id/role
+ * Updates/changes an existing user's role (e.g. promoting a Learner to TA).
+ * Body: { "role": "TA" }
+ */
+router.put("/users/:id/role",requireRole(["Admin"]), (req, res) => {
   const userId = parseInt(req.params.id);
   const { role } = req.body;
   const user = users.find((u) => u.id === userId);
@@ -73,6 +110,13 @@ router.post("/users/bulk-role", (req, res) => {
   if (!Array.isArray(userIds) || !role) {
     return errorResponse(res, 400, "Invalid payload");
   }
+logRoleChange({
+    actorRole: req.user.role,
+    targetUserId: userId,
+    targetUserName: user.name,
+    oldRole: user.role,
+    newRole: role,
+  });
 
   const updatedUsers = [];
   users.forEach((u) => {

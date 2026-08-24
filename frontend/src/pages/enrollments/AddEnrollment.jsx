@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
 import { createEnrollment } from "../../api/enrollmentApi";
 import { getBatches } from "../../api/batchApi";
+import { selectUser } from "../../features/auth/authSlice";
 import InputField from "../../components/common/InputField";
 
 function AddEnrollment() {
   const navigate = useNavigate();
+  const user = useSelector(selectUser);
 
   const [batches, setBatches] = useState([]);
   const [loadingBatches, setLoadingBatches] = useState(true);
@@ -16,7 +19,7 @@ function AddEnrollment() {
     studentName: "",
     studentEmail: "",
     batchId: "",
-    enrollmentStatus: "ACTIVE",
+    enrollmentStatus: "ENROLLED", // was "ACTIVE"
   });
 
   useEffect(() => {
@@ -182,8 +185,9 @@ function AddEnrollment() {
               onChange={handleChange}
               className="bg-[#0B0F19] border border-gray-700/80 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-cyan-500 transition-all cursor-pointer"
             >
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="INACTIVE">INACTIVE</option>
+              <option value="ENROLLED">ENROLLED</option>
+              <option value="COMPLETED">COMPLETED</option>
+              <option value="CANCELLED">CANCELLED</option>
             </select>
           </div>
 

@@ -24,6 +24,9 @@ export default function CourseList({
   // Check if current user has admin privileges
   const isAdmin = user?.role === 'Admin' || user?.role === 'ADMIN' || user?.isAdmin;
 
+  // Sort courses by ID in ascending order
+  const sortedCourses = Array.isArray(courses) ? [...courses].sort((a, b) => (a.id || 0) - (b.id || 0)) : [];
+
   return (
     <div className="relative z-10 w-full bg-[#131824] backdrop-blur-2xl rounded-2xl p-4 sm:p-6 border border-purple-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.6)] space-y-6">
       
@@ -57,7 +60,7 @@ export default function CourseList({
         <>
           {/* Grid Layout */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {courses.map((c) => (
+            {sortedCourses.map((c) => (
               <CourseCard 
                 key={c.id || c._id} 
                 course={c} 
@@ -68,7 +71,7 @@ export default function CourseList({
               />
             ))}
             
-            {courses.length === 0 && (
+            {sortedCourses.length === 0 && (
               <div className="col-span-full py-16 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl bg-[#0b0e14]/40">
                 <p className="text-slate-400 text-xs tracking-widest uppercase">No courses found.</p>
               </div>

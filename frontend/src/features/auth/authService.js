@@ -3,6 +3,7 @@ let MOCK_USERS = [
   { id: 2, name: 'Test Instructor', email: 'instructor@test.com', password: '123456', role: 'Instructor' },
   { id: 3, name: 'Test TA', email: 'ta@test.com', password: '123456', role: 'TA' },
   { id: 4, name: 'Test Admin', email: 'admin@test.com', password: '123456', role: 'Admin' },
+  { id: 5, name: 'Student', email: 'stu@test.com', password: '123456', role: 'Learner' },
 ]
 
 export const loginApi = (credentials) => {

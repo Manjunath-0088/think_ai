@@ -1,50 +1,10 @@
 {
-<<<<<<< HEAD
-  "name": "community-forum",
+  "name": "think-ai",
+  "version": "1.0.0",
   "private": true,
-  "version": "1.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.8"
-=======
-  "name": "think_ai",
-  "version": "1.0.0",
-  "description": "[![Version](https://img.shields.io/badge/version-1.0-blue.svg)](https://shields.io/)\r [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://shields.io/)\r [![React](https://img.shields.io/badge/React-18.x-61DAFB?logo=react)](https://reactjs.org/)\r [![Node](https://img.shields.io/badge/Node.js-18.x-339933?logo=nodedotjs)](https://nodejs.org/)",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Thinkzai/think_ai.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Thinkzai/think_ai/issues"
-  },
-  "homepage": "https://github.com/Thinkzai/think_ai#readme",
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "joi": "^18.2.3",
-    "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.9.1",
-    "swagger-jsdoc": "^6.3.0",
-    "swagger-ui-express": "^5.0.1"
->>>>>>> 9eb3c244f2c9db378ed67ab12b3f084c2c3de15c
+    "lint": "npm --prefix frontend run lint && npm --prefix backend run lint",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "test": "npm --prefix frontend run test && npm --prefix backend run test"
   }
 }

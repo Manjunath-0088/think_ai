@@ -6,11 +6,16 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    strictPort: true,
   },
   preview: {
     host: true,
     port: 4173,
-    strictPort: true,
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    css: true,
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
   },
 });

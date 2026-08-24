@@ -1,72 +1,148 @@
-const validateEnrollmentId = (req, res, next) => {
+/*
+ * Validate positive integer
+ */
+const validatePositiveInteger = (
+    value,
+    fieldName
+) => {
 
-    const enrollmentId =
-        Number(
-            req.params.enrollmentId ||
-            req.body.enrollmentId
+    const number = Number(value);
+
+    if (
+        !Number.isInteger(number) ||
+        number <= 0
+    ) {
+        return `${fieldName} must be a positive integer`;
+    }
+
+    return null;
+};
+
+
+/*
+ * Validate enrollment ID from route
+ *
+ * Used by:
+ * /:enrollmentId
+ */
+const validateEnrollmentId = (
+    req,
+    res,
+    next
+) => {
+
+    const error =
+        validatePositiveInteger(
+            req.params.enrollmentId,
+            "Enrollment ID"
         );
 
-    if (
-        !Number.isInteger(enrollmentId) ||
-        enrollmentId <= 0
-    ) {
+
+    if (error) {
+
         return res.status(400).json({
+
             success: false,
-            message:
-                "enrollmentId must be a positive integer"
+
+            message: error
         });
     }
+
 
     next();
 };
 
 
-const validateLessonId = (req, res, next) => {
+/*
+ * Validate lesson ID from route
+ *
+ * Used by:
+ * /:enrollmentId/lessons/:lessonId
+ */
+const validateLessonId = (
+    req,
+    res,
+    next
+) => {
 
-    const lessonId =
-        Number(req.params.lessonId);
+    const error =
+        validatePositiveInteger(
+            req.params.lessonId,
+            "Lesson ID"
+        );
 
-    if (
-        !Number.isInteger(lessonId) ||
-        lessonId <= 0
-    ) {
+
+    if (error) {
+
         return res.status(400).json({
+
             success: false,
-            message:
-                "lessonId must be a positive integer"
+
+            message: error
         });
     }
+
 
     next();
 };
 
 
+/*
+ * Validate enrollment ID when
+ * completing a lesson.
+ *
+ * enrollmentId is expected
+ * inside request body.
+ */
 const validateCompleteLesson = (
     req,
     res,
     next
 ) => {
 
-    const enrollmentId =
-        Number(req.body.enrollmentId);
-
     if (
-        !Number.isInteger(enrollmentId) ||
-        enrollmentId <= 0
+        !req.body ||
+        typeof req.body !== "object" ||
+        Array.isArray(req.body)
     ) {
+
         return res.status(400).json({
+
             success: false,
+
             message:
-                "enrollmentId must be a positive integer"
+                "Request body is required"
         });
     }
+
+
+    const error =
+        validatePositiveInteger(
+            req.body.enrollmentId,
+            "Enrollment ID"
+        );
+
+
+    if (error) {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message: error
+        });
+    }
+
 
     next();
 };
 
 
 module.exports = {
+
     validateEnrollmentId,
+
     validateLessonId,
+
     validateCompleteLesson
 };

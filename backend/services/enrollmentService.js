@@ -1,113 +1,744 @@
 const prisma = require("../config/database");
-const repository = require("../repositories/enrollmentRepository");
 
-const getAllEnrollments = async () => {
-    return await repository.getAllEnrollments();
-};
+const repository =
+    require("../repositories/enrollmentRepository");
 
-const getEnrollmentById = async (id) => {
-    return await repository.getEnrollmentById(Number(id));
-};
 
-const createEnrollment = async (data) => {
-    const batchId = Number(data.batchId);
+/*
+ * ----------------------------------------------------
+ * Constants
+ * ----------------------------------------------------
+ */
 
-    // Validate batch
-    if (!batchId) {
-        throw new Error("Batch is required");
-    }
+const ACTIVE_ENROLLMENT_STATUSES = new Set([
+    "ACTIVE",
+    "ENROLLED"
+]);
 
-    // Get selected batch, course and active enrollments
-    const selectedBatch = await prisma.batch.findUnique({
-        where: {
-            id: batchId,
-        },
-        include: {
-            course: true,
-            enrollments: {
-                where: {
-                    enrollmentStatus: {
-                        in: ["ACTIVE", "ENROLLED"],
-                    },
-                },
-            },
-        },
-    });
+const DEFAULT_ENROLLMENT_STATUS =
+    "ENROLLED";
 
-    if (!selectedBatch) {
-        throw new Error("Selected batch not found");
-    }
 
-    // Do not allow enrollment into an archived course
-    if (selectedBatch.course?.status !== "ACTIVE") {
+/*
+ * ----------------------------------------------------
+ * Validation helpers
+ * ----------------------------------------------------
+ */
+
+const validateId = (
+    value,
+    fieldName
+) => {
+
+    const id = Number(value);
+
+    if (
+        !Number.isInteger(id) ||
+        id <= 0
+    ) {
         throw new Error(
-            "Cannot enroll into an archived course"
+            `${fieldName} must be a positive integer`
         );
     }
 
-    // Do not allow enrollment into an inactive batch
-    if (selectedBatch.status !== "ACTIVE") {
+    return id;
+};
+
+
+const validateStudentName = (value) => {
+
+    if (
+        typeof value !== "string" ||
+        !value.trim()
+    ) {
+        throw new Error(
+            "Student name is required"
+        );
+    }
+
+    return value.trim();
+};
+
+
+const validateStudentEmail = (value) => {
+
+    if (
+        typeof value !== "string" ||
+        !value.trim()
+    ) {
+        throw new Error(
+            "Student email is required"
+        );
+    }
+
+    return value.trim();
+};
+
+
+const validateEnrollmentStatus = (
+    status
+) => {
+
+    if (
+        status === undefined ||
+        status === null
+    ) {
+        return DEFAULT_ENROLLMENT_STATUS;
+    }
+
+    if (
+        typeof status !== "string" ||
+        !status.trim()
+    ) {
+        throw new Error(
+            "Enrollment status is invalid"
+        );
+    }
+
+    return status.trim();
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Get all enrollments
+ * ----------------------------------------------------
+ */
+
+const getAllEnrollments = async () => {
+
+    return repository.getAllEnrollments();
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Get enrollment by ID
+ * ----------------------------------------------------
+ */
+
+const getEnrollmentById = async (
+    id
+) => {
+
+    const enrollmentId =
+        validateId(
+            id,
+            "Enrollment ID"
+        );
+
+    return repository.getEnrollmentById(
+        enrollmentId
+    );
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Create enrollment
+ * ----------------------------------------------------
+ */
+
+const createEnrollment = async (
+    data
+) => {
+
+    if (
+        !data ||
+        typeof data !== "object" ||
+        Array.isArray(data)
+    ) {
+        throw new Error(
+            "Enrollment data is required"
+        );
+    }
+
+
+    /*
+     * Validate student information
+     */
+
+    const studentName =
+        validateStudentName(
+            data.studentName
+        );
+
+    const studentEmail =
+        validateStudentEmail(
+            data.studentEmail
+        );
+
+
+    /*
+     * Validate batch
+     */
+
+    const batchId =
+        validateId(
+            data.batchId,
+            "Batch ID"
+        );
+
+
+    /*
+     * Validate enrollment status
+     */
+
+    const enrollmentStatus =
+        validateEnrollmentStatus(
+            data.enrollmentStatus
+        );
+
+
+    /*
+     * Prevent duplicate enrollment
+     */
+
+    const existingEnrollment =
+        await prisma.enrollment.findFirst({
+
+            where: {
+
+                studentEmail,
+
+                batchId,
+
+                enrollmentStatus: {
+                    in: [
+                        ...ACTIVE_ENROLLMENT_STATUSES
+                    ]
+                }
+            },
+
+            select: {
+                id: true
+            }
+        });
+
+
+    if (existingEnrollment) {
+
+        throw new Error(
+            "Student is already enrolled in this batch"
+        );
+    }
+
+
+    /*
+     * Get selected batch.
+     *
+     * Only retrieve fields required
+     * for validation.
+     */
+
+    const selectedBatch =
+        await prisma.batch.findUnique({
+
+            where: {
+                id: batchId
+            },
+
+            select: {
+
+                id: true,
+
+                courseId: true,
+
+                capacity: true,
+
+                status: true,
+
+                course: {
+                    select: {
+                        id: true,
+                        status: true
+                    }
+                },
+
+                _count: {
+                    select: {
+                        enrollments: true
+                    }
+                }
+            }
+        });
+
+
+    if (!selectedBatch) {
+
+        throw new Error(
+            "Selected batch not found"
+        );
+    }
+
+
+    /*
+     * Course must be active
+     */
+
+    if (
+        selectedBatch.course?.status !==
+        "ACTIVE"
+    ) {
+
+        throw new Error(
+            "Cannot enroll into an inactive course"
+        );
+    }
+
+
+    /*
+     * Batch must be active
+     */
+
+    if (
+        selectedBatch.status !==
+        "ACTIVE"
+    ) {
+
         throw new Error(
             "Cannot enroll into an inactive batch"
         );
     }
 
-    // Check selected batch capacity
-    const selectedBatchFull =
-        selectedBatch.enrollments.length >=
-        selectedBatch.capacity;
 
-    // Selected batch has available capacity
-    if (!selectedBatchFull) {
-        return await repository.createEnrollment({
-            studentName: data.studentName,
-            studentEmail: data.studentEmail,
-            batchId: selectedBatch.id,
-            enrollmentStatus:
-                data.enrollmentStatus || "ENROLLED",
+    /*
+     * Check capacity
+     */
+
+    const enrollmentCount =
+        selectedBatch._count?.enrollments ?? 0;
+
+
+    if (
+        enrollmentCount <
+        selectedBatch.capacity
+    ) {
+
+        return repository.createEnrollment({
+
+            studentName,
+
+            studentEmail,
+
+            batchId,
+
+            enrollmentStatus
         });
     }
 
-    // Selected batch is full
-    // Find another available batch for the same course
+
+    /*
+     * Selected batch is full.
+     *
+     * Find another available batch
+     * for the same course.
+     */
+
     const alternativeBatch =
         await repository.findAvailableBatch(
             selectedBatch.courseId
         );
 
+
     if (!alternativeBatch) {
+
         throw new Error(
             "Selected batch is full and no other available batch exists"
         );
     }
 
-    // Automatically assign alternative batch
-    return await repository.createEnrollment({
-        studentName: data.studentName,
-        studentEmail: data.studentEmail,
-        batchId: alternativeBatch.id,
-        enrollmentStatus:
-            data.enrollmentStatus || "ENROLLED",
+
+    /*
+     * Safety check
+     */
+
+    if (
+        alternativeBatch.id ===
+        selectedBatch.id
+    ) {
+
+        throw new Error(
+            "No alternative batch available"
+        );
+    }
+
+
+    /*
+     * Create enrollment in
+     * alternative batch.
+     */
+
+    return repository.createEnrollment({
+
+        studentName,
+
+        studentEmail,
+
+        batchId:
+            alternativeBatch.id,
+
+        enrollmentStatus
     });
 };
 
-const updateEnrollment = async (id, data) => {
-    return await repository.updateEnrollment(
-        Number(id),
-        data
+
+/*
+ * ----------------------------------------------------
+ * Update enrollment
+ * ----------------------------------------------------
+ */
+
+const updateEnrollment = async (
+    id,
+    data
+) => {
+
+    const enrollmentId =
+        validateId(
+            id,
+            "Enrollment ID"
+        );
+
+
+    if (
+        !data ||
+        typeof data !== "object" ||
+        Array.isArray(data)
+    ) {
+        throw new Error(
+            "Enrollment update data is required"
+        );
+    }
+
+
+    /*
+     * Get existing enrollment
+     */
+
+    const existingEnrollment =
+        await repository.getEnrollmentById(
+            enrollmentId
+        );
+
+
+    if (!existingEnrollment) {
+
+        throw new Error(
+            "Enrollment not found"
+        );
+    }
+
+
+    const updateData = {};
+
+
+    /*
+     * Student name
+     */
+
+    if (
+        data.studentName !== undefined
+    ) {
+
+        updateData.studentName =
+            validateStudentName(
+                data.studentName
+            );
+    }
+
+
+    /*
+     * Student email
+     */
+
+    if (
+        data.studentEmail !== undefined
+    ) {
+
+        updateData.studentEmail =
+            validateStudentEmail(
+                data.studentEmail
+            );
+    }
+
+
+    /*
+     * Enrollment status
+     */
+
+    if (
+        data.enrollmentStatus !== undefined
+    ) {
+
+        updateData.enrollmentStatus =
+            validateEnrollmentStatus(
+                data.enrollmentStatus
+            );
+    }
+
+
+    /*
+     * Batch change
+     */
+
+    if (
+        data.batchId !== undefined
+    ) {
+
+        const newBatchId =
+            validateId(
+                data.batchId,
+                "Batch ID"
+            );
+
+
+        /*
+         * If same batch was supplied,
+         * no need to perform capacity
+         * validation.
+         */
+
+        if (
+            newBatchId !==
+            existingEnrollment.batchId
+        ) {
+
+            const newBatch =
+                await prisma.batch.findUnique({
+
+                    where: {
+                        id: newBatchId
+                    },
+
+                    select: {
+
+                        id: true,
+
+                        courseId: true,
+
+                        capacity: true,
+
+                        status: true,
+
+                        course: {
+                            select: {
+                                id: true,
+                                status: true
+                            }
+                        },
+
+                        _count: {
+                            select: {
+                                enrollments: true
+                            }
+                        }
+                    }
+                });
+
+
+            if (!newBatch) {
+
+                throw new Error(
+                    "Selected batch not found"
+                );
+            }
+
+
+            /*
+             * Batch must be active
+             */
+
+            if (
+                newBatch.status !==
+                "ACTIVE"
+            ) {
+
+                throw new Error(
+                    "Cannot move enrollment to an inactive batch"
+                );
+            }
+
+
+            /*
+             * Course must be active
+             */
+
+            if (
+                newBatch.course?.status !==
+                "ACTIVE"
+            ) {
+
+                throw new Error(
+                    "Cannot move enrollment to an inactive course"
+                );
+            }
+
+
+            /*
+             * Check capacity
+             */
+
+            const enrollmentCount =
+                newBatch._count?.enrollments ?? 0;
+
+
+            if (
+                enrollmentCount >=
+                newBatch.capacity
+            ) {
+
+                throw new Error(
+                    "Selected batch is full"
+                );
+            }
+        }
+
+
+        updateData.batchId =
+            newBatchId;
+    }
+
+
+    /*
+     * Prevent empty update
+     */
+
+    if (
+        Object.keys(updateData).length === 0
+    ) {
+
+        throw new Error(
+            "At least one field is required for update"
+        );
+    }
+
+
+    /*
+     * Prevent changing the ID.
+     *
+     * Only whitelisted fields are passed
+     * to the repository, so `id` cannot
+     * accidentally reach Prisma.
+     */
+
+    return repository.updateEnrollment(
+        enrollmentId,
+        updateData
     );
 };
 
-const deleteEnrollment = async (id) => {
-    return await repository.deleteEnrollment(
-        Number(id)
+
+/*
+ * ----------------------------------------------------
+ * Unlock course access
+ * ----------------------------------------------------
+ *
+ * This should be called only after
+ * successful payment verification.
+ *
+ * Requires:
+ *
+ * courseAccess Boolean @default(false)
+ *
+ * in the Enrollment Prisma model.
+ */
+
+const unlockCourseAccess = async (
+    id
+) => {
+
+    const enrollmentId =
+        validateId(
+            id,
+            "Enrollment ID"
+        );
+
+
+    const enrollment =
+        await repository.getEnrollmentById(
+            enrollmentId
+        );
+
+
+    if (!enrollment) {
+
+        throw new Error(
+            "Enrollment not found"
+        );
+    }
+
+
+    /*
+     * This property will only be available
+     * after courseAccess is added to Prisma.
+     */
+
+    if (enrollment.courseAccess) {
+        return enrollment;
+    }
+
+
+    return repository.unlockCourseAccess(
+        enrollmentId
     );
 };
+
+
+/*
+ * ----------------------------------------------------
+ * Delete enrollment
+ * ----------------------------------------------------
+ */
+
+const deleteEnrollment = async (
+    id
+) => {
+
+    const enrollmentId =
+        validateId(
+            id,
+            "Enrollment ID"
+        );
+
+
+    const enrollment =
+        await repository.getEnrollmentById(
+            enrollmentId
+        );
+
+
+    if (!enrollment) {
+
+        throw new Error(
+            "Enrollment not found"
+        );
+    }
+
+
+    return repository.deleteEnrollment(
+        enrollmentId
+    );
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Exports
+ * ----------------------------------------------------
+ */
 
 module.exports = {
+
     getAllEnrollments,
+
     getEnrollmentById,
+
     createEnrollment,
+
     updateEnrollment,
-    deleteEnrollment,
+
+    unlockCourseAccess,
+
+    deleteEnrollment
 };

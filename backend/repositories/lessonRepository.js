@@ -1,66 +1,169 @@
 const prisma = require("../config/database");
 
-const getAllLessons = async () => {
-    return await prisma.lesson.findMany({
-        include: {
-            module: true
-        },
-        orderBy: {
-            order: "asc"
+
+const lessonSelect = {
+    id: true,
+    title: true,
+    description: true,
+    content: true,
+    videoUrl: true,
+    duration: true,
+    order: true,
+    moduleId: true
+};
+
+
+const lessonWithModuleSelect = {
+    ...lessonSelect,
+
+    module: {
+        select: {
+            id: true,
+            title: true,
+            courseId: true,
+
+            course: {
+                select: {
+                    id: true,
+                    title: true
+                }
+            }
         }
+    }
+};
+
+
+/*
+ * Get all lessons
+ */
+const getAllLessons = async () => {
+
+    return await prisma.lesson.findMany({
+
+        select: lessonWithModuleSelect,
+
+        orderBy: [
+            {
+                moduleId: "asc"
+            },
+            {
+                order: "asc"
+            },
+            {
+                id: "asc"
+            }
+        ]
     });
 };
 
+
+/*
+ * Get lesson by ID
+ */
 const getLessonById = async (id) => {
+
     return await prisma.lesson.findUnique({
+
         where: {
             id
         },
-        include: {
-            module: true
-        }
+
+        select: lessonWithModuleSelect
     });
 };
 
-const getLessonsByModuleId = async (moduleId) => {
+
+/*
+ * Get lessons belonging to a module
+ */
+const getLessonsByModuleId = async (
+    moduleId
+) => {
+
     return await prisma.lesson.findMany({
+
         where: {
             moduleId
         },
-        orderBy: {
-            order: "asc"
-        }
+
+        select: lessonSelect,
+
+        orderBy: [
+            {
+                order: "asc"
+            },
+            {
+                id: "asc"
+            }
+        ]
     });
 };
 
+
+/*
+ * Create lesson
+ */
 const createLesson = async (data) => {
+
     return await prisma.lesson.create({
-        data
+
+        data,
+
+        select: lessonWithModuleSelect
     });
 };
 
-const updateLesson = async (id, data) => {
+
+/*
+ * Update lesson
+ */
+const updateLesson = async (
+    id,
+    data
+) => {
+
     return await prisma.lesson.update({
+
         where: {
             id
         },
-        data
+
+        data,
+
+        select: lessonWithModuleSelect
     });
 };
 
+
+/*
+ * Delete lesson
+ */
 const deleteLesson = async (id) => {
+
     return await prisma.lesson.delete({
+
         where: {
             id
+        },
+
+        select: {
+            id: true
         }
     });
 };
 
+
 module.exports = {
+
     getAllLessons,
+
     getLessonById,
+
     getLessonsByModuleId,
+
     createLesson,
+
     updateLesson,
+
     deleteLesson
 };

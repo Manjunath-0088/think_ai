@@ -1,78 +1,218 @@
-const repository = require("../repositories/lessonProgressRepository");
-const automationService = require("./automationService");
+const repository =
+    require("../repositories/lessonProgressRepository");
+
+const automationService =
+    require("./automationService");
 
 
-const getProgressByEnrollment = async (enrollmentId) => {
-    return await repository.getProgressByEnrollment(
-        Number(enrollmentId)
-    );
-};
+/*
+ * Validate a positive integer ID
+ */
+const validateId = (value, name) => {
 
+    const id = Number(value);
 
-const getLessonProgress = async (enrollmentId, lessonId) => {
-    return await repository.getLessonProgress(
-        Number(enrollmentId),
-        Number(lessonId)
-    );
-};
-
-
-const completeLesson = async (enrollmentId, lessonId) => {
-
-    const progress = await repository.completeLesson(
-        Number(enrollmentId),
-        Number(lessonId)
-    );
-
-    // Trigger Automation Engine after lesson completion
-    const automationResult =
-        await automationService.processLessonCompletion(
-            Number(enrollmentId)
+    if (
+        !Number.isInteger(id) ||
+        id <= 0
+    ) {
+        throw new Error(
+            `${name} must be a positive integer`
         );
+    }
+
+    return id;
+};
+
+
+/*
+ * Get all lesson progress for an enrollment
+ */
+const getProgressByEnrollment = (
+    enrollmentId
+) => {
+
+    const id = validateId(
+        enrollmentId,
+        "Enrollment ID"
+    );
+
+    return repository.getProgressByEnrollment(
+        id
+    );
+};
+
+
+/*
+ * Get progress for a specific lesson
+ */
+const getLessonProgress = (
+    enrollmentId,
+    lessonId
+) => {
+
+    const enrollmentIdNumber =
+        validateId(
+            enrollmentId,
+            "Enrollment ID"
+        );
+
+    const lessonIdNumber =
+        validateId(
+            lessonId,
+            "Lesson ID"
+        );
+
+    return repository.getLessonProgress(
+        enrollmentIdNumber,
+        lessonIdNumber
+    );
+};
+
+
+/*
+ * Complete a lesson
+ *
+ * 1. Validate IDs
+ * 2. Complete lesson
+ * 3. Trigger automation
+ *
+ * Automation failure does NOT
+ * rollback successful lesson completion.
+ */
+const completeLesson = async (
+    enrollmentId,
+    lessonId
+) => {
+
+    const enrollmentIdNumber =
+        validateId(
+            enrollmentId,
+            "Enrollment ID"
+        );
+
+    const lessonIdNumber =
+        validateId(
+            lessonId,
+            "Lesson ID"
+        );
+
+
+    /*
+     * Complete lesson first.
+     */
+    const progress =
+        await repository.completeLesson(
+            enrollmentIdNumber,
+            lessonIdNumber
+        );
+
+
+    /*
+     * Default automation response.
+     */
+    let automation = {
+        success: false,
+        processed: false,
+        message:
+            "Automation was not processed"
+    };
+
+
+    /*
+     * Process automation only after
+     * successful lesson completion.
+     */
+    try {
+
+        const result =
+            await automationService
+                .processLessonCompletion(
+                    enrollmentIdNumber
+                );
+
+
+        automation = {
+            success: true,
+            processed: true,
+            data: result
+        };
+
+    } catch (error) {
+
+        /*
+         * Do not rollback lesson progress.
+         *
+         * The student's lesson completion
+         * has already been saved successfully.
+         */
+        console.error(
+            "Automation processing failed:",
+            error
+        );
+
+
+        automation = {
+            success: false,
+            processed: false,
+            message:
+                "Lesson completed, but automation processing failed"
+        };
+    }
+
 
     return {
         progress,
-        automation: automationResult
+        automation
     };
 };
 
 
 /*
- * Get course progress summary for an enrollment
+ * Get course progress summary
  */
-const getProgressSummary = async (enrollmentId) => {
+const getProgressSummary = async (
+    enrollmentId
+) => {
 
-    const summary = await repository.getProgressSummary(
-        Number(enrollmentId)
-    );
+    const id =
+        validateId(
+            enrollmentId,
+            "Enrollment ID"
+        );
 
-    const {
-        totalLessons,
-        completedLessons
-    } = summary;
 
-    const completionPercentage =
-        totalLessons === 0
-            ? 0
-            : Number(
-                ((completedLessons / totalLessons) * 100)
-                    .toFixed(2)
-            );
+    const summary =
+        await repository.getProgressSummary(
+            id
+        );
+
 
     return {
-        enrollmentId: Number(enrollmentId),
-        totalLessons,
-        completedLessons,
-        completionPercentage,
-        eligibleForCertificate:
-            completionPercentage >= 80
+        enrollmentId: id,
+
+        totalLessons:
+            summary.totalLessons,
+
+        completedLessons:
+            summary.completedLessons,
+
+        completionPercentage:
+            summary.completionPercentage,
+
+        courseCompletionRequirementMet:
+            summary.completionPercentage >= 80
     };
 };
 
 
 module.exports = {
+
     getProgressByEnrollment,
+
     getLessonProgress,
+
     completeLesson,
+
     getProgressSummary
 };

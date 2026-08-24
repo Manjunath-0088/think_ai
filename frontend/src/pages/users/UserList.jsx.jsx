@@ -64,8 +64,7 @@ function UserList() {
       await updateUser(user.id, updatedUser);
 
       toast.success(
-        `User ${
-          updatedUser.status === "ACTIVE" ? "Activated" : "Deactivated"
+        `User ${updatedUser.status === "ACTIVE" ? "Activated" : "Deactivated"
         } Successfully`
       );
 
@@ -101,12 +100,14 @@ function UserList() {
             className="w-72 bg-[#0B0F19] border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
           />
 
-          <Link
-            to="/admin/users/add"
-            className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-5 py-3 rounded-xl transition"
-          >
-            + Add User
-          </Link>
+          <div className="shadow-[0_0_20px_rgba(168,85,247,0.3)] rounded-xl">
+            <Link
+              to="/admin/users/add"
+              className="px-6 py-2 text-sm font-bold bg-gradient-to-r from-indigo-500 to-cyan-400 hover:from-indigo-400 hover:to-cyan-300 text-white border-0 rounded-xl transition-all duration-300 shadow-lg hover:shadow-cyan-500/50 inline-block"
+            >
+              + Add User
+            </Link>
+          </div>
 
         </div>
 
@@ -159,22 +160,20 @@ function UserList() {
                     <div className="flex items-center gap-2">
 
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          user.status === "ACTIVE"
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${user.status === "ACTIVE"
                             ? "bg-green-500/20 text-green-400"
                             : "bg-red-500/20 text-red-400"
-                        }`}
+                          }`}
                       >
                         {user.status}
                       </span>
 
                       <button
                         onClick={() => handleToggleStatus(user)}
-                        className={`px-3 py-1 rounded-lg text-xs font-medium transition ${
-                          user.status === "ACTIVE"
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition ${user.status === "ACTIVE"
                             ? "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30"
                             : "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30"
-                        }`}
+                          }`}
                       >
                         {user.status === "ACTIVE" ? "Deactivate" : "Activate"}
                       </button>

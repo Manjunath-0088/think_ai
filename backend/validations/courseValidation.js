@@ -1,88 +1,133 @@
-const validateCourseCreate = (req, res, next) => {
+const VALID_STATUSES = new Set([
+    "ACTIVE",
+    "INACTIVE"
+]);
 
-    const {
-        title,
-        description,
-        category,
-        price,
-        duration
-    } = req.body;
 
-    const errors = [];
+/*
+ * ----------------------------------------------------
+ * Common validation helpers
+ * ----------------------------------------------------
+ */
 
-    // Validate title
+const isValidPositiveInteger = (value) => {
+
     if (
-        !title ||
-        typeof title !== "string" ||
-        !title.trim()
+        value === undefined ||
+        value === null ||
+        value === ""
     ) {
-        errors.push("title is required");
+        return false;
     }
 
-    // Validate description
-    if (
-        !description ||
-        typeof description !== "string" ||
-        !description.trim()
-    ) {
-        errors.push("description is required");
-    }
+    const number = Number(value);
 
-    // Validate category
-    if (
-        !category ||
-        typeof category !== "string" ||
-        !category.trim()
-    ) {
-        errors.push("category is required");
-    }
-
-    // Validate price
-    if (
-        price === undefined ||
-        price === null ||
-        isNaN(Number(price)) ||
-        Number(price) < 0
-    ) {
-        errors.push(
-            "price must be a valid non-negative number"
-        );
-    }
-
-    // Validate duration
-    if (
-        !duration ||
-        typeof duration !== "string" ||
-        !duration.trim()
-    ) {
-        errors.push("duration is required");
-    }
-
-    // Validate status
-    if (
-        req.body.status !== undefined &&
-        !["ACTIVE", "INACTIVE"].includes(
-            req.body.status
-        )
-    ) {
-        errors.push(
-            "status must be either ACTIVE or INACTIVE"
-        );
-    }
-
-    if (errors.length > 0) {
-        return res.status(400).json({
-            success: false,
-            message: "Course validation failed",
-            errors
-        });
-    }
-
-    next();
+    return (
+        Number.isInteger(number) &&
+        number > 0
+    );
 };
 
 
-const validateCourseUpdate = (req, res, next) => {
+const isValidNonNegativeNumber = (value) => {
+
+    if (
+        value === undefined ||
+        value === null ||
+        value === ""
+    ) {
+        return false;
+    }
+
+    const number = Number(value);
+
+    return (
+        Number.isFinite(number) &&
+        number >= 0
+    );
+};
+
+
+const isValidNonEmptyString = (value) => {
+
+    return (
+        typeof value === "string" &&
+        value.trim().length > 0
+    );
+};
+
+
+const isValidOptionalString = (value) => {
+
+    return (
+        value === undefined ||
+        value === null ||
+        typeof value === "string"
+    );
+};
+
+
+const isValidOptionalUrl = (value) => {
+
+    /*
+     * Optional field
+     */
+    if (
+        value === undefined ||
+        value === null ||
+        value === ""
+    ) {
+        return true;
+    }
+
+
+    if (typeof value !== "string") {
+        return false;
+    }
+
+
+    try {
+
+        const url = new URL(value);
+
+        return (
+            url.protocol === "http:" ||
+            url.protocol === "https:"
+        );
+
+    } catch {
+
+        return false;
+    }
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Validate Course Create
+ * ----------------------------------------------------
+ */
+const validateCourseCreate = (
+    req,
+    res,
+    next
+) => {
+
+    if (
+        !req.body ||
+        typeof req.body !== "object" ||
+        Array.isArray(req.body)
+    ) {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message:
+                "Request body must be a valid object"
+        });
+    }
+
 
     const {
         title,
@@ -90,142 +135,407 @@ const validateCourseUpdate = (req, res, next) => {
         category,
         price,
         duration,
+        thumbnail,
+        videoUrl,
+        instructorName,
+        instructorDetails,
         status
     } = req.body;
 
+
     const errors = [];
 
-    // Validate title
-    if (
-        title !== undefined &&
-        (
-            typeof title !== "string" ||
-            !title.trim()
-        )
-    ) {
+
+    /*
+     * Required fields
+     */
+
+    if (!isValidNonEmptyString(title)) {
+
         errors.push(
-            "title must be a non-empty string"
+            "title is required"
         );
     }
 
-    // Validate description
-    if (
-        description !== undefined &&
-        (
-            typeof description !== "string" ||
-            !description.trim()
-        )
-    ) {
+
+    if (!isValidNonEmptyString(description)) {
+
         errors.push(
-            "description must be a non-empty string"
+            "description is required"
         );
     }
 
-    // Validate category
-    if (
-        category !== undefined &&
-        (
-            typeof category !== "string" ||
-            !category.trim()
-        )
-    ) {
+
+    if (!isValidNonEmptyString(category)) {
+
         errors.push(
-            "category must be a non-empty string"
+            "category is required"
         );
     }
 
-    // Validate price
-    if (
-        price !== undefined &&
-        (
-            isNaN(Number(price)) ||
-            Number(price) < 0
-        )
-    ) {
+
+    if (!isValidNonNegativeNumber(price)) {
+
         errors.push(
             "price must be a valid non-negative number"
         );
     }
 
-    // Validate duration
-    if (
-        duration !== undefined &&
-        (
-            typeof duration !== "string" ||
-            !duration.trim()
-        )
-    ) {
+
+    if (!isValidNonEmptyString(duration)) {
+
         errors.push(
-            "duration must be a non-empty string"
+            "duration is required"
         );
     }
 
-    // Validate status
+
+    /*
+     * Status
+     */
+
     if (
         status !== undefined &&
-        !["ACTIVE", "INACTIVE"].includes(status)
+        !VALID_STATUSES.has(status)
     ) {
+
         errors.push(
             "status must be either ACTIVE or INACTIVE"
         );
     }
 
+
+    /*
+     * URLs
+     */
+
+    if (!isValidOptionalUrl(thumbnail)) {
+
+        errors.push(
+            "thumbnail must be a valid HTTP or HTTPS URL"
+        );
+    }
+
+
+    if (!isValidOptionalUrl(videoUrl)) {
+
+        errors.push(
+            "videoUrl must be a valid HTTP or HTTPS URL"
+        );
+    }
+
+
+    /*
+     * Optional instructor fields
+     */
+
+    if (
+        instructorName !== undefined &&
+        instructorName !== null &&
+        !isValidNonEmptyString(instructorName)
+    ) {
+
+        errors.push(
+            "instructorName must be a non-empty string"
+        );
+    }
+
+
+    if (
+        instructorDetails !== undefined &&
+        instructorDetails !== null &&
+        !isValidNonEmptyString(instructorDetails)
+    ) {
+
+        errors.push(
+            "instructorDetails must be a non-empty string"
+        );
+    }
+
+
+    /*
+     * Return validation errors
+     */
+
     if (errors.length > 0) {
+
         return res.status(400).json({
+
             success: false,
-            message: "Course validation failed",
+
+            message:
+                "Course validation failed",
+
             errors
         });
     }
 
-    next();
-};
-
-
-// Validate /courses/:id
-const validateCourseId = (req, res, next) => {
-
-    const id = Number(req.params.id);
-
-    if (
-        !Number.isInteger(id) ||
-        id <= 0
-    ) {
-        return res.status(400).json({
-            success: false,
-            message:
-                "Course ID must be a positive integer"
-        });
-    }
 
     next();
 };
 
 
-// Validate /courses/:courseId/...
-const validateCourseParamId = (req, res, next) => {
-
-    const courseId =
-        Number(req.params.courseId);
+/*
+ * ----------------------------------------------------
+ * Validate Course Update
+ *
+ * All fields are optional.
+ * At least one field must be supplied.
+ * ----------------------------------------------------
+ */
+const validateCourseUpdate = (
+    req,
+    res,
+    next
+) => {
 
     if (
-        !Number.isInteger(courseId) ||
-        courseId <= 0
+        !req.body ||
+        typeof req.body !== "object" ||
+        Array.isArray(req.body)
     ) {
+
         return res.status(400).json({
+
             success: false,
+
+            message:
+                "Request body must be a valid object"
+        });
+    }
+
+
+    if (
+        Object.keys(req.body).length === 0
+    ) {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message:
+                "At least one field is required for update"
+        });
+    }
+
+
+    const {
+        title,
+        description,
+        category,
+        price,
+        duration,
+        thumbnail,
+        videoUrl,
+        instructorName,
+        instructorDetails,
+        status
+    } = req.body;
+
+
+    const errors = [];
+
+
+    /*
+     * String fields
+     */
+
+    const stringFields = {
+        title,
+        description,
+        category,
+        duration
+    };
+
+
+    Object.entries(stringFields).forEach(
+        ([field, value]) => {
+
+            if (
+                value !== undefined &&
+                !isValidNonEmptyString(value)
+            ) {
+
+                errors.push(
+                    `${field} must be a non-empty string`
+                );
+            }
+        }
+    );
+
+
+    /*
+     * Instructor fields
+     *
+     * null is allowed so an admin can
+     * clear these fields.
+     */
+
+    if (
+        instructorName !== undefined &&
+        instructorName !== null &&
+        !isValidNonEmptyString(instructorName)
+    ) {
+
+        errors.push(
+            "instructorName must be a non-empty string"
+        );
+    }
+
+
+    if (
+        instructorDetails !== undefined &&
+        instructorDetails !== null &&
+        !isValidNonEmptyString(instructorDetails)
+    ) {
+
+        errors.push(
+            "instructorDetails must be a non-empty string"
+        );
+    }
+
+
+    /*
+     * Price
+     */
+
+    if (
+        price !== undefined &&
+        !isValidNonNegativeNumber(price)
+    ) {
+
+        errors.push(
+            "price must be a valid non-negative number"
+        );
+    }
+
+
+    /*
+     * Status
+     */
+
+    if (
+        status !== undefined &&
+        !VALID_STATUSES.has(status)
+    ) {
+
+        errors.push(
+            "status must be either ACTIVE or INACTIVE"
+        );
+    }
+
+
+    /*
+     * URLs
+     */
+
+    if (!isValidOptionalUrl(thumbnail)) {
+
+        errors.push(
+            "thumbnail must be a valid HTTP or HTTPS URL"
+        );
+    }
+
+
+    if (!isValidOptionalUrl(videoUrl)) {
+
+        errors.push(
+            "videoUrl must be a valid HTTP or HTTPS URL"
+        );
+    }
+
+
+    /*
+     * Return validation errors
+     */
+
+    if (errors.length > 0) {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message:
+                "Course validation failed",
+
+            errors
+        });
+    }
+
+
+    next();
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Validate /courses/:id
+ * ----------------------------------------------------
+ */
+const validateCourseId = (
+    req,
+    res,
+    next
+) => {
+
+    if (
+        !isValidPositiveInteger(
+            req.params.id
+        )
+    ) {
+
+        return res.status(400).json({
+
+            success: false,
+
             message:
                 "Course ID must be a positive integer"
         });
     }
+
+
+    next();
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Validate /courses/:courseId/*
+ * ----------------------------------------------------
+ */
+const validateCourseParamId = (
+    req,
+    res,
+    next
+) => {
+
+    if (
+        !isValidPositiveInteger(
+            req.params.courseId
+        )
+    ) {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message:
+                "Course ID must be a positive integer"
+        });
+    }
+
 
     next();
 };
 
 
 module.exports = {
+
     validateCourseCreate,
+
     validateCourseUpdate,
+
     validateCourseId,
+
     validateCourseParamId
 };

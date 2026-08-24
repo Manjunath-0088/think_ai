@@ -195,5 +195,151 @@
       "createdAt": "2026-07-29T09:00:00Z"
     }
   ],
+  "comments": [
+    {
+      "id": "c1",
+      "postId": "p1",
+      "authorId": "u7",
+      "content": "StrictMode double-invokes effects in development only. For production, gate your fetch with a ref or AbortController, or move to a data-fetching library that handles dedupe.",
+      "createdAt": "2026-08-05T10:02:00Z",
+      "upvotes": 24
+    },
+    {
+      "id": "c2",
+      "postId": "p1",
+      "authorId": "u5",
+      "content": "The double call is intentional to surface impure effects. Keep the cleanup symmetric (cancel the request) and the duplicate call is harmless in dev.",
+      "createdAt": "2026-08-05T11:30:00Z",
+      "upvotes": 31
+    },
+    {
+      "id": "c3",
+      "postId": "p1",
+      "authorId": "u4",
+      "content": "I switch off StrictMode in production builds; it never runs there anyway. The real fix is making your effect idempotent.",
+      "createdAt": "2026-08-05T12:45:00Z",
+      "upvotes": 9
+    },
+    {
+      "id": "c4",
+      "postId": "p2",
+      "authorId": "u1",
+      "content": "Use Collectors.groupingBy with a LinkedHashMap supplier to preserve insertion order, then map each value to its size.",
+      "createdAt": "2026-08-04T15:20:00Z",
+      "upvotes": 18
+    },
+    {
+      "id": "c5",
+      "postId": "p2",
+      "authorId": "u8",
+      "content": "groupingBy with counting() as downstream collector keeps it declarative and stream-safe.",
+      "createdAt": "2026-08-04T16:10:00Z",
+      "upvotes": 12
+    },
+    {
+      "id": "c6",
+      "postId": "p3",
+      "authorId": "u2",
+      "content": "@Transactional is proxied and self-invocation bypasses it. Move the async call into a separate bean, or use TransactionTemplate inside the async method.",
+      "createdAt": "2026-08-03T12:30:00Z",
+      "upvotes": 42
+    },
+    {
+      "id": "c7",
+      "postId": "p3",
+      "authorId": "u6",
+      "content": "Also note: async methods run in a different thread, so the transaction boundary from the caller does not propagate. Handle rollback inside the async task.",
+      "createdAt": "2026-08-03T13:05:00Z",
+      "upvotes": 27
+    },
+    {
+      "id": "c8",
+      "postId": "p3",
+      "authorId": "u7",
+      "content": "Adding @Async to a public method on a separate @Service and calling it via the injected proxy fixes both problems at once.",
+      "createdAt": "2026-08-03T14:22:00Z",
+      "upvotes": 15
+    },
+    {
+      "id": "c9",
+      "postId": "p4",
+      "authorId": "u1",
+      "content": "auto-fit collapses empty tracks; auto-fill keeps them. With minmax(250px, 1fr), auto-fit usually looks better for card galleries.",
+      "createdAt": "2026-08-02T17:00:00Z",
+      "upvotes": 21
+    },
+    {
+      "id": "c10",
+      "postId": "p4",
+      "authorId": "u3",
+      "content": "auto-fill preserves the column count when there are few items, so empty tracks remain. Great when you want a fixed grid feel.",
+      "createdAt": "2026-08-02T17:40:00Z",
+      "upvotes": 14
+    },
+    {
+      "id": "c11",
+      "postId": "p5",
+      "authorId": "u3",
+      "content": "httpOnly + Secure + SameSite cookies for the refresh token, with rotation and reuse detection. Keep the access token short-lived.",
+      "createdAt": "2026-08-01T09:15:00Z",
+      "upvotes": 38
+    },
+    {
+      "id": "c12",
+      "postId": "p5",
+      "authorId": "u6",
+      "content": "Store refresh tokens server-side keyed by a hashed token; revoke on rotation. This stops replay if a token leaks.",
+      "createdAt": "2026-08-01T10:05:00Z",
+      "upvotes": 26
+    },
+    {
+      "id": "c13",
+      "postId": "p6",
+      "authorId": "u5",
+      "content": "Turn on Hibernate format_sql and trace logging, then watch the query count. fetch join solves most to-one paths; batch fetching handles collections.",
+      "createdAt": "2026-07-31T14:00:00Z",
+      "upvotes": 19
+    },
+    {
+      "id": "c14",
+      "postId": "p6",
+      "authorId": "u1",
+      "content": "@EntityGraph covers the full graph in one query. Just avoid pagination on the collection side or you get in-memory pagination.",
+      "createdAt": "2026-07-31T15:30:00Z",
+      "upvotes": 22
+    },
+    {
+      "id": "c15",
+      "postId": "p7",
+      "authorId": "u5",
+      "content": "Split the context by domain slice and memoize providers. Consumers only subscribe to the slice they read, so unrelated updates do not re-render them.",
+      "createdAt": "2026-07-30T11:20:00Z",
+      "upvotes": 17
+    },
+    {
+      "id": "c16",
+      "postId": "p7",
+      "authorId": "u4",
+      "content": "Context value identity matters: memoize the object with useMemo or every consumer re-renders on each provider render.",
+      "createdAt": "2026-07-30T12:10:00Z",
+      "upvotes": 20
+    },
+    {
+      "id": "c17",
+      "postId": "p8",
+      "authorId": "u6",
+      "content": "eclipse-temurin + jlink custom runtime dropped my image from 500MB to ~120MB. Then strip debug symbols and use layer caching.",
+      "createdAt": "2026-07-29T09:40:00Z",
+      "upvotes": 28
+    },
+    {
+      "id": "c18",
+      "postId": "p8",
+      "authorId": "u2",
+      "content": "Copy the built jar in its own RUN layer so Gradle/Maven changes do not invalidate the app layer. Smallest is not always fastest to start.",
+      "createdAt": "2026-07-29T10:25:00Z",
+      "upvotes": 16
+    }
+  ],
   "tags": ["React", "JavaScript", "Java", "Spring Boot", "Hooks", "Streams", "CSS", "Responsive", "Security", "REST API", "JPA", "PostgreSQL", "Transactions", "Docker", "DevOps"]
 }

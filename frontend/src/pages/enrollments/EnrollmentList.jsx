@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { getEnrollments, deleteEnrollment } from "../../api/enrollmentApi";
 import { EnrollmentListSkeleton } from "../../components/common/LoadingSkeleton";
-import InputField from "../../components/common/InputField";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 
 const STATUS_STYLES = {
-  ACTIVE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-  INACTIVE: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+  ENROLLED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+  COMPLETED: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+  CANCELLED: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
 };
 
 export default function EnrollmentList() {
@@ -17,11 +17,9 @@ export default function EnrollmentList() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 8;
 
-  // Confirm Dialog State for deletion
   const [confirmState, setConfirmState] = useState({ open: false, enrollmentId: null });
 
   useEffect(() => {
@@ -41,7 +39,6 @@ export default function EnrollmentList() {
     }
   };
 
-  // 1. Filter Enrollments by search (student name, email, batch name, course title) and status
   const filteredEnrollments = useMemo(() => {
     return enrollments.filter((enr) => {
       const matchesSearch =
@@ -54,12 +51,10 @@ export default function EnrollmentList() {
     });
   }, [search, statusFilter, enrollments]);
 
-  // 2. Reset to page 1 when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [search, statusFilter]);
 
-  // 3. Pagination Logic
   const totalPages = Math.ceil(filteredEnrollments.length / ITEMS_PER_PAGE);
   const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
@@ -85,10 +80,7 @@ export default function EnrollmentList() {
   }
 
   return (
-    // Main Wrapper: Fixed height, Flex column, Hidden overflow matching AdminUsersPage/BatchList
     <div className="relative flex flex-col h-full space-y-4 sm:space-y-6 -mt-2 overflow-hidden pb-2">
-
-      {/* Header - shrink-0 to prevent squishing */}
       <div className="flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-semibold text-white">Enrollment Management</h1>
@@ -104,10 +96,7 @@ export default function EnrollmentList() {
         </div>
       </div>
 
-      {/* Glass Panel: flex-1 to fill space, min-h-0 to allow internal scrolling */}
       <div className="flex-1 flex flex-col glass-panel rounded-2xl p-4 sm:p-6 space-y-4 min-h-0 bg-[#1A1F2B] border border-gray-800">
-
-        {/* Search & Status Filters - shrink-0 */}
         <div className="flex flex-col sm:flex-row gap-4 sm:items-end shrink-0">
           <div className="max-w-sm shrink-0 relative">
             <input
@@ -122,7 +111,7 @@ export default function EnrollmentList() {
             </svg>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {['all', 'ACTIVE', 'INACTIVE'].map((status) => (
+            {['all', 'ENROLLED', 'COMPLETED', 'CANCELLED'].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -137,18 +126,18 @@ export default function EnrollmentList() {
           </div>
         </div>
 
-        {/* Table Container - flex-1 for remaining space, overflow-auto for internal scrolling */}
-        <div className="flex-1 overflow-auto min-h-0 border border-gray-800/60 rounded-xl custom-scrollbar relative">
-          <table className="w-full text-sm">
+        <div className="flex-1 overflow-auto min-h-0 rounded-xl relative">
+          {/* Desktop/tablet: table */}
+          <table className="hidden md:table w-full text-sm border border-gray-800/60 rounded-xl">
             <thead className="sticky top-0 bg-[#151025] z-10 shadow-md">
               <tr className="border-b border-slate-700 text-left text-xs text-slate-400">
                 <th className="p-4 font-medium uppercase tracking-wider">ID</th>
                 <th className="p-4 font-medium uppercase tracking-wider">Student Name</th>
-                <th className="p-4 font-medium uppercase tracking-wider">Email</th>
+                <th className="p-4 font-medium uppercase tracking-wider hidden lg:table-cell">Email</th>
                 <th className="p-4 font-medium uppercase tracking-wider">Batch</th>
-                <th className="p-4 font-medium uppercase tracking-wider">Course</th>
+                <th className="p-4 font-medium uppercase tracking-wider hidden lg:table-cell">Course</th>
                 <th className="p-4 font-medium uppercase tracking-wider">Status</th>
-                <th className="p-4 font-medium uppercase tracking-wider">Enrolled On</th>
+                <th className="p-4 font-medium uppercase tracking-wider hidden xl:table-cell">Enrolled On</th>
                 <th className="p-4 font-medium uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
@@ -161,15 +150,15 @@ export default function EnrollmentList() {
                   <tr key={enrollment.id} className="border-b border-slate-800/60 hover:bg-white/[0.02] transition-colors">
                     <td className="p-4 text-gray-300 font-medium">{enrollment.id}</td>
                     <td className="p-4 text-gray-200 font-medium">{enrollment.studentName}</td>
-                    <td className="p-4 text-gray-400">{enrollment.studentEmail}</td>
+                    <td className="p-4 text-gray-400 hidden lg:table-cell">{enrollment.studentEmail}</td>
                     <td className="p-4 text-cyan-400 font-medium">{batch?.name || "-"}</td>
-                    <td className="p-4 text-gray-300">{course?.title || "-"}</td>
+                    <td className="p-4 text-gray-300 hidden lg:table-cell">{course?.title || "-"}</td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-widest uppercase border whitespace-nowrap ${STATUS_STYLES[enrollment.enrollmentStatus] || STATUS_STYLES.ACTIVE}`}>
+                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold tracking-widest uppercase border whitespace-nowrap ${STATUS_STYLES[enrollment.enrollmentStatus] || STATUS_STYLES.ENROLLED}`}>
                         {enrollment.enrollmentStatus}
                       </span>
                     </td>
-                    <td className="p-4 text-gray-300">
+                    <td className="p-4 text-gray-300 hidden xl:table-cell">
                       {enrollment.enrolledAt ? new Date(enrollment.enrolledAt).toLocaleDateString() : "-"}
                     </td>
                     <td className="p-4 text-right">
@@ -207,9 +196,66 @@ export default function EnrollmentList() {
               )}
             </tbody>
           </table>
+
+          {/* Mobile: cards */}
+          <div className="md:hidden space-y-3">
+            {currentEnrollments.map((enrollment) => {
+              const batch = enrollment.batch;
+              const course = batch?.course;
+
+              return (
+                <div key={enrollment.id} className="rounded-xl border border-gray-800/60 bg-[#151025] p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-200 truncate">{enrollment.studentName}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">{enrollment.studentEmail}</p>
+                    </div>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-widest uppercase border ${STATUS_STYLES[enrollment.enrollmentStatus] || STATUS_STYLES.ENROLLED}`}>
+                      {enrollment.enrollmentStatus}
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-gray-400">
+                    <span className="text-cyan-400 font-medium">{batch?.name || "-"}</span>
+                    {course?.title && <span> · {course.title}</span>}
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    Enrolled {enrollment.enrolledAt ? new Date(enrollment.enrolledAt).toLocaleDateString() : "-"}
+                  </p>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-800/60">
+                    <Link
+                      to={`/admin/enrollments/${enrollment.id}`}
+                      className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-cyan-400 uppercase tracking-wider font-semibold"
+                    >
+                      View
+                    </Link>
+                    <Link
+                      to={`/admin/enrollments/edit/${enrollment.id}`}
+                      className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-purple-400 uppercase tracking-wider font-semibold"
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      onClick={() => setConfirmState({ open: true, enrollmentId: enrollment.id })}
+                      className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-rose-400 uppercase tracking-wider font-semibold"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {filteredEnrollments.length === 0 && (
+              <div className="py-12 text-center text-gray-500 border-2 border-dashed border-gray-800 rounded-xl">
+                <p className="text-sm tracking-widest uppercase">No enrollments match your search.</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Pagination UI Controls - shrink-0 */}
         {totalPages > 0 && (
           <div className="shrink-0 flex flex-col sm:flex-row justify-between items-center gap-4 mt-2 pt-4 border-t border-gray-800/60">
             <span className="text-xs text-gray-500 font-medium tracking-wide">

@@ -1,15 +1,14 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import InputField from '../../components/common/InputField';
-import Button from '../../components/common/Button';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import ErrorState from '../../components/common/ErrorState';
-import UserModal from '../../components/admin/UserModal';
-import { usePermission } from '../../hooks/usePermission';
-import ConfirmDialog from '../../components/common/ConfirmDialog';
-import RBACMatrix from '../../components/RBACMatrix';
-import useSessionTimeout from '../../hooks/useSessionTimeout';
+import { useEffect, useState, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import InputField from "../../components/common/InputField";
+import Button from "../../components/common/Button";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import ErrorState from "../../components/common/ErrorState";
+import UserModal from "../../components/admin/UserModal";
+import { usePermission } from "../../hooks/usePermission";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import useSessionTimeout from "../../hooks/useSessionTimeout";
 import {
   fetchUsers,
   createUser,
@@ -17,13 +16,13 @@ import {
   selectAdminUsers,
   selectAdminUsersLoading,
   selectAdminUsersError,
-} from '../../features/adminUsers/adminUserSlice';
-import { 
-  getUsersApi, 
-  toggleUserStatusApi, 
-  triggerPasswordResetApi, 
-  bulkAssignRolesApi 
-} from '../../features/adminUsers/adminUserService';
+} from "../../features/adminUsers/adminUserSlice";
+import {
+  getUsersApi,
+  toggleUserStatusApi,
+  triggerPasswordResetApi,
+  bulkAssignRolesApi,
+} from "../../features/adminUsers/adminUserService";
 
 const ROLE_STYLES = {
   Learner: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
@@ -43,14 +42,13 @@ export default function AdminUsersPage() {
   const ITEMS_PER_PAGE = 8;
 
   const dispatch = useDispatch();
-  const users = useSelector(selectAdminUsers) ?? [];
+  const rawUsers = useSelector(selectAdminUsers) ?? [];
   const loading = useSelector(selectAdminUsersLoading);
   const error = useSelector(selectAdminUsersError);
   useSessionTimeout();
 
   // State for bulk selection and role assignment
-
-const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [selectedRole, setSelectedRole] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, action: null, payload: null });
 
@@ -60,9 +58,11 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
   useEffect(() => {
     dispatch(fetchUsers());
   }, [dispatch]);
-  useEffect(() => {
-    dispatch(fetchUsers());
-  }, [dispatch]);
+
+  // Sort users strictly by ID in ascending order
+  const users = useMemo(() => {
+    return [...rawUsers].sort((a, b) => (a.id || 0) - (b.id || 0));
+  }, [rawUsers]);
 
   // 1. Filter Users
   const filteredUsers = useMemo(() => {
@@ -146,11 +146,11 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
       prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
   };
-  
+
   const askConfirm = (action, payload) => setConfirmState({ open: true, action, payload });
 
   const handleConfirmed = async () => {
-    const { action, payload } = ConfirmState;
+    const { action, payload } = confirmState;
     if (action === 'toggleStatus') await handleStatusToggle(payload.id, payload.status);
     if (action === 'resetPassword') await handlePasswordReset(payload.id);
     if (action === 'bulkRole') await handleBulkRoleAssign();
@@ -160,7 +160,7 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
   return (
     // Main Wrapper: Fixed height, Flex column, Hidden overflow
     <div className="relative flex flex-col h-full space-y-4 sm:space-y-6 -mt-2 overflow-hidden pb-2">
-      
+
       {/* Header - shrink-0 to prevent squishing */}
       <div className="flex items-center justify-between shrink-0">
         <div>
@@ -169,9 +169,9 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
         </div>
         {canManageUsers && (
           <div className="shadow-[0_0_20px_rgba(168,85,247,0.3)] rounded-xl">
-            <button 
-              onClick={() => handleOpenModal()} 
-              className="px-8 py-3 text-lg font-bold bg-gradient-to-r from-indigo-500 to-cyan-400 hover:from-indigo-400 hover:to-cyan-300 text-white border-0 rounded-xl transition-all duration-300 shadow-lg hover:shadow-cyan-500/50"
+            <button
+              onClick={() => handleOpenModal()}
+              className="px-6 py-2 text-sm font-bold bg-gradient-to-r from-indigo-500 to-cyan-400 hover:from-indigo-400 hover:to-cyan-300 text-white border-0 rounded-xl transition-all duration-300 shadow-lg hover:shadow-cyan-500/50"
             >
               + New User
             </button>
@@ -181,7 +181,7 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
 
       {/* Glass Panel: flex-1 to fill space, min-h-0 to allow internal scrolling */}
       <div className="flex-1 flex flex-col glass-panel rounded-2xl p-4 sm:p-6 space-y-4 min-h-0">
-        
+
         {/* Search & Filters - shrink-0 */}
         <div className="flex flex-col sm:flex-row gap-4 sm:items-end shrink-0">
           <div className="flex-1">
@@ -199,11 +199,10 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
               <button
                 key={role}
                 onClick={() => setRoleFilter(role)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  roleFilter === role
-                    ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
-                    : 'text-gray-400 border-gray-700 hover:border-gray-600 hover:bg-gray-800/50'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${roleFilter === role
+                  ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                  : 'text-gray-400 border-gray-700 hover:border-gray-600 hover:bg-gray-800/50'
+                  }`}
               >
                 {role === 'all' ? 'All' : role}
               </button>
@@ -223,7 +222,7 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
         )}
 
         {!loading && !error && (
-         <>
+          <>
             {/* Bulk Actions - shrink-0 */}
             {canManageUsers && selectedUserIds.length > 0 && (
               <div className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg shrink-0">
@@ -298,25 +297,37 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
                       <td className="p-4 text-right">
                         {canManageUsers ? (
                           <div className="flex items-center justify-end gap-2">
+                            {/* Toggle / Status Button */}
                             <button
-                              onClick={() => askConfirm('toggleStatus', { id: user.id, status:user.status})}
-                              className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/30 transition-all uppercase tracking-wider font-semibold"
+                              onClick={() => askConfirm('toggleStatus', { id: user.id, status: user.status })}
+                              title="Toggle Status"
+                              className="p-2 rounded-lg bg-white/5 border border-white/10 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/30 transition-all inline-flex items-center justify-center"
                             >
-                              Toggle
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                              </svg>
                             </button>
 
+                            {/* Reset Password Button */}
                             <button
-                              onClick={() => askConfirm('resetPassword', {id: user.id})}
-                              className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all uppercase tracking-wider font-semibold"
+                              onClick={() => askConfirm('resetPassword', { id: user.id })}
+                              title="Reset Password"
+                              className="p-2 rounded-lg bg-white/5 border border-white/10 text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30 transition-all inline-flex items-center justify-center"
                             >
-                              Reset Pass
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4v-4m18-9a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                              </svg>
                             </button>
 
+                            {/* Edit Icon Button */}
                             <button
                               onClick={() => handleOpenModal(user)}
-                              className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/30 transition-all uppercase tracking-wider font-semibold"
+                              title="Edit"
+                              className="p-2 rounded-lg bg-white/5 border border-white/10 text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/30 transition-all inline-flex items-center justify-center"
                             >
-                              Edit
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                              </svg>
                             </button>
                           </div>
                         ) : (
@@ -325,7 +336,7 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
                       </td>
                     </tr>
                   ))}
-                  
+
                   {filteredUsers.length === 0 && (
                     <tr>
                       <td colSpan={5} className="py-12 text-center text-gray-500 border-2 border-dashed border-gray-800 rounded-xl">
@@ -343,7 +354,7 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
                 <span className="text-xs text-gray-500 font-medium tracking-wide">
                   Showing <strong className="text-gray-300">{indexOfFirstItem + 1}</strong> to <strong className="text-gray-300">{Math.min(indexOfLastItem, filteredUsers.length)}</strong> of <strong className="text-gray-300">{filteredUsers.length}</strong> users
                 </span>
-                
+
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
@@ -368,11 +379,6 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
           </>
         )}
       </div>
-      
-      {/* RBAC Matrix - shrink-0 to prevent squishing */}
-      <div className="shrink-0">
-        <RBACMatrix />
-      </div>
 
       <ConfirmDialog
         open={confirmState.open}
@@ -386,7 +392,7 @@ const [selectedUserIds, setSelectedUserIds] = useState([]);
         onConfirm={handleConfirmed}
         onCancel={() => setConfirmState({ open: false, action: null, payload: null })}
       />
-      
+
       <UserModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

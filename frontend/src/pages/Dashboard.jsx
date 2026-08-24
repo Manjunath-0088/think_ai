@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaBook, FaUsers, FaUserGraduate } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 import { getCourses } from "../api/courseApi";
 import { getBatches } from "../api/batchApi";

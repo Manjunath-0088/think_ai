@@ -2,13 +2,17 @@ const express = require("express");
 
 const router = express.Router();
 
+
 const {
     getEnrollments,
     getEnrollmentById,
     createEnrollment,
     updateEnrollment,
+    unlockCourseAccess,
     deleteEnrollment
 } = require("../controllers/enrollmentController");
+const { createSession, getSessionById, updateSession, deleteSession } = require("../controllers/sessionController");
+
 
 const {
     validateEnrollmentCreate,
@@ -30,39 +34,17 @@ const {
  * /api/enrollments:
  *   get:
  *     summary: Get all enrollments
+ *     description: Returns all student enrollments with batch and course information.
  *     tags: [Enrollments]
  *     responses:
  *       200:
- *         description: List of enrollments
- */
-router.get("/", getEnrollments);
-
-
-/**
- * @swagger
- * /api/enrollments/{id}:
- *   get:
- *     summary: Get enrollment by ID
- *     tags: [Enrollments]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: Enrollment details
- *       400:
- *         description: Invalid enrollment ID
- *       404:
- *         description: Enrollment not found
+ *         description: Enrollments retrieved successfully
+ *       500:
+ *         description: Failed to retrieve enrollments
  */
 router.get(
-    "/:id",
-    validateEnrollmentId,
-    getEnrollmentById
+    "/",
+    getEnrollments
 );
 
 
@@ -71,6 +53,7 @@ router.get(
  * /api/enrollments:
  *   post:
  *     summary: Create a new enrollment
+ *     description: Enrolls a student into the selected batch. If the selected batch is full, the service may allocate another available batch for the same course.
  *     tags: [Enrollments]
  *     requestBody:
  *       required: true
@@ -88,23 +71,98 @@ router.get(
  *                 example: Roopesh
  *               studentEmail:
  *                 type: string
+ *                 format: email
  *                 example: roopesh@gmail.com
  *               batchId:
  *                 type: integer
+ *                 minimum: 1
  *                 example: 1
  *               enrollmentStatus:
  *                 type: string
+ *                 enum:
+ *                   - ENROLLED
+ *                   - COMPLETED
+ *                   - CANCELLED
+ *                 default: ENROLLED
  *                 example: ENROLLED
  *     responses:
  *       201:
  *         description: Enrollment created successfully
  *       400:
- *         description: Enrollment validation failed
+ *         description: Invalid enrollment data or unavailable batch
+ *       409:
+ *         description: Student is already enrolled in this batch
+ *       500:
+ *         description: Failed to create enrollment
  */
 router.post(
     "/",
     validateEnrollmentCreate,
     createEnrollment
+);
+
+
+/**
+ * @swagger
+ * /api/enrollments/{id}/course-access:
+ *   patch:
+ *     summary: Unlock course access
+ *     description: Unlocks course access after successful payment verification.
+ *     tags: [Enrollments]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Enrollment ID
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         example: 17
+ *     responses:
+ *       200:
+ *         description: Course access unlocked successfully
+ *       400:
+ *         description: Invalid enrollment ID
+ *       404:
+ *         description: Enrollment not found
+ *       500:
+ *         description: Failed to unlock course access
+ */
+router.patch(
+    "/:id/course-access",
+    validateEnrollmentId,
+    unlockCourseAccess
+);
+
+
+/**
+ * @swagger
+ * /api/enrollments/{id}:
+ *   get:
+ *     summary: Get enrollment by ID
+ *     tags: [Enrollments]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Enrollment details retrieved successfully
+ *       400:
+ *         description: Invalid enrollment ID
+ *       404:
+ *         description: Enrollment not found
+ *       500:
+ *         description: Failed to retrieve enrollment
+ */
+router.get(
+    "/:id",
+    validateEnrollmentId,
+    getEnrollmentById
 );
 
 
@@ -120,6 +178,7 @@ router.post(
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         example: 1
  *     requestBody:
  *       required: true
@@ -133,20 +192,28 @@ router.post(
  *                 example: Roopesh H
  *               studentEmail:
  *                 type: string
+ *                 format: email
  *                 example: roopesh@gmail.com
  *               batchId:
  *                 type: integer
+ *                 minimum: 1
  *                 example: 1
  *               enrollmentStatus:
  *                 type: string
+ *                 enum:
+ *                   - ENROLLED
+ *                   - COMPLETED
+ *                   - CANCELLED
  *                 example: COMPLETED
  *     responses:
  *       200:
  *         description: Enrollment updated successfully
  *       400:
- *         description: Enrollment validation failed
+ *         description: Invalid enrollment data
  *       404:
  *         description: Enrollment not found
+ *       500:
+ *         description: Failed to update enrollment
  */
 router.put(
     "/:id",
@@ -168,6 +235,7 @@ router.put(
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         example: 1
  *     responses:
  *       200:
@@ -176,7 +244,16 @@ router.put(
  *         description: Invalid enrollment ID
  *       404:
  *         description: Enrollment not found
+ *       409:
+ *         description: Enrollment cannot be deleted because related data exists
+ *       500:
+ *         description: Failed to delete enrollment
  */
+router.delete("/:id", deleteEnrollment);
+router.post("/sessions", createSession);
+router.get("/sessions/:id", getSessionById);
+router.put("/sessions/:id", updateSession);
+router.delete("/sessions/:id", deleteSession);
 router.delete(
     "/:id",
     validateEnrollmentId,

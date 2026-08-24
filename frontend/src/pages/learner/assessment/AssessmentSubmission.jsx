@@ -167,16 +167,16 @@ export default function AssessmentSubmission({
 
   return (
     <div className="w-full max-w-5xl mx-auto bg-[#FAFAF8] rounded-2xl border border-neutral-200 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-neutral-200 bg-white">
-        <div>
-          <h1 className="text-sm font-semibold text-neutral-900">Frontend Fundamentals — Quiz 3</h1>
+      {/* Header — stack on mobile, row on sm+ */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b border-neutral-200 bg-white">
+        <div className="min-w-0">
+          <h1 className="text-sm font-semibold text-neutral-900 truncate">Frontend Fundamentals — Quiz 3</h1>
           <p className="text-xs text-neutral-500 mt-0.5">
             Question {currentIndex + 1} of {questions.length}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <SaveIndicator state={saveState} />
           <div
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium tabular-nums border ${
@@ -278,7 +278,7 @@ export default function AssessmentSubmission({
             </span>
           </div>
 
-          <div className="grid grid-cols-5 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {questions.map((q, i) => (
               <button
                 key={q.id}

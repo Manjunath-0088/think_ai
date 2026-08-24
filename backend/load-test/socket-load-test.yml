@@ -1,18 +1,23 @@
 config:
-  target: "http://localhost:3000"
+  target: "http://localhost:5000"
   engines:
-    socketio-v3: {}
+    socketio-v3:
+     transports: ["websocket"]
+     query:
+       x-demo-role:"learner"
+       x-demo-user-id:"load-test-{{ $randomNumber(1,100000) }}"
   phases:
     - duration: 30
-      arrivalRate: 5
-      rampTo: 15
+      arrivalRate: 10
+      rampTo: 30
       name: "Warm up"
     - duration: 90
-      arrivalRate: 20
-      name: "Sustained 100+ concurrent"
+      arrivalRate: 40
+      name: "Sustained 200+ concurrent"
 
 scenarios:
   - engine: socketio-v3
+    socketio:
     flow:
       - emit:
           channel: "room:join"

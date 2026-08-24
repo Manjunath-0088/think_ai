@@ -1,13 +1,5 @@
 import React from 'react';
 
-const STATUS_STYLES = {
-  ACTIVE: 'bg-purple-500/10 text-purple-300 border-purple-500/30',
-};
-const DEFAULT_STATUS_STYLE = 'bg-white/5 text-purple-200 border-purple-500/20';
-
-// Mock tech images (CDN logos) — used only as a fallback until backend
-// returns a real course.thumbnail URL. Matched against title + category
-// using keyword search, since category is often generic (e.g. "backend").
 const TECH_IMAGES = [
   { keywords: ['typescript', 'type script', 'ts'], img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg' },
   { keywords: ['javascript', 'java script'], img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg' },
@@ -24,6 +16,12 @@ const TECH_IMAGES = [
   { keywords: ['sql'], img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original.svg' },
 ];
 
+const THUMB_GRADIENTS = ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8'];
+function getThumbGradientClass(id = 0) {
+  const index = typeof id === 'number' ? id : String(id).charCodeAt(0) || 0;
+  return THUMB_GRADIENTS[index % THUMB_GRADIENTS.length];
+}
+
 function getFallbackImage(title, category) {
   const haystack = ` ${(title || '')} ${(category || '')} `.toLowerCase();
   for (const entry of TECH_IMAGES) {
@@ -35,77 +33,126 @@ function getFallbackImage(title, category) {
 }
 
 export default function CourseCard({ course, isAdmin, onEdit, onDelete, onView }) {
-  // Priority: real backend thumbnail -> mock tech logo (matched from title/category) -> none
   const imageSrc = course.thumbnail || getFallbackImage(course.title, course.category);
+  const gradientClass = getThumbGradientClass(course.id || course._id || 0);
+  const isLocked = course.isLocked || course.price > 0;
 
   return (
     <div
       onClick={() => onView && onView(course)}
-      className="group relative flex flex-col rounded-xl overflow-hidden border border-red-600 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer min-h-[260px] bg-white"
+      className="cursor-pointer w-full group transition-all duration-500"
+      style={{ display: 'inline-block' }}
     >
-      {/* Full-fit background image, full color/brightness */}
-      {imageSrc && (
-        <img
-          src={imageSrc}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-          onError={(e) => { e.target.style.display = 'none'; }}
-        />
-      )}
+      {/* Outer Glow Border Wrapper */}
+      <div className="relative rounded-3xl p-0.5 bg-gradient-to-b from-purple-500/40 via-cyan-500/10 to-transparent shadow-[0_0_20px_rgba(147,51,235,0.06)] group-hover:shadow-[0_0_30px_rgba(147,51,235,0.2)] transition-all duration-500">
 
-      {/* Readability overlay — only fades in near the bottom, image stays bright up top */}
-      <div className="absolute inset-0 bg-gradient-to-t from-white via-white/60 to-transparent" />
+        {/* Light White / Off-White Card Container */}
+        <div className="course-card bg-white text-slate-900 rounded-[22px] overflow-hidden flex flex-col h-full relative border border-slate-200 shadow-lg">
 
-      {/* Status badge */}
-      <span className={`absolute top-3 left-3 z-10 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border bg-purple-950/90 text-green-100 border-purple-200/10 shadow-sm backdrop-blur-md`}>
-        {course.status || 'ACTIVE'}
-      </span>
+          {/* Top Thumbnail Section with fitted image & soft background */}
+          <div className={`course-thumb ${gradientClass} relative h-48 w-full overflow-hidden flex items-center justify-center p-4 bg-slate-50 border-b border-slate-100`}>
 
-      {/* Body */}
-      <div className="relative z-10 flex flex-col flex-1 justify-end p-4 pt-10 space-y-2">
-        <h3 className="font-medium text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-cyan-700 transition-colors drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">
-          {course.title}
-        </h3>
+            {imageSrc ? (
+              <img
+                src={imageSrc}
+                alt={course.title}
+                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 drop-shadow-md"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            ) : (
+              <div className="flex items-center justify-center font-mono text-xl font-bold text-slate-700">&lt;/&gt;</div>
+            )}
 
-        <div className="flex flex-wrap gap-1.5 text-[10px] font-medium text-gray-600">
-          {course.category && <span>{course.category}</span>}
-          {course.category && course.level && <span>·</span>}
-          {course.level && <span>{course.level}</span>}
-          {course.duration && (
-            <>
-              <span>·</span>
-              <span>{course.duration}</span> Days
-            </>
-          )}
-        </div>
+            {/* Duration Badge */}
+            {course.duration && (
+              <span className="absolute bottom-2 left-3 z-10 text-[10px] text-slate-700 font-medium bg-white/90 px-2.5 py-1 rounded-md backdrop-blur-sm border border-slate-200 shadow-sm">
+                <i className="fa-regular fa-clock mr-1 text-purple-600"></i>{course.duration}
+              </span>
+            )}
 
-        {course.language && (
-          <p className="text-[11px] text-gray-500">{course.language}</p>
-        )}
+            {/* Status Badge */}
+            <span className="absolute top-3 right-3 z-25 bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-1 text-[9px] font-bold rounded-lg uppercase tracking-wider shadow-sm">
+              {course.status || 'ACTIVE'}
+            </span>
 
-        <div className="pt-1">
-          <p className="text-xl font-bold text-gray-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)]">
-            {typeof course.price === 'number' ? `₹${course.price.toLocaleString('en-IN')}` : (course.price || 'Free')}
-          </p>
-        </div>
+            {/* Trendy Lock Card Overlay Badge */}
+            {isLocked && (
+              <span className="absolute top-3 left-3 z-25 bg-purple-950/90 border border-purple-500/30 backdrop-blur-md text-purple-200 px-2.5 py-1 text-[9px] font-extrabold rounded-lg uppercase tracking-wider flex items-center gap-1 shadow-md">
+                <i className="fa-solid fa-lock text-[9px]"></i> Pro Locked
+              </span>
+            )}
+          </div>
 
-        {/* Actions */}
-        <div className="pt-3" onClick={(e) => e.stopPropagation()}>
-          {isAdmin ? (
-            <div className="flex gap-3 text-[11px] font-bold tracking-wide uppercase">
-              <button onClick={() => onView(course)} className="text-cyan-600 hover:text-cyan-700 cursor-pointer">View</button>
-              <button onClick={() => onEdit(course)} className="text-purple-600 hover:text-purple-700 cursor-pointer">Edit</button>
-              <button onClick={() => onDelete(course.id || course._id)} className="text-rose-500 hover:text-rose-600 cursor-pointer">Delete</button>
+          {/* Card Body */}
+          <div className="course-body p-5 flex-1 flex flex-col justify-between space-y-3">
+            <div className="space-y-1.5">
+              {course.category && (
+                <div className="course-cat text-purple-600 text-xs font-bold tracking-wide uppercase">
+                  {course.category}
+                </div>
+              )}
+              <div className="course-title text-base font-bold text-slate-900 group-hover:text-purple-600 transition-colors line-clamp-2">
+                {course.title}
+              </div>
+
+              {/* Instructor + Updated date, matches reference: "Ananya Rao · Updated Jul 2026" */}
+              <div className="course-meta text-xs text-slate-500">
+                {course.instructorName}
+                {course.instructorName && course.updatedAt && ' · '}
+                {course.updatedAt &&
+                  `Updated ${new Date(course.updatedAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    year: 'numeric',
+                  })}`}
+              </div>
+
+              {course.instructorDetails && (
+                <div className="text-[11px] text-slate-400 line-clamp-1">
+                  {course.instructorDetails}
+                </div>
+              )}
+
+              {/* Rating: bold purple number, gray count, no star — matches reference */}
+              {course.rating && (
+                <div className="course-rating text-xs pt-0.5">
+                  <span className="text-purple-600 font-bold">{course.rating}</span>{' '}
+                  <span className="text-slate-400 font-normal">({(course.ratingsCount || 0).toLocaleString('en-IN')} ratings)</span>
+                </div>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={() => onView(course)}
-              className="w-full py-2 bg-yellow-400 hover:bg-yellow-300 text-gray-900 rounded-full font-semibold text-sm transition-colors cursor-pointer"
-            >
-              View Course
-            </button>
-          )}
+
+            {/* Bottom Price Bar (Full White Footer Container) */}
+            <div className="course-foot pt-3.5 pb-3 px-4 -mx-5 -mb-5 bg-slate-100 text-slate-900 border-t border-slate-200 rounded-b-[20px] flex items-center justify-between">
+              <div className="price flex items-baseline gap-2">
+                {course.originalPrice && (
+                  <span className="old text-xs text-slate-400 line-through font-mono">
+                    {typeof course.originalPrice === 'number' ? `₹${course.originalPrice.toLocaleString('en-IN')}` : course.originalPrice}
+                  </span>
+                )}
+                <span className="font-mono text-lg font-black text-slate-900">
+                  {typeof course.price === 'number' ? `₹${course.price.toLocaleString('en-IN')}` : (course.price || 'Free')}
+                </span>
+              </div>
+
+              <div onClick={(e) => e.stopPropagation()}>
+                {isAdmin ? (
+                  <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-wider">
+                    <button onClick={() => onView(course)} className="text-purple-700 hover:underline cursor-pointer">View</button>
+                    <button onClick={() => onEdit(course)} className="text-amber-700 hover:underline cursor-pointer">Edit</button>
+                    <button onClick={() => onDelete(course.id || course._id)} className="text-rose-600 hover:underline cursor-pointer">Delete</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => onView(course)}
+                    className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>{isLocked ? 'Unlock' : 'View'}</span>
+                    <i className={`fa-solid ${isLocked ? 'fa-lock' : 'fa-arrow-right'} text-[9px]`}></i>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
