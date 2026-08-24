@@ -4,14 +4,15 @@ const prisma = require("../config/database");
 /*
  * Get enrollment trends
  *
- * Returns number of enrollments grouped by date.
+ * Returns the number of enrollments
+ * grouped by enrollment date.
  */
 const getEnrollmentTrends = async () => {
 
     const enrollments =
         await prisma.enrollment.findMany({
+
             select: {
-                id: true,
                 enrolledAt: true
             },
 
@@ -24,7 +25,7 @@ const getEnrollmentTrends = async () => {
     const trends = {};
 
 
-    enrollments.forEach((enrollment) => {
+    for (const enrollment of enrollments) {
 
         const date =
             enrollment.enrolledAt
@@ -34,7 +35,7 @@ const getEnrollmentTrends = async () => {
 
         trends[date] =
             (trends[date] || 0) + 1;
-    });
+    }
 
 
     return Object.entries(trends).map(
@@ -50,8 +51,8 @@ const getEnrollmentTrends = async () => {
  * Get course completion rates
  *
  * A course is considered completed when
- * an enrollment has completed >= 80% of
- * the lessons in that course.
+ * an enrollment completes at least 80%
+ * of the lessons belonging to that course.
  */
 const getCourseCompletionRates = async () => {
 
@@ -59,24 +60,10 @@ const getCourseCompletionRates = async () => {
         await prisma.course.findMany({
 
             select: {
+
                 id: true,
+
                 title: true,
-
-                batches: {
-                    select: {
-                        enrollments: {
-                            select: {
-                                id: true,
-
-                                lessonProgress: {
-                                    select: {
-                                        completed: true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
 
                 modules: {
                     select: {
@@ -86,7 +73,32 @@ const getCourseCompletionRates = async () => {
                             }
                         }
                     }
+                },
+
+                batches: {
+                    select: {
+                        enrollments: {
+                            select: {
+
+                                id: true,
+
+                                lessonProgress: {
+                                    where: {
+                                        completed: true
+                                    },
+
+                                    select: {
+                                        lessonId: true
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+            },
+
+            orderBy: {
+                id: "asc"
             }
         });
 
@@ -97,21 +109,34 @@ const getCourseCompletionRates = async () => {
     for (const course of courses) {
 
         /*
-         * Count all lessons belonging
-         * to the course.
+         * Get all lesson IDs belonging
+         * to this course.
          */
-        const totalLessons =
-            course.modules.reduce(
-                (total, module) =>
-                    total +
-                    module.lessons.length,
-                0
+        const courseLessonIds =
+            course.modules.flatMap(
+                (module) =>
+                    module.lessons.map(
+                        (lesson) =>
+                            lesson.id
+                    )
             );
+
+
+        const totalLessons =
+            courseLessonIds.length;
+
+
+        /*
+         * Create a Set so lesson lookup
+         * is fast.
+         */
+        const courseLessonIdSet =
+            new Set(courseLessonIds);
 
 
         /*
          * Get all enrollments belonging
-         * to the course through batches.
+         * to this course.
          */
         const enrollments =
             course.batches.flatMap(
@@ -128,41 +153,62 @@ const getCourseCompletionRates = async () => {
 
 
         /*
-         * Calculate how many enrollments
-         * reached at least 80% completion.
+         * Calculate completion for
+         * every enrollment.
          */
-        if (totalLessons > 0) {
+        for (const enrollment of enrollments) {
 
-            for (
-                const enrollment
-                of enrollments
-            ) {
+            /*
+             * Only count completed lessons
+             * that actually belong to this course.
+             */
+            const completedLessonIds =
+                new Set(
+                    enrollment.lessonProgress
+                        .map(
+                            (progress) =>
+                                progress.lessonId
+                        )
+                        .filter(
+                            (lessonId) =>
+                                courseLessonIdSet.has(
+                                    lessonId
+                                )
+                        )
+                );
 
-                const completedLessons =
-                    enrollment.lessonProgress.filter(
-                        (progress) =>
-                            progress.completed
-                    ).length;
+
+            const completedLessons =
+                completedLessonIds.size;
 
 
-                const completionPercentage =
-                    (
+            /*
+             * Calculate completion percentage.
+             */
+            const completionPercentage =
+                totalLessons === 0
+                    ? 0
+                    : (
                         completedLessons /
                         totalLessons
                     ) * 100;
 
 
-                if (
-                    completionPercentage >= 80
-                ) {
-                    completedEnrollments++;
-                }
+            /*
+             * 80% or more means
+             * course completed.
+             */
+            if (
+                completionPercentage >= 80
+            ) {
+                completedEnrollments++;
             }
         }
 
 
         /*
-         * Calculate course completion rate.
+         * Calculate final course
+         * completion rate.
          */
         const completionRate =
             totalEnrollments === 0
@@ -201,6 +247,8 @@ const getCourseCompletionRates = async () => {
 
 
 module.exports = {
+
     getEnrollmentTrends,
+
     getCourseCompletionRates
 };

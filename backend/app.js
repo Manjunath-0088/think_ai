@@ -6,10 +6,13 @@ const path = require("path");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 
-// Routes
 const courseRoutes = require("./routes/courseRoutes");
 const batchRoutes = require("./routes/batchRoutes");
 const enrollmentRoutes = require("./routes/enrollmentRoutes");
+const authRoutes = require("./routes/authRoutes")
+const adminUsers = require("./routes/adminUsers");
+const roleRoutes = require("./routes/roleRoutes");
+const demoRoutes = require("./routes/demoRoutes");
 const moduleRoutes = require("./routes/moduleRoutes");
 const lessonRoutes = require("./routes/lessonRoutes");
 const lessonProgressRoutes = require("./routes/lessonProgressRoutes");
@@ -21,13 +24,7 @@ const analyticsRoutes = require("./routes/analytics");
 
 const app = express();
 
-
-// ----------------------------------------------------
-// Middlewares
-// ----------------------------------------------------
-
 app.use(cors());
-
 app.use(express.json());
 
 app.use(
@@ -37,11 +34,20 @@ app.use(
 );
 
 app.use(morgan("dev"));
+const session = require('express-session');
+const passport = require('passport');
+require('./config/passport');
 
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your_secret_fallback',
+    resave: false,
+    saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
-// ----------------------------------------------------
-// Additional API Routes
-// ----------------------------------------------------
+// Mount Demo Routes
+app.use('/api/demo', demoRoutes);
 
 app.use(
     "/api/audit-logs",
@@ -52,11 +58,6 @@ app.use(
     "/api/analytics",
     analyticsRoutes
 );
-
-
-// ----------------------------------------------------
-// Swagger Configuration
-// ----------------------------------------------------
 
 const swaggerOptions = {
     definition: {
@@ -71,7 +72,7 @@ const swaggerOptions = {
 
         servers: [
             {
-                url: "http://localhost:3000"
+                url: "http://localhost:5000"
             }
         ]
     },
@@ -88,11 +89,6 @@ app.use(
     swaggerUi.setup(swaggerSpec)
 );
 
-
-// ----------------------------------------------------
-// Home Route
-// ----------------------------------------------------
-
 app.get("/", (req, res) => {
     res.status(200).json({
         success: true,
@@ -101,11 +97,14 @@ app.get("/", (req, res) => {
     });
 });
 
-
-// ----------------------------------------------------
-// Serve Generated Certificate PDFs
-// ----------------------------------------------------
-
+// API Routes
+app.use("/api/courses", courseRoutes);
+app.use("/api/batches", batchRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
+// The New Routes Anand Requested
+app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminUsers);
+app.use("/api/roles", roleRoutes);
 app.use(
     "/certificates",
     express.static(
@@ -115,11 +114,6 @@ app.use(
         )
     )
 );
-
-
-// ----------------------------------------------------
-// API Routes
-// ----------------------------------------------------
 
 app.use(
     "/api/courses",
@@ -161,19 +155,17 @@ app.use(
     assessmentRoutes
 );
 
-
-// ----------------------------------------------------
-// Code Execution
-// ----------------------------------------------------
-
 app.use(
     "/api/code",
     codeExecutionRoutes
 );
 
-
-// ----------------------------------------------------
-// Export App
-// ----------------------------------------------------
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    service: "think-ai-backend",
+    timestamp: new Date().toISOString()
+  });
+});
 
 module.exports = app;

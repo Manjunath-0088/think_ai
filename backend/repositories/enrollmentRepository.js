@@ -1,29 +1,53 @@
 const prisma = require("../config/database");
 
 
-const getAllEnrollments = async () => {
-    return await prisma.enrollment.findMany({
-        include: {
-            batch: {
-                include: {
-                    course: true
-                }
-            }
-        },
-        orderBy: {
-            id: "desc"
-        }
-    });
+/*
+ * Common enrollment fields
+ */
+const enrollmentSelect = {
+    id: true,
+    studentName: true,
+    studentEmail: true,
+    batchId: true,
+    enrollmentStatus: true,
+    enrolledAt: true
 };
 
 
-const getEnrollmentById = async (id) => {
-    return await prisma.enrollment.findUnique({
-        where: { id },
-        include: {
+/*
+ * Get all enrollments
+ */
+const getAllEnrollments = async () => {
+
+    return prisma.enrollment.findMany({
+
+        orderBy: {
+            id: "desc"
+        },
+
+        select: {
+
+            ...enrollmentSelect,
+
             batch: {
-                include: {
-                    course: true
+                select: {
+                    id: true,
+                    name: true,
+                    courseId: true,
+                    instructorName: true,
+                    capacity: true,
+                    startDate: true,
+                    endDate: true,
+                    status: true,
+
+                    course: {
+                        select: {
+                            id: true,
+                            title: true,
+                            category: true,
+                            status: true
+                        }
+                    }
                 }
             }
         }
@@ -32,39 +56,93 @@ const getEnrollmentById = async (id) => {
 
 
 /*
- * Find an available batch for a course.
+ * Get enrollment by ID
+ */
+const getEnrollmentById = async (id) => {
+
+    return prisma.enrollment.findUnique({
+
+        where: {
+            id
+        },
+
+        select: {
+
+            ...enrollmentSelect,
+
+            batch: {
+                select: {
+                    id: true,
+                    name: true,
+                    courseId: true,
+                    instructorName: true,
+                    capacity: true,
+                    startDate: true,
+                    endDate: true,
+                    status: true,
+
+                    course: {
+                        select: {
+                            id: true,
+                            title: true,
+                            description: true,
+                            category: true,
+                            duration: true,
+                            status: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+
+/*
+ * Find an available active batch
  *
- * A batch is considered available when:
- * - status is ACTIVE
- * - capacity has not been reached
+ * Selects the earliest active batch
+ * that still has available capacity.
  */
 const findAvailableBatch = async (courseId) => {
 
     const batches = await prisma.batch.findMany({
+
         where: {
-            courseId: Number(courseId),
+            courseId,
             status: "ACTIVE"
         },
-        include: {
-            enrollments: {
-                where: {
-                    enrollmentStatus: {
-                        in: ["ACTIVE", "ENROLLED"]
-                    }
-                }
-            }
-        },
+
         orderBy: {
             startDate: "asc"
+        },
+
+        select: {
+            id: true,
+            name: true,
+            courseId: true,
+            capacity: true,
+            startDate: true,
+            endDate: true,
+            status: true,
+
+            _count: {
+                select: {
+                    enrollments: true
+                }
+            }
         }
     });
 
-    const availableBatch = batches.find(
-        (batch) =>
-            batch.enrollments.length < batch.capacity
-    );
 
-    return availableBatch || null;
+    return batches.find((batch) => {
+
+        const enrollmentCount =
+            batch._count?.enrollments ?? 0;
+
+        return enrollmentCount < batch.capacity;
+
+    }) || null;
 };
 
 
@@ -73,40 +151,23 @@ const findAvailableBatch = async (courseId) => {
  */
 const createEnrollment = async (data) => {
 
-    return await prisma.enrollment.create({
-        data
-    });
-};
+    return prisma.enrollment.create({
 
+        data,
 
-const updateEnrollment = async (id, data) => {
-    return await prisma.enrollment.update({
-        where: { id },
-        data
-    });
-};
+        select: {
 
+            ...enrollmentSelect,
 
-/*
- * Unlock course access
- *
- * Called after payment verification.
- */
-const unlockCourseAccess = async (id) => {
-
-    return await prisma.enrollment.update({
-        where: {
-            id: Number(id)
-        },
-
-        data: {
-            courseAccess: true
-        },
-
-        include: {
             batch: {
-                include: {
-                    course: true
+                select: {
+                    id: true,
+                    name: true,
+                    courseId: true,
+                    capacity: true,
+                    startDate: true,
+                    endDate: true,
+                    status: true
                 }
             }
         }
@@ -114,14 +175,88 @@ const unlockCourseAccess = async (id) => {
 };
 
 
+/*
+ * Update enrollment
+ */
+const updateEnrollment = async (
+    id,
+    data
+) => {
+
+    return prisma.enrollment.update({
+
+        where: {
+            id
+        },
+
+        data,
+
+        select: enrollmentSelect
+    });
+};
+
+
+/*
+ * Unlock course access
+ *
+ * NOTE:
+ * This function requires `courseAccess`
+ * to exist in the Enrollment Prisma model.
+ */
+const unlockCourseAccess = async (id) => {
+
+    return prisma.enrollment.update({
+
+        where: {
+            id
+        },
+
+        data: {
+            courseAccess: true
+        },
+
+        select: {
+
+            ...enrollmentSelect,
+
+            courseAccess: true,
+
+            batch: {
+                select: {
+                    id: true,
+                    name: true,
+                    courseId: true,
+
+                    course: {
+                        select: {
+                            id: true,
+                            title: true,
+                            status: true
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+
+/*
+ * Delete enrollment
+ */
 const deleteEnrollment = async (id) => {
-    return await prisma.enrollment.delete({
-        where: { id }
+
+    return prisma.enrollment.delete({
+
+        where: {
+            id
+        }
     });
 };
 
 
 module.exports = {
+
     getAllEnrollments,
     getEnrollmentById,
     findAvailableBatch,

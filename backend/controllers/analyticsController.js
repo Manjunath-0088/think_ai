@@ -5,14 +5,17 @@ const service =
 /*
  * Get enrollment trends
  */
-const getEnrollmentTrends = async (req, res) => {
+const getEnrollmentTrends = async (
+    req,
+    res
+) => {
 
     try {
 
         const trends =
             await service.getEnrollmentTrends();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             data: trends
         });
@@ -24,7 +27,7 @@ const getEnrollmentTrends = async (req, res) => {
             error
         );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message:
                 "Failed to get enrollment trends"
@@ -46,7 +49,7 @@ const getCourseCompletionRates = async (
         const completionRates =
             await service.getCourseCompletionRates();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             data: completionRates
         });
@@ -58,7 +61,7 @@ const getCourseCompletionRates = async (
             error
         );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message:
                 "Failed to get course completion rates"
@@ -68,6 +71,8 @@ const getCourseCompletionRates = async (
 
 
 module.exports = {
+
     getEnrollmentTrends,
+
     getCourseCompletionRates
 };

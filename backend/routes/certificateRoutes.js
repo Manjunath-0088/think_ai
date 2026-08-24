@@ -3,7 +3,6 @@ const express = require("express");
 const router = express.Router();
 
 const {
-    generateCertificate,
     getCertificateEligibility,
     getCertificateByEnrollment,
     downloadCertificate,
@@ -26,43 +25,8 @@ const {
  * @swagger
  * tags:
  *   name: Certificates
- *   description: Certificate Management APIs
+ *   description: Automatic Certificate Management APIs
  */
-
-
-/**
- * @swagger
- * /api/certificates/generate/{enrollmentId}:
- *   post:
- *     summary: Generate course completion certificate
- *     description: >
- *       Generates a certificate when the student has completed at least
- *       80% of the course and passed all required assessments with a
- *       minimum score of 40%.
- *     tags: [Certificates]
- *     parameters:
- *       - in: path
- *         name: enrollmentId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *         description: Enrollment ID
- *     responses:
- *       201:
- *         description: Certificate generated successfully
- *       400:
- *         description: Student is not eligible for certificate
- *       404:
- *         description: Enrollment not found
- *       500:
- *         description: Certificate generation failed
- */
-router.post(
-    "/generate/:enrollmentId",
-    validateCertificateEnrollmentId,
-    generateCertificate
-);
 
 
 /**
@@ -71,9 +35,11 @@ router.post(
  *   get:
  *     summary: Check certificate eligibility
  *     description: >
- *       Checks whether the student is eligible to receive a certificate.
- *       The student must complete at least 80% of the course and pass
- *       all required assessments with a minimum score of 40%.
+ *       Checks whether a student is eligible for a certificate.
+ *       Eligibility requires at least 80% course completion and
+ *       passing all required assessments.
+ *       Certificate generation is handled automatically by the
+ *       Automation Engine when eligibility is satisfied.
  *     tags: [Certificates]
  *     parameters:
  *       - in: path
@@ -82,54 +48,11 @@ router.post(
  *         schema:
  *           type: integer
  *         example: 1
- *         description: Enrollment ID
  *     responses:
  *       200:
  *         description: Certificate eligibility checked successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     enrollmentId:
- *                       type: integer
- *                       example: 1
- *                     courseCompletion:
- *                       type: number
- *                       example: 85
- *                     requiredCourseCompletion:
- *                       type: number
- *                       example: 80
- *                     courseCompleted:
- *                       type: boolean
- *                       example: true
- *                     assessments:
- *                       type: object
- *                       properties:
- *                         total:
- *                           type: integer
- *                           example: 3
- *                         passed:
- *                           type: integer
- *                           example: 3
- *                         failed:
- *                           type: integer
- *                           example: 0
- *                     requiredAssessmentPercentage:
- *                       type: number
- *                       example: 40
- *                     assessmentsCompleted:
- *                       type: boolean
- *                       example: true
- *                     eligible:
- *                       type: boolean
- *                       example: true
+ *       400:
+ *         description: Invalid enrollment ID
  *       404:
  *         description: Enrollment not found
  *       500:
@@ -147,6 +70,9 @@ router.get(
  * /api/certificates/enrollment/{enrollmentId}:
  *   get:
  *     summary: Get certificate by enrollment
+ *     description: >
+ *       Returns the automatically generated certificate for an enrollment.
+ *       Returns 404 when the student has not yet received a certificate.
  *     tags: [Certificates]
  *     parameters:
  *       - in: path
@@ -155,10 +81,11 @@ router.get(
  *         schema:
  *           type: integer
  *         example: 1
- *         description: Enrollment ID
  *     responses:
  *       200:
  *         description: Certificate found
+ *       400:
+ *         description: Invalid enrollment ID
  *       404:
  *         description: Certificate not found
  *       500:
@@ -176,7 +103,7 @@ router.get(
  * /api/certificates/{certificateNo}/download:
  *   get:
  *     summary: Download certificate PDF
- *     description: Downloads the generated certificate PDF.
+ *     description: Downloads the automatically generated certificate PDF.
  *     tags: [Certificates]
  *     parameters:
  *       - in: path
@@ -193,6 +120,8 @@ router.get(
  *             schema:
  *               type: string
  *               format: binary
+ *       400:
+ *         description: Certificate number is required
  *       404:
  *         description: Certificate or PDF not found
  *       500:
@@ -209,8 +138,10 @@ router.get(
  * @swagger
  * /api/certificates/verify/{certificateNo}:
  *   get:
- *     summary: Verify a certificate
- *     description: Public certificate verification endpoint. No login is required.
+ *     summary: Verify certificate
+ *     description: >
+ *       Public certificate verification endpoint.
+ *       No authentication is required.
  *     tags: [Certificates]
  *     parameters:
  *       - in: path
@@ -222,6 +153,8 @@ router.get(
  *     responses:
  *       200:
  *         description: Valid certificate
+ *       400:
+ *         description: Certificate number is required
  *       404:
  *         description: Certificate not found
  *       500:

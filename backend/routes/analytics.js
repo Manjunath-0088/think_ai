@@ -1,4 +1,5 @@
 const express = require("express");
+
 const router = express.Router();
 
 const {
@@ -6,6 +7,12 @@ const {
     getCourseCompletionRates
 } = require("../controllers/analyticsController");
 
+const prisma = require("../config/database");
+
+
+// ----------------------------------------------------
+// Swagger
+// ----------------------------------------------------
 
 /**
  * @swagger
@@ -54,7 +61,17 @@ router.get(
 
 
 /**
- * Existing audit-log heatmap
+ * @swagger
+ * /api/analytics/heatmap:
+ *   get:
+ *     summary: Get audit log activity heatmap
+ *     description: Returns audit log events from the last 7 days grouped by date and hour.
+ *     tags: [Analytics]
+ *     responses:
+ *       200:
+ *         description: Audit log heatmap data
+ *       500:
+ *         description: Failed to build heatmap
  */
 router.get(
     "/heatmap",
@@ -62,21 +79,16 @@ router.get(
 
         try {
 
-            const {
-                PrismaClient
-            } = require("@prisma/client");
-
-            const prisma =
-                new PrismaClient();
-
             const sevenDaysAgo =
                 new Date(
                     Date.now() -
                     7 * 24 * 60 * 60 * 1000
                 );
 
+
             const logs =
                 await prisma.auditLog.findMany({
+
                     where: {
                         createdAt: {
                             gte: sevenDaysAgo
@@ -89,7 +101,9 @@ router.get(
                     }
                 });
 
+
             const heatmap = {};
+
 
             logs.forEach((log) => {
 
@@ -99,7 +113,7 @@ router.get(
                         .slice(0, 10);
 
                 const hour =
-                    log.createdAt.getHours();
+                    log.createdAt.getUTCHours();
 
                 const key =
                     `${day}-${hour}`;
@@ -108,15 +122,28 @@ router.get(
                     (heatmap[key] || 0) + 1;
             });
 
-            res.json({
+
+            return res.status(200).json({
+
+                success: true,
+
                 heatmap,
-                totalEvents: logs.length
+
+                totalEvents:
+                    logs.length
             });
 
-        } catch (err) {
+        } catch (error) {
 
-            res.status(500).json({
+            console.error(
+                "Heatmap error:",
+                error
+            );
+
+            return res.status(500).json({
+
                 success: false,
+
                 message:
                     "Failed to build heatmap"
             });
