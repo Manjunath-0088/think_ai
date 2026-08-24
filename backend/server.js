@@ -20,6 +20,9 @@ const io = new Server(httpServer, {
 
 initSockets(io);
 
+// Forum Live Class Studio chat (Socket.IO namespace: /studio)
+require("./src/websocket/chatSocket")(io);
+
 const PORT = process.env.PORT || 5000;
 
 httpServer.listen(PORT, () => {

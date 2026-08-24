@@ -20,12 +20,12 @@
     "is-promise": "^4.0.0",
     "jsonwebtoken": "^9.0.3",
     "media-typer": "^2.0.0",
-
     "morgan": "^1.11.0",
     "path-to-regexp": "^8.4.2",
     "pdfkit": "^0.19.1",
     "pg": "^8.22.0",
     "prisma": "^6.19.3",
+    "side-channel": "^1.1.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "swagger-jsdoc": "^6.3.0",
@@ -33,7 +33,6 @@
   },
   "devDependencies": {
     "artillery": "^2.0.33",
-
     "artillery-engine-socketio-v3": "^1.2.0",
     "nodemon": "^3.1.14"
   },

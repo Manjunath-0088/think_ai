@@ -11,6 +11,8 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import AppRoutes from "./routes/AppRoutes";
 import LearnerRoutes from "./routes/LearnerRoutes";
 import AdminRoutes from "./routes/AdminRoutes";
+import ForumModuleRoutes from "./routes/ForumModuleRoutes";
+import { fetchCurrentUser } from "./features/auth/authSlice";
 
 function RolePlaceholder({ label }) {
   return (
@@ -59,6 +61,15 @@ function App() {
       <Route
         path="/register"
         element={<RegisterPage />}
+      />
+
+      {/* =========================
+          FORUM MODULE (self-contained — mock auth, no other-module deps)
+      ========================= */}
+
+      <Route
+        path="/forum/*"
+        element={<ForumModuleRoutes />}
       />
 
       <Route

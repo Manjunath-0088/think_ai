@@ -134,4 +134,15 @@ app.use(
     codeExecutionRoutes
 );
 
+// ---------------------------------------------------------------------
+// Forum module (self-contained: discussions, comments, categories,
+// bookmarks, notifications, moderation, live studio).
+// Mounted last on purpose — it can never shadow the routes above.
+// ---------------------------------------------------------------------
+
+app.use(
+    "/api",
+    require("./src/routes")
+);
+
 module.exports = app;
