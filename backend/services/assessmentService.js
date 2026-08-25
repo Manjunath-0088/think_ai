@@ -8,6 +8,33 @@ const createAssessment = async (data) => {
 };
 
 
+const getAllAssessments = async (moduleId) => {
+    return await repository.getAllAssessments(moduleId);
+};
+
+
+const updateAssessment = async (id, data) => {
+
+    const existing = await repository.getAssessmentById(Number(id));
+
+    if (!existing) {
+        throw new Error("Assessment not found");
+    }
+
+    return await repository.updateAssessment(Number(id), data);
+};
+
+
+const deleteAssessment = async (id) => {
+
+    const existing = await repository.getAssessmentById(Number(id));
+
+    if (!existing) {
+        throw new Error("Assessment not found");
+    }
+
+    return await repository.deleteAssessment(Number(id));
+};
 
 const getAssessmentById = async (id) => {
     return await repository.getAssessmentById(
@@ -35,6 +62,23 @@ const getAssessmentAnalytics = async (id) => {
     return await repository.getAssessmentAnalytics(
         Number(id)
     );
+};
+
+
+/*
+ * List all submissions for a given assessment.
+ * Throws if the assessment doesn't exist, same
+ * pattern as updateAssessment/deleteAssessment.
+ */
+const getSubmissionsByAssessmentId = async (assessmentId) => {
+
+    const existing = await repository.getAssessmentById(Number(assessmentId));
+
+    if (!existing) {
+        throw new Error("Assessment not found");
+    }
+
+    return await repository.getSubmissionsByAssessmentId(Number(assessmentId));
 };
 
 
@@ -110,8 +154,12 @@ const getEnrollmentAssessmentStatus =
 module.exports = {
     createAssessment,
     getAssessmentById,
+    getAllAssessments,
     submitAssessment,
+    updateAssessment,
+    deleteAssessment,
     getAssessmentAnalytics,
+    getSubmissionsByAssessmentId,
     saveJudge0Token,
     getSubmissionByJudge0Token,
     updateAssessmentSubmissionStatus,

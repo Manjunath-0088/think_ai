@@ -48,10 +48,9 @@ export default function LearnerCoursesPage() {
   const hasNextPage = currentCourses.length === ITEMS_PER_PAGE;
 
   return (
- <div className="flex flex-col h-[calc(100vh-8rem)] space-y-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col space-y-6">
       <div className="shrink-0">
-        {/* Switches between white text in dark mode and black text in light mode */}
-       <h1 className="text-2xl font-semibold dark:text-purple-400">All Courses</h1>
+        <h1 className="text-2xl font-semibold dark:text-purple-400">All Courses</h1>
       </div>
 
       <div className="flex-1 min-h-0 flex flex-col">

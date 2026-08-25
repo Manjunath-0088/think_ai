@@ -1,13 +1,27 @@
-import api from "./axios";
+import axiosInstance from "../api/axios";
 
-export const createAssessment = (data) =>
-  api.post("/assessments", data);
+const BASE_URL = "/assessments";
+
+export const getAllAssessments = (moduleId) =>
+  axiosInstance.get(BASE_URL, { params: moduleId ? { moduleId } : {} });
+
+export const deleteAssessment = (id) =>
+  axiosInstance.delete(`${BASE_URL}/${id}`);
+
+export const createAssessment = (payload) =>
+  axiosInstance.post(BASE_URL, payload);
+
+export const updateAssessment = (id, payload) =>
+  axiosInstance.put(`${BASE_URL}/${id}`, payload);
 
 export const getAssessmentById = (id) =>
-  api.get(`/assessments/${id}`);
+  axiosInstance.get(`${BASE_URL}/${id}`);
 
-export const submitAssessment = (id, data) =>
-  api.post(`/assessments/${id}/submit`, data);
+export const submitAssessment = (id, payload) =>
+  axiosInstance.post(`${BASE_URL}/${id}/submit`, payload);
 
 export const getAssessmentAnalytics = (id) =>
-  api.get(`/assessments/${id}/analytics`);
+  axiosInstance.get(`${BASE_URL}/${id}/analytics`);
+
+export const getEnrollmentAssessmentStatus = (enrollmentId) =>
+  axiosInstance.get(`${BASE_URL}/enrollment/${enrollmentId}/status`);
