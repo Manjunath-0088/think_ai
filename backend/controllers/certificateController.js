@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require("path");
 
 const service =
     require("../services/certificateService");
@@ -12,56 +13,14 @@ const lessonProgressRepository =
 
 /*
  * ---------------------------------------------
- * Generate Certificate
- * ---------------------------------------------
- */
-const generateCertificate = async (req, res) => {
-
-    try {
-
-        const certificate =
-            await service.generateCertificate(
-                req.params.enrollmentId
-            );
-
-
-        return res.status(201).json({
-
-            success: true,
-
-            message:
-                "Certificate generated successfully",
-
-            data: certificate
-        });
-
-    } catch (error) {
-
-        console.error(
-            "Generate certificate error:",
-            error
-        );
-
-
-        return res.status(400).json({
-
-            success: false,
-
-            message:
-                error.message
-        });
-    }
-};
-
-
-/*
- * ---------------------------------------------
  * Check Certificate Eligibility
  *
  * Requirements:
- *
  * 1. Course completion >= 80%
- * 2. All assessments passed >= 40%
+ * 2. Required assessments passed
+ *
+ * Certificate generation itself is handled
+ * automatically by the Automation Engine.
  * ---------------------------------------------
  */
 const getCertificateEligibility = async (
@@ -73,6 +32,19 @@ const getCertificateEligibility = async (
 
         const enrollmentId =
             Number(req.params.enrollmentId);
+
+
+        if (
+            !Number.isInteger(enrollmentId) ||
+            enrollmentId <= 0
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Enrollment ID must be a positive integer"
+            });
+        }
 
 
         /*
@@ -87,25 +59,20 @@ const getCertificateEligibility = async (
 
         const {
             totalLessons,
-            completedLessons
+            completedLessons,
+            completionPercentage
         } = summary;
 
 
-        const courseCompletion =
-            totalLessons === 0
-                ? 0
-                : Number(
-                    (
-                        (
-                            completedLessons /
-                            totalLessons
-                        ) * 100
-                    ).toFixed(2)
-                );
+        /*
+         * Course requirement
+         */
+        const courseCompleted =
+            completionPercentage >= 80;
 
 
         /*
-         * Get assessment status
+         * Assessment requirement
          */
         const assessmentStatus =
             await assessmentService
@@ -114,16 +81,6 @@ const getCertificateEligibility = async (
                 );
 
 
-        /*
-         * Course requirement
-         */
-        const courseCompleted =
-            courseCompletion >= 80;
-
-
-        /*
-         * Assessment requirement
-         */
         const assessmentsCompleted =
             assessmentStatus.allPassed;
 
@@ -144,11 +101,19 @@ const getCertificateEligibility = async (
 
                 enrollmentId,
 
-                courseCompletion,
+                courseProgress: {
 
-                requiredCourseCompletion: 80,
+                    totalLessons,
 
-                courseCompleted,
+                    completedLessons,
+
+                    completionPercentage,
+
+                    requiredPercentage: 80,
+
+                    requirementMet:
+                        courseCompleted
+                },
 
                 assessments: {
 
@@ -159,14 +124,20 @@ const getCertificateEligibility = async (
                         assessmentStatus.passedAssessments,
 
                     failed:
-                        assessmentStatus.failedAssessments
+                        assessmentStatus.failedAssessments,
+
+                    requiredPercentage: 40,
+
+                    requirementMet:
+                        assessmentsCompleted
                 },
 
-                requiredAssessmentPercentage: 40,
+                eligible,
 
-                assessmentsCompleted,
-
-                eligible
+                status:
+                    eligible
+                        ? "ELIGIBLE"
+                        : "NOT_ELIGIBLE"
             }
         });
 
@@ -178,12 +149,24 @@ const getCertificateEligibility = async (
         );
 
 
+        if (
+            error.message ===
+            "Enrollment not found"
+        ) {
+
+            return res.status(404).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+
         return res.status(500).json({
 
             success: false,
 
             message:
-                error.message
+                "Failed to check certificate eligibility"
         });
     }
 };
@@ -193,6 +176,9 @@ const getCertificateEligibility = async (
  * ---------------------------------------------
  * Get Certificate By Enrollment
  * ---------------------------------------------
+ *
+ * Returns the certificate generated
+ * automatically for the enrollment.
  */
 const getCertificateByEnrollment = async (
     req,
@@ -201,9 +187,26 @@ const getCertificateByEnrollment = async (
 
     try {
 
+        const enrollmentId =
+            Number(req.params.enrollmentId);
+
+
+        if (
+            !Number.isInteger(enrollmentId) ||
+            enrollmentId <= 0
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Enrollment ID must be a positive integer"
+            });
+        }
+
+
         const certificate =
             await service.getCertificateByEnrollment(
-                req.params.enrollmentId
+                enrollmentId
             );
 
 
@@ -239,7 +242,7 @@ const getCertificateByEnrollment = async (
             success: false,
 
             message:
-                error.message
+                "Failed to retrieve certificate"
         });
     }
 };
@@ -257,9 +260,29 @@ const downloadCertificate = async (
 
     try {
 
+        const certificateNo =
+            req.params.certificateNo;
+
+
+        if (
+            !certificateNo ||
+            typeof certificateNo !== "string" ||
+            !certificateNo.trim()
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Certificate number is required"
+            });
+        }
+
+
         const certificate =
             await service.getCertificateByNumber(
-                req.params.certificateNo
+                certificateNo.trim()
             );
 
 
@@ -282,14 +305,29 @@ const downloadCertificate = async (
                 success: false,
 
                 message:
-                    "Certificate PDF not found"
+                    "Certificate PDF is not available"
             });
         }
 
 
-        if (!fs.existsSync(
-            certificate.pdfUrl
-        )) {
+        /*
+         * Resolve stored PDF path
+         */
+        const pdfPath =
+            path.resolve(
+                certificate.pdfUrl
+            );
+
+
+        /*
+         * Make sure PDF exists
+         */
+        if (!fs.existsSync(pdfPath)) {
+
+            console.error(
+                "Certificate PDF missing:",
+                pdfPath
+            );
 
             return res.status(404).json({
 
@@ -301,9 +339,38 @@ const downloadCertificate = async (
         }
 
 
+        /*
+         * Make sure path points to a file
+         */
+        const stats =
+            fs.statSync(pdfPath);
+
+
+        if (!stats.isFile()) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "Certificate PDF is invalid"
+            });
+        }
+
+
         return res.download(
-            certificate.pdfUrl,
-            `${certificate.certificateNo}.pdf`
+            pdfPath,
+            `${certificate.certificateNo}.pdf`,
+            (error) => {
+
+                if (error) {
+
+                    console.error(
+                        "Certificate download error:",
+                        error
+                    );
+                }
+            }
         );
 
     } catch (error) {
@@ -319,7 +386,7 @@ const downloadCertificate = async (
             success: false,
 
             message:
-                error.message
+                "Failed to download certificate"
         });
     }
 };
@@ -328,6 +395,8 @@ const downloadCertificate = async (
 /*
  * ---------------------------------------------
  * Verify Certificate
+ *
+ * Public verification endpoint.
  * ---------------------------------------------
  */
 const verifyCertificate = async (
@@ -337,23 +406,56 @@ const verifyCertificate = async (
 
     try {
 
+        const certificateNo =
+            req.params.certificateNo;
+
+
+        if (
+            !certificateNo ||
+            typeof certificateNo !== "string" ||
+            !certificateNo.trim()
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Certificate number is required"
+            });
+        }
+
+
         const result =
             await service.verifyCertificate(
-                req.params.certificateNo
+                certificateNo.trim()
             );
 
 
         if (!result.valid) {
 
-            return res.status(404).json(
-                result
-            );
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    result.message
+            });
         }
 
 
-        return res.status(200).json(
-            result
-        );
+        return res.status(200).json({
+
+            success: true,
+
+            data: {
+
+                valid: true,
+
+                certificate:
+                    result.certificate
+            }
+        });
 
     } catch (error) {
 
@@ -368,15 +470,13 @@ const verifyCertificate = async (
             success: false,
 
             message:
-                error.message
+                "Failed to verify certificate"
         });
     }
 };
 
 
 module.exports = {
-
-    generateCertificate,
 
     getCertificateEligibility,
 

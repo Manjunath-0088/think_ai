@@ -2,10 +2,34 @@ const service =
     require("../services/assessmentService");
 
 
+const isValidationError = (message) => {
+    return (
+        message.includes(
+            "must be a positive integer"
+        ) ||
+        message.includes(
+            "must be an array"
+        ) ||
+        message.includes(
+            "must be a required"
+        ) ||
+        message.includes(
+            "is required"
+        ) ||
+        message.includes(
+            "At least one answer is required"
+        )
+    );
+};
+
+
 /**
  * Create Assessment
  */
-const createAssessment = async (req, res) => {
+const createAssessment = async (
+    req,
+    res
+) => {
 
     try {
 
@@ -14,13 +38,11 @@ const createAssessment = async (req, res) => {
                 req.body
             );
 
-
         return res.status(201).json({
-
             success: true,
-
+            message:
+                "Assessment created successfully",
             data: assessment
-
         });
 
     } catch (error) {
@@ -30,13 +52,20 @@ const createAssessment = async (req, res) => {
             error
         );
 
+        if (
+            isValidationError(
+                error.message
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
 
         return res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
     }
 };
@@ -172,7 +201,10 @@ const deleteAssessment = async (req, res) => {
 /**
  * Get Assessment By ID
  */
-const getAssessmentById = async (req, res) => {
+const getAssessmentById = async (
+    req,
+    res
+) => {
 
     try {
 
@@ -181,26 +213,17 @@ const getAssessmentById = async (req, res) => {
                 req.params.id
             );
 
-
         if (!assessment) {
-
             return res.status(404).json({
-
                 success: false,
-
                 message:
                     "Assessment not found"
-
             });
         }
 
-
         return res.status(200).json({
-
             success: true,
-
             data: assessment
-
         });
 
     } catch (error) {
@@ -210,13 +233,20 @@ const getAssessmentById = async (req, res) => {
             error
         );
 
+        if (
+            error.message.includes(
+                "must be a positive integer"
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
 
         return res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
     }
 };
@@ -225,7 +255,10 @@ const getAssessmentById = async (req, res) => {
 /**
  * Submit Assessment
  */
-const submitAssessment = async (req, res) => {
+const submitAssessment = async (
+    req,
+    res
+) => {
 
     try {
 
@@ -235,13 +268,11 @@ const submitAssessment = async (req, res) => {
                 req.body
             );
 
-
         return res.status(201).json({
-
             success: true,
-
+            message:
+                "Assessment submitted successfully",
             data: submission
-
         });
 
     } catch (error) {
@@ -252,42 +283,84 @@ const submitAssessment = async (req, res) => {
         );
 
 
+        /*
+         * Invalid IDs / request data
+         */
         if (
-            error.message ===
-            "Assessment not found"
+            isValidationError(
+                error.message
+            )
         ) {
-
-            return res.status(404).json({
-
+            return res.status(400).json({
                 success: false,
-
                 message: error.message
-
             });
         }
 
 
+        /*
+         * Assessment / enrollment not found
+         */
         if (
             error.message ===
-            "Enrollment not found"
+                "Assessment not found" ||
+
+            error.message ===
+                "Enrollment not found"
         ) {
-
             return res.status(404).json({
-
                 success: false,
-
                 message: error.message
+            });
+        }
 
+
+        /*
+         * Enrollment/course/assessment
+         * business rules.
+         */
+        if (
+            error.message ===
+                "Enrollment is not active" ||
+
+            error.message ===
+                "Batch is not active" ||
+
+            error.message ===
+                "Course is not active" ||
+
+            error.message ===
+                "This assessment does not belong to the enrolled course"
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+
+        /*
+         * Invalid question/option submitted.
+         */
+        if (
+            error.message.startsWith(
+                "Question "
+            ) ||
+
+            error.message.startsWith(
+                "Invalid option for question"
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
             });
         }
 
 
         return res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
     }
 };
@@ -308,13 +381,9 @@ const getAssessmentAnalytics = async (
                 req.params.id
             );
 
-
         return res.status(200).json({
-
             success: true,
-
             data: analytics
-
         });
 
     } catch (error) {
@@ -329,27 +398,86 @@ const getAssessmentAnalytics = async (
             error.message ===
             "Assessment not found"
         ) {
-
             return res.status(404).json({
-
                 success: false,
-
                 message: error.message
+            });
+        }
 
+
+        if (
+            error.message.includes(
+                "must be a positive integer"
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
             });
         }
 
 
         return res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
     }
 };
 
+/**
+ * Get Assessment Submission Result
+ */
+const getAssessmentSubmissionResult = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const result =
+            await service.getAssessmentSubmissionResult(
+                req.params.submissionId
+            );
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Get assessment submission result error:",
+            error
+        );
+
+        if (
+            error.message.includes(
+                "must be a positive integer"
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        if (
+            error.message ===
+            "Assessment submission not found"
+        ) {
+            return res.status(404).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
 
 /**
  * Get Assessment Submissions

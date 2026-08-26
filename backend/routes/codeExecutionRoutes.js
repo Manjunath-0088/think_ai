@@ -8,6 +8,10 @@ const {
 } = require("../controllers/codeExecutionController");
 
 const {
+    getAssessmentSubmissionResult
+} = require("../controllers/assessmentController");
+
+const {
     validateCodeExecution
 } = require("../validations/codeExecutionValidation");
 
@@ -45,17 +49,14 @@ const {
  *                 type: string
  *                 example: javascript
  *                 description: Programming language
- *
  *               code:
  *                 type: string
  *                 example: console.log("Hello World");
  *                 description: Source code to execute
- *
  *               stdin:
  *                 type: string
  *                 example: ""
  *                 description: Standard input for the program
- *
  *               submissionId:
  *                 type: integer
  *                 example: 1
@@ -64,13 +65,10 @@ const {
  *     responses:
  *       201:
  *         description: Code submission created successfully
- *
  *       400:
  *         description: Invalid code execution request
- *
  *       502:
  *         description: Judge0 execution service failed
- *
  *       503:
  *         description: Judge0 is not configured
  */
@@ -135,6 +133,41 @@ router.post(
 router.put(
     "/callback",
     gradingCallback
+);
+
+
+/**
+ * @swagger
+ * /api/code/submissions/{submissionId}:
+ *   get:
+ *     summary: Get code execution result
+ *     description: Returns the Judge0 execution result and assessment submission status.
+ *     tags: [Code Execution]
+ *     parameters:
+ *       - in: path
+ *         name: submissionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *         description: Assessment submission ID
+ *
+ *     responses:
+ *       200:
+ *         description: Code execution result retrieved successfully
+ *
+ *       400:
+ *         description: Invalid submission ID
+ *
+ *       404:
+ *         description: Assessment submission not found
+ *
+ *       500:
+ *         description: Failed to get assessment submission result
+ */
+router.get(
+    "/submissions/:submissionId",
+    getAssessmentSubmissionResult
 );
 
 

@@ -2,6 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
+
 const {
     getCourses,
     getCourseById,
@@ -13,7 +14,6 @@ const {
 } = require("../controllers/courseController");
 
 
-// Course validations
 const {
     validateCourseCreate,
     validateCourseUpdate,
@@ -36,10 +36,56 @@ const {
 
 /**
  * @swagger
+ * /api/courses:
+ *   get:
+ *     summary: Get all courses
+ *     description: Returns paginated courses with optional title search.
+ *     tags: [Courses]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         example: 1
+ *
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         example: 10
+ *
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *         example: Java
+ *
+ *     responses:
+ *       200:
+ *         description: Courses retrieved successfully
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+    "/",
+    getCourses
+);
+
+
+/**
+ * @swagger
  * /api/courses/{courseId}/content:
  *   get:
  *     summary: Get complete course content
- *     description: Get course details including thumbnail, course video, instructor details, modules and lessons with lesson videos.
+ *     description: Returns course details including modules and lessons.
  *     tags: [Courses]
  *     parameters:
  *       - in: path
@@ -47,7 +93,9 @@ const {
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         example: 1
+ *
  *     responses:
  *       200:
  *         description: Course content retrieved successfully
@@ -67,66 +115,32 @@ router.get(
 
 /**
  * @swagger
- * /api/courses:
+ * /api/courses/{courseId}/batches:
  *   get:
- *     summary: Get all courses
- *     tags: [Courses]
- *     parameters:
- *       - in: query
- *         name: page
- *         required: false
- *         schema:
- *           type: integer
- *           default: 1
- *         example: 1
- *       - in: query
- *         name: limit
- *         required: false
- *         schema:
- *           type: integer
- *           default: 10
- *         example: 10
- *       - in: query
- *         name: search
- *         required: false
- *         schema:
- *           type: string
- *         example: Node
- *     responses:
- *       200:
- *         description: List of courses
- */
-router.get(
-    "/",
-    getCourses
-);
-
-
-/**
- * @swagger
- * /api/courses/{id}:
- *   get:
- *     summary: Get course by ID
+ *     summary: Get all batches of a course
+ *     description: Returns all batches belonging to the specified course.
  *     tags: [Courses]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: courseId
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         example: 1
+ *
  *     responses:
  *       200:
- *         description: Course found
+ *         description: Course batches retrieved successfully
  *       400:
  *         description: Invalid course ID
- *       404:
- *         description: Course not found
+ *       500:
+ *         description: Internal server error
  */
 router.get(
-    "/:id",
-    validateCourseId,
-    getCourseById
+    "/:courseId/batches",
+    validateCourseParamId,
+    getCourseBatches
 );
 
 
@@ -136,6 +150,7 @@ router.get(
  *   post:
  *     summary: Create a new course
  *     tags: [Courses]
+ *
  *     requestBody:
  *       required: true
  *       content:
@@ -160,25 +175,37 @@ router.get(
  *                 example: Backend
  *               price:
  *                 type: number
+ *                 minimum: 0
  *                 example: 4999
  *               duration:
  *                 type: string
  *                 example: 60 Hours
  *               thumbnail:
  *                 type: string
+ *                 format: uri
+ *                 nullable: true
  *                 example: https://example.com/node-thumbnail.jpg
  *               videoUrl:
  *                 type: string
- *                 example: https://example.com/node-course-intro.mp4
+ *                 format: uri
+ *                 nullable: true
+ *                 example: https://example.com/node-course.mp4
  *               instructorName:
  *                 type: string
+ *                 nullable: true
  *                 example: John Doe
  *               instructorDetails:
  *                 type: string
- *                 example: Senior Backend Developer with 8 years of experience
+ *                 nullable: true
+ *                 example: Senior Backend Developer
  *               status:
  *                 type: string
+ *                 enum:
+ *                   - ACTIVE
+ *                   - INACTIVE
+ *                 default: ACTIVE
  *                 example: ACTIVE
+ *
  *     responses:
  *       201:
  *         description: Course created successfully
@@ -197,8 +224,8 @@ router.post(
 /**
  * @swagger
  * /api/courses/{id}:
- *   put:
- *     summary: Update course
+ *   get:
+ *     summary: Get course by ID
  *     tags: [Courses]
  *     parameters:
  *       - in: path
@@ -206,7 +233,42 @@ router.post(
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         example: 1
+ *
+ *     responses:
+ *       200:
+ *         description: Course found
+ *       400:
+ *         description: Invalid course ID
+ *       404:
+ *         description: Course not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+    "/:id",
+    validateCourseId,
+    getCourseById
+);
+
+
+/**
+ * @swagger
+ * /api/courses/{id}:
+ *   put:
+ *     summary: Update course
+ *     tags: [Courses]
+ *
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         example: 1
+ *
  *     requestBody:
  *       required: true
  *       content:
@@ -225,25 +287,31 @@ router.post(
  *                 example: Backend
  *               price:
  *                 type: number
+ *                 minimum: 0
  *                 example: 5999
  *               duration:
  *                 type: string
  *                 example: 70 Hours
  *               thumbnail:
  *                 type: string
- *                 example: https://example.com/node-new-thumbnail.jpg
+ *                 format: uri
+ *                 nullable: true
  *               videoUrl:
  *                 type: string
- *                 example: https://example.com/node-course-new-intro.mp4
+ *                 format: uri
+ *                 nullable: true
  *               instructorName:
  *                 type: string
- *                 example: Jane Smith
+ *                 nullable: true
  *               instructorDetails:
  *                 type: string
- *                 example: Full Stack Developer with 10 years of experience
+ *                 nullable: true
  *               status:
  *                 type: string
- *                 example: ACTIVE
+ *                 enum:
+ *                   - ACTIVE
+ *                   - INACTIVE
+ *
  *     responses:
  *       200:
  *         description: Course updated successfully
@@ -268,13 +336,16 @@ router.put(
  *   delete:
  *     summary: Delete course
  *     tags: [Courses]
+ *
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         example: 1
+ *
  *     responses:
  *       200:
  *         description: Course deleted successfully
@@ -282,39 +353,15 @@ router.put(
  *         description: Invalid course ID
  *       404:
  *         description: Course not found
+ *       409:
+ *         description: Course has related records
+ *       500:
+ *         description: Internal server error
  */
 router.delete(
     "/:id",
     validateCourseId,
     deleteCourse
-);
-
-
-/**
- * @swagger
- * /api/courses/{courseId}/batches:
- *   get:
- *     summary: Get all batches of a course
- *     tags: [Courses]
- *     parameters:
- *       - in: path
- *         name: courseId
- *         required: true
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         description: List of batches
- *       400:
- *         description: Invalid course ID
- *       404:
- *         description: Course not found
- */
-router.get(
-    "/:courseId/batches",
-    validateCourseParamId,
-    getCourseBatches
 );
 
 

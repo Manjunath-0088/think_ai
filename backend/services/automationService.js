@@ -8,105 +8,85 @@ const certificateService =
     require("./certificateService");
 
 
+const validateEnrollmentId = (value) => {
+
+    const enrollmentId = Number(value);
+
+    if (
+        !Number.isInteger(enrollmentId) ||
+        enrollmentId <= 0
+    ) {
+        throw new Error(
+            "Enrollment ID must be a positive integer"
+        );
+    }
+
+    return enrollmentId;
+};
+
+
 const processLessonCompletion = async (enrollmentId) => {
 
-    enrollmentId = Number(enrollmentId);
+    const id = validateEnrollmentId(enrollmentId);
 
 
     /*
-     * ---------------------------------------------
-     * 1. Get lesson progress
-     * ---------------------------------------------
+     * 1. Get current course progress
      */
-
     const summary =
-        await lessonProgressRepository.getProgressSummary(
-            enrollmentId
-        );
+        await lessonProgressRepository.getProgressSummary(id);
 
 
     const {
         totalLessons,
-        completedLessons
+        completedLessons,
+        completionPercentage
     } = summary;
 
 
-    const completionPercentage =
-        totalLessons === 0
-            ? 0
-            : Number(
-                (
-                    (completedLessons / totalLessons) *
-                    100
-                ).toFixed(2)
-            );
-
-
     /*
-     * ---------------------------------------------
-     * 2. Course completion must be >= 80%
-     * ---------------------------------------------
+     * 2. Course completion requirement
      */
-
     if (completionPercentage < 80) {
 
         return {
             triggered: false,
+            action: "COURSE_IN_PROGRESS",
 
-            action:
-                "COURSE_IN_PROGRESS",
-
-            enrollmentId,
+            enrollmentId: id,
 
             totalLessons,
-
             completedLessons,
-
             completionPercentage
         };
     }
 
 
     /*
-     * ---------------------------------------------
-     * 3. Check assessments
-     *
-     * Every assessment must be passed.
-     * Passing percentage = 40%
-     * ---------------------------------------------
+     * 3. Check assessment requirements
      */
-
     const assessmentStatus =
-        await assessmentService
-            .getEnrollmentAssessmentStatus(
-                enrollmentId
-            );
+        await assessmentService.getEnrollmentAssessmentStatus(
+            id
+        );
 
 
     /*
-     * ---------------------------------------------
      * 4. Assessment requirement not satisfied
-     * ---------------------------------------------
      */
-
     if (!assessmentStatus.allPassed) {
 
         return {
             triggered: false,
+            action: "ASSESSMENTS_PENDING",
 
-            action:
-                "ASSESSMENTS_PENDING",
-
-            enrollmentId,
+            enrollmentId: id,
 
             totalLessons,
-
             completedLessons,
-
             completionPercentage,
 
             assessments: {
-
                 total:
                     assessmentStatus.totalAssessments,
 
@@ -124,43 +104,30 @@ const processLessonCompletion = async (enrollmentId) => {
 
 
     /*
-     * ---------------------------------------------
-     * 5. Both conditions satisfied
+     * 5. All requirements satisfied.
      *
-     * Course completion >= 80%
-     * All assessments >= 40%
-     * ---------------------------------------------
+     * Certificate service must handle
+     * duplicate certificate prevention.
      */
-
     const certificate =
-        await certificateService.generateCertificate(
-            enrollmentId
-        );
+        await certificateService.generateCertificate(id);
 
 
     /*
-     * ---------------------------------------------
      * 6. Certificate generated
-     * ---------------------------------------------
      */
-
     return {
-
         triggered: true,
 
-        action:
-            "CERTIFICATE_GENERATED",
+        action: "CERTIFICATE_GENERATED",
 
-        enrollmentId,
+        enrollmentId: id,
 
         totalLessons,
-
         completedLessons,
-
         completionPercentage,
 
         assessments: {
-
             total:
                 assessmentStatus.totalAssessments,
 
@@ -175,9 +142,7 @@ const processLessonCompletion = async (enrollmentId) => {
         },
 
         certificate: {
-
-            id:
-                certificate.id,
+            id: certificate.id,
 
             certificateNo:
                 certificate.certificateNo,

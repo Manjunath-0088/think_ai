@@ -1,116 +1,66 @@
-const validateBatchCreate = (req, res, next) => {
+/*
+ * ----------------------------------------------------
+ * Validation helpers
+ * ----------------------------------------------------
+ */
 
-    const {
-        name,
-        courseId,
-        instructorName,
-        capacity,
-        startDate,
-        endDate
-    } = req.body;
+const VALID_STATUSES = new Set([
+    "ACTIVE",
+    "INACTIVE"
+]);
 
-    const errors = [];
 
-    // Validate name
-    if (
-        !name ||
-        typeof name !== "string" ||
-        !name.trim()
-    ) {
-        errors.push("name is required");
-    }
+const isPositiveInteger = (value) => {
 
-    // Validate courseId
-    if (
-        !Number.isInteger(Number(courseId)) ||
-        Number(courseId) <= 0
-    ) {
-        errors.push(
-            "courseId must be a positive integer"
-        );
-    }
+    const number = Number(value);
 
-    // Validate instructorName
-    if (
-        !instructorName ||
-        typeof instructorName !== "string" ||
-        !instructorName.trim()
-    ) {
-        errors.push(
-            "instructorName is required"
-        );
-    }
-
-    // Validate capacity
-    if (
-        !Number.isInteger(Number(capacity)) ||
-        Number(capacity) <= 0
-    ) {
-        errors.push(
-            "capacity must be a positive integer"
-        );
-    }
-
-    // Validate startDate
-    const start = new Date(startDate);
-
-    if (
-        !startDate ||
-        isNaN(start.getTime())
-    ) {
-        errors.push(
-            "startDate must be a valid date"
-        );
-    }
-
-    // Validate endDate
-    const end = new Date(endDate);
-
-    if (
-        !endDate ||
-        isNaN(end.getTime())
-    ) {
-        errors.push(
-            "endDate must be a valid date"
-        );
-    }
-
-    // Validate date order
-    if (
-        !isNaN(start.getTime()) &&
-        !isNaN(end.getTime()) &&
-        start >= end
-    ) {
-        errors.push(
-            "startDate must be before endDate"
-        );
-    }
-
-    // Validate status
-    if (
-        req.body.status !== undefined &&
-        !["ACTIVE", "INACTIVE"].includes(
-            req.body.status
-        )
-    ) {
-        errors.push(
-            "status must be either ACTIVE or INACTIVE"
-        );
-    }
-
-    if (errors.length > 0) {
-        return res.status(400).json({
-            success: false,
-            message: "Batch validation failed",
-            errors
-        });
-    }
-
-    next();
+    return (
+        Number.isInteger(number) &&
+        number > 0
+    );
 };
 
 
-const validateBatchUpdate = (req, res, next) => {
+const isNonEmptyString = (value) => {
+
+    return (
+        typeof value === "string" &&
+        value.trim().length > 0
+    );
+};
+
+
+const parseValidDate = (value) => {
+
+    if (
+        value === undefined ||
+        value === null ||
+        value === ""
+    ) {
+        return null;
+    }
+
+    const date = new Date(value);
+
+    return Number.isNaN(
+        date.getTime()
+    )
+        ? null
+        : date;
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Validate batch creation
+ * ----------------------------------------------------
+ */
+
+const validateBatchCreate = (
+    req,
+    res,
+    next
+) => {
 
     const {
         name,
@@ -122,181 +72,460 @@ const validateBatchUpdate = (req, res, next) => {
         status
     } = req.body;
 
+
     const errors = [];
 
-    // Validate name
-    if (
-        name !== undefined &&
-        (
-            typeof name !== "string" ||
-            !name.trim()
-        )
-    ) {
+
+    /*
+     * Batch name
+     */
+
+    if (!isNonEmptyString(name)) {
+
         errors.push(
-            "name must be a non-empty string"
+            "name is required"
         );
     }
 
-    // Validate courseId
+
+    /*
+     * Course ID
+     */
+
     if (
-        courseId !== undefined &&
-        (
-            !Number.isInteger(Number(courseId)) ||
-            Number(courseId) <= 0
-        )
+        !isPositiveInteger(courseId)
     ) {
+
         errors.push(
             "courseId must be a positive integer"
         );
     }
 
-    // Validate instructorName
-    if (
-        instructorName !== undefined &&
-        (
-            typeof instructorName !== "string" ||
-            !instructorName.trim()
-        )
-    ) {
+
+    /*
+     * Instructor
+     */
+
+    if (!isNonEmptyString(instructorName)) {
+
         errors.push(
-            "instructorName must be a non-empty string"
+            "instructorName is required"
         );
     }
 
-    // Validate capacity
+
+    /*
+     * Capacity
+     */
+
     if (
-        capacity !== undefined &&
-        (
-            !Number.isInteger(Number(capacity)) ||
-            Number(capacity) <= 0
-        )
+        !isPositiveInteger(capacity)
     ) {
+
         errors.push(
             "capacity must be a positive integer"
         );
     }
 
-    // Validate startDate
-    if (
-        startDate !== undefined &&
-        isNaN(new Date(startDate).getTime())
-    ) {
+
+    /*
+     * Start date
+     */
+
+    const start =
+        parseValidDate(startDate);
+
+
+    if (!start) {
+
         errors.push(
             "startDate must be a valid date"
         );
     }
 
-    // Validate endDate
-    if (
-        endDate !== undefined &&
-        isNaN(new Date(endDate).getTime())
-    ) {
+
+    /*
+     * End date
+     */
+
+    const end =
+        parseValidDate(endDate);
+
+
+    if (!end) {
+
         errors.push(
             "endDate must be a valid date"
         );
     }
 
-    // Validate date order
+
+    /*
+     * Date relationship
+     */
+
     if (
-        startDate !== undefined &&
-        endDate !== undefined &&
-        !isNaN(new Date(startDate).getTime()) &&
-        !isNaN(new Date(endDate).getTime()) &&
-        new Date(startDate) >= new Date(endDate)
+        start &&
+        end &&
+        start >= end
     ) {
+
         errors.push(
             "startDate must be before endDate"
         );
     }
 
-    // Validate status
+
+    /*
+     * Status
+     */
+
     if (
         status !== undefined &&
-        !["ACTIVE", "INACTIVE"].includes(status)
+        !VALID_STATUSES.has(status)
     ) {
+
         errors.push(
             "status must be either ACTIVE or INACTIVE"
         );
     }
 
+
+    /*
+     * Return validation errors
+     */
+
     if (errors.length > 0) {
+
         return res.status(400).json({
+
             success: false,
-            message: "Batch validation failed",
+
+            message:
+                "Batch validation failed",
+
             errors
         });
     }
+
 
     next();
 };
 
 
-// Validate /batches/:id
-const validateBatchId = (req, res, next) => {
+/*
+ * ----------------------------------------------------
+ * Validate batch update
+ * ----------------------------------------------------
+ *
+ * All fields are optional.
+ * At least one field must be supplied.
+ * ----------------------------------------------------
+ */
 
-    const id = Number(req.params.id);
+const validateBatchUpdate = (
+    req,
+    res,
+    next
+) => {
+
+    const {
+        name,
+        courseId,
+        instructorName,
+        capacity,
+        startDate,
+        endDate,
+        status
+    } = req.body;
+
+
+    const errors = [];
+
+
+    /*
+     * Empty body
+     */
 
     if (
-        !Number.isInteger(id) ||
-        id <= 0
+        !req.body ||
+        typeof req.body !== "object" ||
+        Array.isArray(req.body) ||
+        Object.keys(req.body).length === 0
     ) {
+
         return res.status(400).json({
+
             success: false,
+
+            message:
+                "At least one field is required for update"
+        });
+    }
+
+
+    /*
+     * Batch name
+     */
+
+    if (
+        name !== undefined &&
+        !isNonEmptyString(name)
+    ) {
+
+        errors.push(
+            "name must be a non-empty string"
+        );
+    }
+
+
+    /*
+     * Course ID
+     */
+
+    if (
+        courseId !== undefined &&
+        !isPositiveInteger(courseId)
+    ) {
+
+        errors.push(
+            "courseId must be a positive integer"
+        );
+    }
+
+
+    /*
+     * Instructor
+     */
+
+    if (
+        instructorName !== undefined &&
+        instructorName !== null &&
+        !isNonEmptyString(instructorName)
+    ) {
+
+        errors.push(
+            "instructorName must be a non-empty string"
+        );
+    }
+
+
+    /*
+     * Capacity
+     */
+
+    if (
+        capacity !== undefined &&
+        !isPositiveInteger(capacity)
+    ) {
+
+        errors.push(
+            "capacity must be a positive integer"
+        );
+    }
+
+
+    /*
+     * Start date
+     */
+
+    let start = null;
+
+    if (startDate !== undefined) {
+
+        start =
+            parseValidDate(startDate);
+
+
+        if (!start) {
+
+            errors.push(
+                "startDate must be a valid date"
+            );
+        }
+    }
+
+
+    /*
+     * End date
+     */
+
+    let end = null;
+
+    if (endDate !== undefined) {
+
+        end =
+            parseValidDate(endDate);
+
+
+        if (!end) {
+
+            errors.push(
+                "endDate must be a valid date"
+            );
+        }
+    }
+
+
+    /*
+     * Validate date order when
+     * both are supplied.
+     */
+
+    if (
+        start &&
+        end &&
+        start >= end
+    ) {
+
+        errors.push(
+            "startDate must be before endDate"
+        );
+    }
+
+
+    /*
+     * Status
+     */
+
+    if (
+        status !== undefined &&
+        !VALID_STATUSES.has(status)
+    ) {
+
+        errors.push(
+            "status must be either ACTIVE or INACTIVE"
+        );
+    }
+
+
+    /*
+     * Return validation errors
+     */
+
+    if (errors.length > 0) {
+
+        return res.status(400).json({
+
+            success: false,
+
+            message:
+                "Batch validation failed",
+
+            errors
+        });
+    }
+
+
+    next();
+};
+
+
+/*
+ * ----------------------------------------------------
+ * Validate batch ID
+ * ----------------------------------------------------
+ */
+
+const validateBatchId = (
+    req,
+    res,
+    next
+) => {
+
+    if (
+        !isPositiveInteger(
+            req.params.id
+        )
+    ) {
+
+        return res.status(400).json({
+
+            success: false,
+
             message:
                 "Batch ID must be a positive integer"
         });
     }
 
+
     next();
 };
 
 
-// Validate /batches/:courseId
-const validateBatchCourseId = (req, res, next) => {
+/*
+ * ----------------------------------------------------
+ * Validate course ID
+ * ----------------------------------------------------
+ */
 
-    const courseId =
-        Number(req.params.courseId);
+const validateBatchCourseId = (
+    req,
+    res,
+    next
+) => {
 
     if (
-        !Number.isInteger(courseId) ||
-        courseId <= 0
+        !isPositiveInteger(
+            req.params.courseId
+        )
     ) {
+
         return res.status(400).json({
+
             success: false,
+
             message:
                 "Course ID must be a positive integer"
         });
     }
 
+
     next();
 };
 
 
-// Validate /batches/:batchId/enrollments
-const validateBatchEnrollmentId = (req, res, next) => {
+/*
+ * ----------------------------------------------------
+ * Validate batch enrollment ID
+ * ----------------------------------------------------
+ */
 
-    const batchId =
-        Number(req.params.batchId);
+const validateBatchEnrollmentId = (
+    req,
+    res,
+    next
+) => {
 
     if (
-        !Number.isInteger(batchId) ||
-        batchId <= 0
+        !isPositiveInteger(
+            req.params.batchId
+        )
     ) {
+
         return res.status(400).json({
+
             success: false,
+
             message:
                 "Batch ID must be a positive integer"
         });
     }
+
 
     next();
 };
 
 
 module.exports = {
+
     validateBatchCreate,
+
     validateBatchUpdate,
+
     validateBatchId,
+
     validateBatchCourseId,
+
     validateBatchEnrollmentId
 };

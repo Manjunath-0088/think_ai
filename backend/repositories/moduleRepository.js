@@ -1,35 +1,100 @@
-const prisma = require("../config/database");
+const prisma =
+    require("../config/database");
 
 
+/*
+ * Common lesson selection
+ *
+ * Prevents unnecessary fields from
+ * being returned from the database.
+ */
+const lessonSelect = {
+
+    id: true,
+
+    title: true,
+
+    description: true,
+
+    content: true,
+
+    videoUrl: true,
+
+    duration: true,
+
+    order: true,
+
+    moduleId: true,
+
+    createdAt: true,
+
+    updatedAt: true
+};
+
+
+/*
+ * Common course selection
+ */
+const courseSelect = {
+
+    id: true,
+
+    title: true,
+
+    status: true
+};
+
+
+/*
+ * Get all modules
+ */
 const getAllModules = async () => {
 
     return await prisma.module.findMany({
 
-        include: {
-
-            lessons: {
-                orderBy: {
-                    order: "asc"
-                }
-            },
-
-            course: {
-                select: {
-                    id: true,
-                    title: true
-                }
-            }
-        },
-
         orderBy: {
             id: "asc"
+        },
+
+        select: {
+
+            id: true,
+
+            title: true,
+
+            description: true,
+
+            courseId: true,
+
+            createdAt: true,
+
+            updatedAt: true,
+
+            course: {
+                select: courseSelect
+            },
+
+            lessons: {
+
+                orderBy: [
+                    {
+                        order: "asc"
+                    },
+                    {
+                        id: "asc"
+                    }
+                ],
+
+                select: lessonSelect
+            }
         }
-
     });
-
 };
 
 
+/*
+ * Get module by ID
+ */
 const getModuleById = async (id) => {
 
     return await prisma.module.findUnique({
@@ -38,24 +103,49 @@ const getModuleById = async (id) => {
             id
         },
 
-        include: {
+        select: {
 
-            lessons: {
-                orderBy: {
-                    order: "asc"
-                }
+            id: true,
+
+            title: true,
+
+            description: true,
+
+            courseId: true,
+
+            createdAt: true,
+
+            updatedAt: true,
+
+            course: {
+                select: courseSelect
             },
 
-            course: true
+            lessons: {
 
+                orderBy: [
+                    {
+                        order: "asc"
+                    },
+                    {
+                        id: "asc"
+                    }
+                ],
+
+                select: lessonSelect
+            }
         }
-
     });
-
 };
 
 
-const getModulesByCourseId = async (courseId) => {
+/*
+ * Get all modules belonging
+ * to a course
+ */
+const getModulesByCourseId = async (
+    courseId
+) => {
 
     return await prisma.module.findMany({
 
@@ -63,35 +153,80 @@ const getModulesByCourseId = async (courseId) => {
             courseId
         },
 
-        include: {
-
-            lessons: {
-                orderBy: {
-                    order: "asc"
-                }
-            }
-
-        },
-
         orderBy: {
             id: "asc"
+        },
+
+        select: {
+
+            id: true,
+
+            title: true,
+
+            description: true,
+
+            courseId: true,
+
+            createdAt: true,
+
+            updatedAt: true,
+
+            lessons: {
+
+                orderBy: [
+                    {
+                        order: "asc"
+                    },
+                    {
+                        id: "asc"
+                    }
+                ],
+
+                select: lessonSelect
+            }
         }
-
     });
-
 };
 
 
+/*
+ * Create module
+ */
 const createModule = async (data) => {
 
     return await prisma.module.create({
-        data
-    });
 
+        data,
+
+        select: {
+
+            id: true,
+
+            title: true,
+
+            description: true,
+
+            courseId: true,
+
+            createdAt: true,
+
+            updatedAt: true,
+
+            course: {
+                select: courseSelect
+            }
+        }
+    });
 };
 
 
-const updateModule = async (id, data) => {
+/*
+ * Update module
+ */
+const updateModule = async (
+    id,
+    data
+) => {
 
     return await prisma.module.update({
 
@@ -99,13 +234,33 @@ const updateModule = async (id, data) => {
             id
         },
 
-        data
+        data,
 
+        select: {
+
+            id: true,
+
+            title: true,
+
+            description: true,
+
+            courseId: true,
+
+            createdAt: true,
+
+            updatedAt: true,
+
+            course: {
+                select: courseSelect
+            }
+        }
     });
-
 };
 
 
+/*
+ * Delete module
+ */
 const deleteModule = async (id) => {
 
     return await prisma.module.delete({
@@ -113,19 +268,21 @@ const deleteModule = async (id) => {
         where: {
             id
         }
-
     });
-
 };
 
 
 module.exports = {
 
     getAllModules,
-    getModuleById,
-    getModulesByCourseId,
-    createModule,
-    updateModule,
-    deleteModule
 
+    getModuleById,
+
+    getModulesByCourseId,
+
+    createModule,
+
+    updateModule,
+
+    deleteModule
 };

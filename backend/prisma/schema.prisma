@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ====================================================
+// COURSE
+// ====================================================
+
 model Course {
   id                Int     @id @default(autoincrement())
   title             String
@@ -25,7 +29,14 @@ model Course {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
 }
+
+// ====================================================
+// BATCH
+// ====================================================
 
 model Batch {
   id   Int    @id @default(autoincrement())
@@ -44,7 +55,15 @@ model Batch {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([status])
+  @@index([startDate])
 }
+
+// ====================================================
+// ENROLLMENT
+// ====================================================
 
 model Enrollment {
   id               Int      @id @default(autoincrement())
@@ -53,13 +72,43 @@ model Enrollment {
   batchId          Int
   batch            Batch    @relation(fields: [batchId], references: [id])
   enrollmentStatus String   @default("ENROLLED")
-  courseAccess     Boolean  @default(false)
   enrolledAt       DateTime @default(now())
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  hashedPassword String
+  role           String   @default("USER")
+  createdAt      DateTime @default(now())
+}
+  id           Int    @id @default(autoincrement())
+  studentName  String
+  studentEmail String
+  batchId      Int
+
+  batch Batch @relation(fields: [batchId], references: [id])
+
+  enrollmentStatus String @default("ENROLLED")
+
+  // Course access is unlocked after successful payment verification.
+  courseAccess Boolean @default(false)
+
+  enrolledAt DateTime @default(now())
 
   lessonProgress        LessonProgress[]
   assessmentSubmissions AssessmentSubmission[]
   certificate           Certificate?
+
+  @@index([batchId])
+  @@index([studentEmail])
+  @@index([enrollmentStatus])
+  @@index([courseAccess])
 }
+
+// ====================================================
+// AUDIT LOG
+// ====================================================
 
 model AuditLog {
   id         String   @id @default(uuid())
@@ -69,7 +118,15 @@ model AuditLog {
   targetId   String?
   metadata   Json?
   createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }
+
+// ====================================================
+// MODULE
+// ====================================================
 
 model Module {
   id          Int     @id @default(autoincrement())
@@ -84,7 +141,13 @@ model Module {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courseId])
 }
+
+// ====================================================
+// LESSON
+// ====================================================
 
 model Lesson {
   id          Int     @id @default(autoincrement())
@@ -102,7 +165,14 @@ model Lesson {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([moduleId])
+  @@index([moduleId, order])
 }
+
+// ====================================================
+// LESSON PROGRESS
+// ====================================================
 
 model LessonProgress {
   id Int @id @default(autoincrement())
@@ -120,7 +190,13 @@ model LessonProgress {
   updatedAt DateTime @updatedAt
 
   @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId])
+  @@index([lessonId])
 }
+
+// ====================================================
+// CERTIFICATE
+// ====================================================
 
 model Certificate {
   id            Int    @id @default(autoincrement())
@@ -143,6 +219,10 @@ model Certificate {
   updatedAt DateTime @updatedAt
 }
 
+// ====================================================
+// ASSESSMENT
+// ====================================================
+
 model Assessment {
   id          Int     @id @default(autoincrement())
   title       String
@@ -159,7 +239,14 @@ model Assessment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([moduleId])
+  @@index([status])
 }
+
+// ====================================================
+// QUESTION
+// ====================================================
 
 model Question {
   id           Int    @id @default(autoincrement())
@@ -176,7 +263,14 @@ model Question {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([assessmentId])
+  @@index([assessmentId, order])
 }
+
+// ====================================================
+// OPTION
+// ====================================================
 
 model Option {
   id         Int     @id @default(autoincrement())
@@ -187,7 +281,13 @@ model Option {
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+
+  @@index([questionId])
 }
+
+// ====================================================
+// ASSESSMENT SUBMISSION
+// ====================================================
 
 model AssessmentSubmission {
   id Int @id @default(autoincrement())
@@ -198,19 +298,23 @@ model AssessmentSubmission {
   enrollmentId Int
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
-  judge0Token String? @unique
+  // Judge0 integration
+  judge0Token  String? @unique
+  judge0Status String?
 
-  judge0Status  String?
   stdout        String?
   stderr        String?
   compileOutput String?
+
   executionTime String?
   memory        Int?
 
+  // Assessment result
   score      Float?
   totalMarks Int
   percentage Float?
-  status     String @default("SUBMITTED")
+
+  status String @default("SUBMITTED")
 
   submittedAt DateTime @default(now())
 
@@ -218,7 +322,15 @@ model AssessmentSubmission {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([assessmentId])
+  @@index([enrollmentId])
+  @@index([status])
 }
+
+// ====================================================
+// SUBMISSION ANSWER
+// ====================================================
 
 model SubmissionAnswer {
   id Int @id @default(autoincrement())
@@ -229,10 +341,14 @@ model SubmissionAnswer {
   questionId Int
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
+  // MCQ
   selectedOptionId Int?
-  answerText       String?
-  code             String?
 
+  // Coding / descriptive answers
+  answerText String?
+  code       String?
+
+  // Evaluation result
   isCorrect     Boolean?
   marksObtained Float?
 
@@ -240,4 +356,5 @@ model SubmissionAnswer {
   updatedAt DateTime @updatedAt
 
   @@unique([submissionId, questionId])
+  @@index([questionId])
 }

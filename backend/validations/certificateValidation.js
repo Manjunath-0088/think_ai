@@ -1,3 +1,6 @@
+/*
+ * Validate enrollment ID used for certificate operations
+ */
 const validateCertificateEnrollmentId = (
     req,
     res,
@@ -22,6 +25,9 @@ const validateCertificateEnrollmentId = (
 };
 
 
+/*
+ * Validate certificate number
+ */
 const validateCertificateNumber = (
     req,
     res,
@@ -32,7 +38,6 @@ const validateCertificateNumber = (
         req.params.certificateNo;
 
     if (
-        !certificateNo ||
         typeof certificateNo !== "string" ||
         !certificateNo.trim()
     ) {
@@ -40,6 +45,21 @@ const validateCertificateNumber = (
             success: false,
             message:
                 "Certificate number is required"
+        });
+    }
+
+
+    /*
+     * Prevent unnecessarily large
+     * certificate-number requests.
+     */
+    if (
+        certificateNo.trim().length > 100
+    ) {
+        return res.status(400).json({
+            success: false,
+            message:
+                "Certificate number is too long"
         });
     }
 

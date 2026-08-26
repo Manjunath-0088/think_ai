@@ -7,7 +7,10 @@ const repository =
  */
 const getEnrollmentTrends = async () => {
 
-    return await repository.getEnrollmentTrends();
+    const trends =
+        await repository.getEnrollmentTrends();
+
+    return trends;
 };
 
 
@@ -16,11 +19,16 @@ const getEnrollmentTrends = async () => {
  */
 const getCourseCompletionRates = async () => {
 
-    return await repository.getCourseCompletionRates();
+    const completionRates =
+        await repository.getCourseCompletionRates();
+
+    return completionRates;
 };
 
 
 module.exports = {
+
     getEnrollmentTrends,
+
     getCourseCompletionRates
 };
