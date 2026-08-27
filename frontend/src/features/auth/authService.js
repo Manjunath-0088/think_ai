@@ -1,3 +1,5 @@
+import { selectUser } from '../../features/auth/authSlice';
+
 let MOCK_USERS = [
   { id: 1, name: 'Test Learner', email: 'learner@test.com', password: '123456', role: 'Learner' },
   { id: 2, name: 'Test Instructor', email: 'instructor@test.com', password: '123456', role: 'Instructor' },
@@ -60,4 +62,22 @@ export const updateProfileApi = (userId, updates) => {
 }
 
 export const logoutApi = () => Promise.resolve({ data: { message: 'Logged out' } })
-export const getCurrentUserApi = () => Promise.resolve({ data: { user: null } })
+
+export const getCurrentUserApi = (token) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (!token) {
+        reject({ response: { data: { message: 'No token' } } });
+        return;
+      }
+      const role = token.replace('mock-jwt-token-', '');
+      const match = MOCK_USERS.find((u) => u.role === role);
+      if (!match) {
+        reject({ response: { data: { message: 'User not found' } } });
+        return;
+      }
+      const { password, ...user } = match;
+      resolve({ data: { user } });
+    }, 300);
+  });
+};

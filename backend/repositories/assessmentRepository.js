@@ -79,6 +79,98 @@ const createAssessment = async (data) => {
     });
 };
 
+const getAllAssessments = async (moduleId) => {
+    const where = {};
+
+    if (moduleId) {
+        where.moduleId = Number(moduleId);
+    }
+
+    return await prisma.assessment.findMany({
+        where,
+        include: {
+            questions: {
+                include: {
+                    options: true
+                },
+                orderBy: {
+                    order: "asc"
+                }
+            }
+        },
+        orderBy: {
+            id: "asc"
+        }
+    });
+};
+
+const updateAssessment = async (id, data) => {
+
+    return await prisma.$transaction(async (tx) => {
+
+        await tx.assessment.update({
+            where: { id },
+            data: {
+                title: data.title,
+                description: data.description,
+                totalMarks:
+                    data.totalMarks !== undefined
+                        ? Number(data.totalMarks)
+                        : undefined,
+                duration:
+                    data.duration !== undefined
+                        ? (data.duration ? Number(data.duration) : null)
+                        : undefined,
+                status: data.status || undefined
+            }
+        });
+
+        // If questions were sent, replace them entirely
+        // (simplest consistent approach for a full-form edit)
+        if (Array.isArray(data.questions)) {
+
+            await tx.question.deleteMany({
+                where: { assessmentId: id }
+            });
+
+            for (const question of data.questions) {
+                await tx.question.create({
+                    data: {
+                        assessmentId: id,
+                        questionText: question.questionText,
+                        questionType: question.questionType || "MCQ",
+                        marks: Number(question.marks),
+                        order: question.order ? Number(question.order) : 0,
+                        options: {
+                            create: question.options.map((option) => ({
+                                optionText: option.optionText,
+                                isCorrect: option.isCorrect === true
+                            }))
+                        }
+                    }
+                });
+            }
+        }
+
+        return await tx.assessment.findUnique({
+            where: { id },
+            include: {
+                questions: {
+                    include: { options: true },
+                    orderBy: { order: "asc" }
+                }
+            }
+        });
+    });
+};
+
+
+const deleteAssessment = async (id) => {
+    return await prisma.assessment.delete({
+        where: { id }
+    });
+};
+
 
 /*
  * Get assessment by ID
@@ -614,7 +706,35 @@ const getAssessmentAnalytics =
 
 
 /*
- * Save Judge0 token
+ * List all submissions for a given assessment,
+ * joined with Enrollment for student name/email,
+ * newest first. Used by the instructor's
+ * "Student Submissions" page.
+ */
+const getSubmissionsByAssessmentId = async (assessmentId) => {
+    return await prisma.assessmentSubmission.findMany({
+        where: {
+            assessmentId
+        },
+        include: {
+            enrollment: {
+                select: {
+                    id: true,
+                    studentName: true,
+                    studentEmail: true
+                }
+            }
+        },
+        orderBy: {
+            submittedAt: "desc"
+        }
+    });
+};
+
+
+/*
+ * Save Judge0 token against
+ * an assessment submission.
  */
 const saveJudge0Token = async (
     submissionId,
@@ -727,128 +847,31 @@ const updateAssessmentSubmissionStatus = async (
      */
     if (codingAnswer) {
 
-        const question =
-            await prisma.question.findUnique({
-                where: {
-                    id: codingAnswer.questionId
-                }
-            });
+                executionTime:
+                    data.executionTime !== null &&
+                        data.executionTime !== undefined
+                        ? Number(data.executionTime)
+                        : null,
 
-        if (question) {
-
-            const isCorrect =
-                judge0Status === "Accepted";
-
-            await prisma.submissionAnswer.update({
-                where: {
-                    id: codingAnswer.id
-                },
-                data: {
-                    isCorrect,
-                    marksObtained:
-                        isCorrect
-                            ? question.marks
-                            : 0
-                }
-            });
-        }
-    }
-
-    /*
-     * Recalculate submission score.
-     */
-    const updatedAnswers =
-        await prisma.submissionAnswer.findMany({
-            where: {
-                submissionId: Number(submissionId)
+                memory:
+                    data.memory !== null &&
+                        data.memory !== undefined
+                        ? Number(data.memory)
+                        : null
             }
         });
 
-    const score =
-        updatedAnswers.reduce(
-            (total, answer) =>
-                total +
-                Number(answer.marksObtained || 0),
-            0
-        );
-
-    const totalMarks =
-        submission.totalMarks;
-
-    const percentage =
-        totalMarks > 0
-            ? Number(
-                (
-                    (score / totalMarks) *
-                    100
-                ).toFixed(2)
-            )
-            : 0;
-
-    return await prisma.assessmentSubmission.update({
-
-        where: {
-            id: Number(submissionId)
-        },
-
-        data: {
-
-            judge0Status,
-
-            stdout:
-                data.stdout || null,
-
-            stderr:
-                data.stderr || null,
-
-            compileOutput:
-                data.compileOutput || null,
-
-            executionTime:
-                data.executionTime
-                    ? String(data.executionTime)
-                    : null,
-
-            memory:
-                data.memory !== undefined &&
-                data.memory !== null
-                    ? Number(data.memory)
-                    : null,
-
-            score,
-
-            percentage,
-
-            status
-        },
-
-        include: {
-            assessment: {
-                select: {
-                    id: true,
-                    title: true,
-                    totalMarks: true
-                }
-            },
-
-            answers: true
-        }
-    });
-};
-
-
 /*
- * Get assessment status for an enrollment.
- *
- * Certificate requirement:
- *
- * - Every required assessment must be passed.
- * - Passing percentage = 40%.
- * - At least one submission >= 40%
- *   is enough to pass an assessment.
- */
-const getEnrollmentAssessmentStatus =
-    async (enrollmentId) => {
+* Check assessment completion for an enrollment.
+*
+* Certificate requirement:
+* - Every assessment in the enrolled course must be attempted
+* - Every assessment must have at least one submission
+* - Passing percentage = 40%
+*/
+const getEnrollmentAssessmentStatus = async (
+    enrollmentId
+) => {
 
         const id =
             Number(enrollmentId);
@@ -1090,11 +1113,13 @@ module.exports = {
     createAssessment,
 
     getAssessmentById,
-
+    getAllAssessments,
+    updateAssessment,
+    deleteAssessment,
     submitAssessment,
 
     getAssessmentAnalytics,
-
+    getSubmissionsByAssessmentId,
     saveJudge0Token,
 
     getSubmissionByJudge0Token,

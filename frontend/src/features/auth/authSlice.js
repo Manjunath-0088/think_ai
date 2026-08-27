@@ -4,13 +4,9 @@ import { loginApi, registerApi, getCurrentUserApi } from "./authService";
 const token = localStorage.getItem("token");
 
 const initialState = {
-  user: token
-    ? {
-        role: token.replace("mock-jwt-token-", ""),
-      }
-    : null,
+  user: token ? { role: token.replace("mock-jwt-token-", "") } : null,
   token: token || null,
-  isAuthenticated: !!token,
+  isAuthenticated: false,
   loading: false,
   error: null,
 };

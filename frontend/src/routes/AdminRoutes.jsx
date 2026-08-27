@@ -31,6 +31,10 @@ import EditLesson from '../pages/lessons/EditLesson';
 import LessonDetails from '../pages/lessons/LessonDetails';
 import RBACMatrix from "../pages/admin/RBACMatrix";
 
+// import CreateAssessment from "../pages/assessment/CreateAssessment";
+// import AssessmentDetails from "../pages/assessment/Assessmentdetails";
+// import Assessmentlist from "../pages/assessment/Assessmentlist";
+
 function AdminRoutes() {
   return (
     <Routes>
@@ -65,6 +69,10 @@ function AdminRoutes() {
         <Route path="lessons/add" element={<AddLesson />} />
         <Route path="lessons/edit/:id" element={<EditLesson />} />
         <Route path="lessons/:id" element={<LessonDetails />} />
+{/* 
+        <Route path="assessments/create" element={<CreateAssessment />} />
+        <Route path="assessments/:id/edit" element={<AssessmentDetails />} />
+        <Route path="assessments" element={<Assessmentlist  />} /> */}
 
       </Route>
     </Routes>
