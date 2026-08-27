@@ -2,6 +2,10 @@ const repository =
     require("../repositories/assessmentRepository");
 
 
+// ============================================================
+// VALIDATION
+// ============================================================
+
 const validateId = (value, name) => {
 
     const id = Number(value);
@@ -10,6 +14,7 @@ const validateId = (value, name) => {
         !Number.isInteger(id) ||
         id <= 0
     ) {
+
         throw new Error(
             `${name} must be a positive integer`
         );
@@ -19,36 +24,43 @@ const validateId = (value, name) => {
 };
 
 
-/*
- * Create assessment
- */
+// ============================================================
+// CREATE ASSESSMENT
+// ============================================================
+
 const createAssessment = async (data) => {
 
     if (!data || typeof data !== "object") {
+
         throw new Error(
             "Assessment data is required"
         );
     }
 
     if (!Array.isArray(data.questions)) {
+
         throw new Error(
             "Assessment questions must be an array"
         );
     }
 
     if (data.questions.length === 0) {
+
         throw new Error(
             "Assessment must contain at least one question"
         );
     }
 
-    return await repository.createAssessment(data);
+    return await repository.createAssessment(
+        data
+    );
 };
 
 
-/*
- * Get assessment by ID
- */
+// ============================================================
+// GET ASSESSMENT
+// ============================================================
+
 const getAssessmentById = async (id) => {
 
     const assessmentId =
@@ -63,9 +75,38 @@ const getAssessmentById = async (id) => {
 };
 
 
-/*
- * Submit assessment
- */
+// ============================================================
+// START ASSESSMENT
+// ============================================================
+
+const startAssessment = async (
+    assessmentId,
+    enrollmentId
+) => {
+
+    const id =
+        validateId(
+            assessmentId,
+            "Assessment ID"
+        );
+
+    const enrollment =
+        validateId(
+            enrollmentId,
+            "Enrollment ID"
+        );
+
+    return await repository.startAssessment(
+        id,
+        enrollment
+    );
+};
+
+
+// ============================================================
+// SUBMIT ASSESSMENT
+// ============================================================
+
 const submitAssessment = async (
     assessmentId,
     data
@@ -77,7 +118,11 @@ const submitAssessment = async (
             "Assessment ID"
         );
 
-    if (!data || typeof data !== "object") {
+    if (
+        !data ||
+        typeof data !== "object"
+    ) {
+
         throw new Error(
             "Assessment submission data is required"
         );
@@ -90,12 +135,14 @@ const submitAssessment = async (
         );
 
     if (!Array.isArray(data.answers)) {
+
         throw new Error(
             "Answers must be an array"
         );
     }
 
     if (data.answers.length === 0) {
+
         throw new Error(
             "At least one answer is required"
         );
@@ -111,10 +158,13 @@ const submitAssessment = async (
 };
 
 
-/*
- * Get assessment analytics
- */
-const getAssessmentAnalytics = async (id) => {
+// ============================================================
+// ASSESSMENT ANALYTICS
+// ============================================================
+
+const getAssessmentAnalytics = async (
+    id
+) => {
 
     const assessmentId =
         validateId(
@@ -128,10 +178,10 @@ const getAssessmentAnalytics = async (id) => {
 };
 
 
-/*
- * Save Judge0 token against an
- * assessment submission.
- */
+// ============================================================
+// JUDGE0 - LEGACY SUBMISSION FLOW
+// ============================================================
+
 const saveJudge0Token = async (
     submissionId,
     judge0Token
@@ -147,6 +197,7 @@ const saveJudge0Token = async (
         !judge0Token ||
         typeof judge0Token !== "string"
     ) {
+
         throw new Error(
             "Judge0 token is required"
         );
@@ -154,67 +205,489 @@ const saveJudge0Token = async (
 
     return await repository.saveJudge0Token(
         id,
-        judge0Token
+        judge0Token.trim()
     );
 };
 
 
+const getSubmissionByJudge0Token =
+    async (judge0Token) => {
+
+        if (
+            !judge0Token ||
+            typeof judge0Token !== "string"
+        ) {
+
+            throw new Error(
+                "Judge0 token is required"
+            );
+        }
+
+        return await repository
+            .getSubmissionByJudge0Token(
+                judge0Token.trim()
+            );
+    };
+
+
+const updateAssessmentSubmissionStatus =
+    async (
+        submissionId,
+        data
+    ) => {
+
+        const id =
+            validateId(
+                submissionId,
+                "Submission ID"
+            );
+
+        if (
+            !data ||
+            typeof data !== "object"
+        ) {
+
+            throw new Error(
+                "Judge0 result data is required"
+            );
+        }
+
+        return await repository
+            .updateAssessmentSubmissionStatus(
+                id,
+                data
+            );
+    };
+
+
+// ============================================================
+// CODING TEST CASE EXECUTION
+// ============================================================
+
+const createCodingTestCaseExecution =
+    async ({
+        submissionId,
+        questionId,
+        testCaseId,
+        judge0Token
+    }) => {
+
+        const parsedSubmissionId =
+            validateId(
+                submissionId,
+                "Submission ID"
+            );
+
+        const parsedQuestionId =
+            validateId(
+                questionId,
+                "Question ID"
+            );
+
+        const parsedTestCaseId =
+            validateId(
+                testCaseId,
+                "Test Case ID"
+            );
+
+        if (
+            !judge0Token ||
+            typeof judge0Token !== "string"
+        ) {
+
+            throw new Error(
+                "Judge0 token is required"
+            );
+        }
+
+        return await repository
+            .createCodingTestCaseExecution({
+
+                submissionId:
+                    parsedSubmissionId,
+
+                questionId:
+                    parsedQuestionId,
+
+                testCaseId:
+                    parsedTestCaseId,
+
+                judge0Token:
+                    judge0Token.trim()
+            });
+    };
+
+
+const getCodingTestCaseExecutionByToken =
+    async (judge0Token) => {
+
+        if (
+            !judge0Token ||
+            typeof judge0Token !== "string"
+        ) {
+
+            throw new Error(
+                "Judge0 token is required"
+            );
+        }
+
+        return await repository
+            .getCodingTestCaseExecutionByToken(
+                judge0Token.trim()
+            );
+    };
+
+
+const updateCodingTestCaseExecution =
+    async (
+        executionId,
+        data
+    ) => {
+
+        const id =
+            validateId(
+                executionId,
+                "Coding execution ID"
+            );
+
+        if (
+            !data ||
+            typeof data !== "object"
+        ) {
+
+            throw new Error(
+                "Judge0 execution result is required"
+            );
+        }
+
+        return await repository
+            .updateCodingTestCaseExecution(
+                id,
+                data
+            );
+    };
+
+
+const recalculateCodingQuestionScore =
+    async (
+        submissionId,
+        questionId
+    ) => {
+
+        const parsedSubmissionId =
+            validateId(
+                submissionId,
+                "Submission ID"
+            );
+
+        const parsedQuestionId =
+            validateId(
+                questionId,
+                "Question ID"
+            );
+
+        return await repository
+            .recalculateCodingQuestionScore(
+                parsedSubmissionId,
+                parsedQuestionId
+            );
+    };
+
+
+const getCodingTestCasesByQuestion =
+    async (questionId) => {
+
+        const parsedQuestionId =
+            validateId(
+                questionId,
+                "Question ID"
+            );
+
+        return await repository
+            .getCodingTestCasesByQuestion(
+                parsedQuestionId
+            );
+    };
+
+
+// ============================================================
+// ADMIN - CODING QUESTION MANAGEMENT
+// ============================================================
+
 /*
- * Find assessment submission
- * using Judge0 token.
+ * Create a GeeksforGeeks-style coding question.
  */
-const getSubmissionByJudge0Token = async (
-    judge0Token
+
+const createCodingQuestion = async (
+    data
 ) => {
 
     if (
-        !judge0Token ||
-        typeof judge0Token !== "string"
+        !data ||
+        typeof data !== "object"
     ) {
+
         throw new Error(
-            "Judge0 token is required"
+            "Coding question data is required"
+        );
+    }
+
+    const assessmentId =
+        validateId(
+            data.assessmentId,
+            "Assessment ID"
+        );
+
+    if (
+        typeof data.questionText !==
+            "string" ||
+        !data.questionText.trim()
+    ) {
+
+        throw new Error(
+            "Question text is required"
+        );
+    }
+
+    if (
+        data.testCases !== undefined &&
+        !Array.isArray(data.testCases)
+    ) {
+
+        throw new Error(
+            "Test cases must be an array"
+        );
+    }
+
+    return await repository.createCodingQuestion({
+
+        ...data,
+
+        assessmentId,
+
+        questionText:
+            data.questionText.trim(),
+
+        questionType:
+            "CODING"
+    });
+};
+
+
+/*
+ * Get all coding questions
+ * belonging to an assessment.
+ */
+
+const getCodingQuestions = async (
+    assessmentId
+) => {
+
+    const id =
+        validateId(
+            assessmentId,
+            "Assessment ID"
+        );
+
+    return await repository
+        .getCodingQuestions(id);
+};
+
+
+/*
+ * Get one coding question.
+ */
+
+const getCodingQuestionById =
+    async (questionId) => {
+
+        const id =
+            validateId(
+                questionId,
+                "Question ID"
+            );
+
+        return await repository
+            .getCodingQuestionById(id);
+    };
+
+
+/*
+ * Update coding question.
+ */
+
+const updateCodingQuestion = async (
+    questionId,
+    data
+) => {
+
+    const id =
+        validateId(
+            questionId,
+            "Question ID"
+        );
+
+    if (
+        !data ||
+        typeof data !== "object"
+    ) {
+
+        throw new Error(
+            "Coding question data is required"
         );
     }
 
     return await repository
-        .getSubmissionByJudge0Token(
-            judge0Token
+        .updateCodingQuestion(
+            id,
+            data
         );
 };
 
+
 /*
- * Update assessment submission
- * with Judge0 execution result.
+ * Delete coding question.
  */
-const updateAssessmentSubmissionStatus = async (
-    submissionId,
+
+const deleteCodingQuestion = async (
+    questionId
+) => {
+
+    const id =
+        validateId(
+            questionId,
+            "Question ID"
+        );
+
+    return await repository
+        .deleteCodingQuestion(id);
+};
+
+
+// ============================================================
+// ADMIN - CODING TEST CASE MANAGEMENT
+// ============================================================
+
+/*
+ * Create test case for a coding question.
+ */
+
+const createCodingTestCase = async (
+    questionId,
     data
 ) => {
 
-    const id = validateId(
-        submissionId,
-        "Submission ID"
-    );
+    const id =
+        validateId(
+            questionId,
+            "Question ID"
+        );
 
-    if (!data || typeof data !== "object") {
+    if (
+        !data ||
+        typeof data !== "object"
+    ) {
+
         throw new Error(
-            "Judge0 result data is required"
+            "Test case data is required"
         );
     }
 
-    return await repository.updateAssessmentSubmissionStatus(
-        id,
-        data
-    );
+    if (
+        data.expectedOutput ===
+            undefined ||
+        data.expectedOutput ===
+            null
+    ) {
+
+        throw new Error(
+            "Expected output is required"
+        );
+    }
+
+    return await repository
+        .createCodingTestCase(
+            id,
+            data
+        );
 };
 
 
 /*
- * Check whether all assessments
- * for the enrolled course are passed.
- *
- * Passing percentage = 40%.
+ * Get all test cases for a question.
  */
+
+const getCodingTestCases = async (
+    questionId
+) => {
+
+    const id =
+        validateId(
+            questionId,
+            "Question ID"
+        );
+
+    return await repository
+        .getCodingTestCases(id);
+};
+
+
+/*
+ * Update test case.
+ */
+
+const updateCodingTestCase = async (
+    testCaseId,
+    data
+) => {
+
+    const id =
+        validateId(
+            testCaseId,
+            "Test Case ID"
+        );
+
+    if (
+        !data ||
+        typeof data !== "object"
+    ) {
+
+        throw new Error(
+            "Test case data is required"
+        );
+    }
+
+    return await repository
+        .updateCodingTestCase(
+            id,
+            data
+        );
+};
+
+
+/*
+ * Delete test case.
+ */
+
+const deleteCodingTestCase = async (
+    testCaseId
+) => {
+
+    const id =
+        validateId(
+            testCaseId,
+            "Test Case ID"
+        );
+
+    return await repository
+        .deleteCodingTestCase(id);
+};
+
+
+// ============================================================
+// ENROLLMENT ASSESSMENT STATUS
+// ============================================================
+
 const getEnrollmentAssessmentStatus =
     async (enrollmentId) => {
 
@@ -230,41 +703,68 @@ const getEnrollmentAssessmentStatus =
             );
     };
 
-    /*
- * Get assessment submission result
- */
-const getAssessmentSubmissionResult = async (
-    submissionId
-) => {
 
-    const id = validateId(
-        submissionId,
-        "Submission ID"
-    );
+// ============================================================
+// GET SUBMISSION RESULT
+// ============================================================
 
-    return await repository.getAssessmentSubmissionResult(
-        id
-    );
-};
+const getAssessmentSubmissionResult =
+    async (submissionId) => {
 
+        const id =
+            validateId(
+                submissionId,
+                "Submission ID"
+            );
+
+        return await repository
+            .getAssessmentSubmissionResult(
+                id
+            );
+    };
+
+
+// ============================================================
+// EXPORTS
+// ============================================================
 
 module.exports = {
 
+    // Existing assessment
     createAssessment,
-
     getAssessmentById,
-
     submitAssessment,
-
+    startAssessment,
     getAssessmentAnalytics,
 
+    // Existing Judge0 flow
     saveJudge0Token,
-
     getSubmissionByJudge0Token,
-
     updateAssessmentSubmissionStatus,
 
+    // Coding execution
+    createCodingTestCaseExecution,
+    getCodingTestCaseExecutionByToken,
+    updateCodingTestCaseExecution,
+    recalculateCodingQuestionScore,
+    getCodingTestCasesByQuestion,
+
+    // Admin coding questions
+    createCodingQuestion,
+    getCodingQuestions,
+    getCodingQuestionById,
+    updateCodingQuestion,
+    deleteCodingQuestion,
+
+    // Admin coding test cases
+    createCodingTestCase,
+    getCodingTestCases,
+    updateCodingTestCase,
+    deleteCodingTestCase,
+
+    // Enrollment
     getEnrollmentAssessmentStatus,
 
+    // Submission result
     getAssessmentSubmissionResult
 };

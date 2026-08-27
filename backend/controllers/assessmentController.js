@@ -2,30 +2,67 @@ const service =
     require("../services/assessmentService");
 
 
-const isValidationError = (message) => {
+// ============================================================
+// VALIDATION HELPERS
+// ============================================================
+
+const isValidationError = (message = "") => {
+
     return (
-        message.includes(
-            "must be a positive integer"
-        ) ||
-        message.includes(
-            "must be an array"
-        ) ||
-        message.includes(
-            "must be a required"
-        ) ||
-        message.includes(
-            "is required"
-        ) ||
-        message.includes(
-            "At least one answer is required"
-        )
+        message.includes("must be a positive integer") ||
+        message.includes("must be an array") ||
+        message.includes("is required") ||
+        message.includes("At least one answer is required") ||
+        message.includes("At least one coding test case is required") ||
+        message.includes("must be greater than 0")
     );
 };
 
 
-/**
- * Create Assessment
- */
+const sendControllerError = (
+    res,
+    error,
+    notFoundMessages = []
+) => {
+
+    const message =
+        error?.message ||
+        "Internal server error";
+
+
+    if (
+        isValidationError(message)
+    ) {
+
+        return res.status(400).json({
+            success: false,
+            message
+        });
+    }
+
+
+    if (
+        notFoundMessages.includes(message)
+    ) {
+
+        return res.status(404).json({
+            success: false,
+            message
+        });
+    }
+
+
+    return res.status(500).json({
+        success: false,
+        message
+    });
+};
+
+
+// ============================================================
+// CREATE ASSESSMENT
+// ============================================================
+
 const createAssessment = async (
     req,
     res
@@ -39,9 +76,12 @@ const createAssessment = async (
             );
 
         return res.status(201).json({
+
             success: true,
+
             message:
                 "Assessment created successfully",
+
             data: assessment
         });
 
@@ -52,28 +92,21 @@ const createAssessment = async (
             error
         );
 
-        if (
-            isValidationError(
-                error.message
-            )
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: error.message
-            });
-        }
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Assessment not found"
+            ]
+        );
     }
 };
 
 
-/**
- * Get Assessment By ID
- */
+// ============================================================
+// GET ASSESSMENT BY ID
+// ============================================================
+
 const getAssessmentById = async (
     req,
     res
@@ -87,15 +120,20 @@ const getAssessmentById = async (
             );
 
         if (!assessment) {
+
             return res.status(404).json({
+
                 success: false,
+
                 message:
                     "Assessment not found"
             });
         }
 
         return res.status(200).json({
+
             success: true,
+
             data: assessment
         });
 
@@ -106,28 +144,156 @@ const getAssessmentById = async (
             error
         );
 
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Assessment not found"
+            ]
+        );
+    }
+};
+
+// ============================================================
+// START ASSESSMENT
+// ============================================================
+
+const startAssessment = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const submission =
+            await service.startAssessment(
+                req.params.id,
+                req.body.enrollmentId
+            );
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "Assessment started successfully",
+
+            data: {
+
+                submissionId:
+                    submission.id,
+
+                assessmentId:
+                    submission.assessmentId,
+
+                enrollmentId:
+                    submission.enrollmentId,
+
+                status:
+                    submission.status,
+
+                totalMarks:
+                    submission.totalMarks,
+
+                score:
+                    submission.score,
+
+                percentage:
+                    submission.percentage
+
+            }
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Start assessment error:",
+            error
+        );
+
+
+        const message =
+            error?.message ||
+            "Failed to start assessment";
+
+
         if (
-            error.message.includes(
-                "must be a positive integer"
-            )
+            isValidationError(message)
         ) {
+
             return res.status(400).json({
+
                 success: false,
-                message: error.message
+
+                message
+
             });
         }
 
+
+        if (
+            message ===
+                "Assessment not found" ||
+
+            message ===
+                "Enrollment not found"
+        ) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message
+
+            });
+        }
+
+
+        if (
+            message ===
+                "Assessment is not active" ||
+
+            message ===
+                "Enrollment is not active" ||
+
+            message ===
+                "Batch is not active" ||
+
+            message ===
+                "Course is not active" ||
+
+            message ===
+                "This assessment does not belong to the enrolled course"
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message
+
+            });
+        }
+
+
         return res.status(500).json({
+
             success: false,
-            message: error.message
+
+            message:
+                "Failed to start assessment"
+
         });
     }
 };
 
 
-/**
- * Submit Assessment
- */
+// ============================================================
+// SUBMIT ASSESSMENT
+// ============================================================
+
 const submitAssessment = async (
     req,
     res
@@ -142,9 +308,12 @@ const submitAssessment = async (
             );
 
         return res.status(201).json({
+
             success: true,
+
             message:
                 "Assessment submitted successfully",
+
             data: submission
         });
 
@@ -156,24 +325,22 @@ const submitAssessment = async (
         );
 
 
-        /*
-         * Invalid IDs / request data
-         */
         if (
             isValidationError(
                 error.message
             )
         ) {
+
             return res.status(400).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
 
-        /*
-         * Assessment / enrollment not found
-         */
         if (
             error.message ===
                 "Assessment not found" ||
@@ -181,17 +348,17 @@ const submitAssessment = async (
             error.message ===
                 "Enrollment not found"
         ) {
+
             return res.status(404).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
 
-        /*
-         * Enrollment/course/assessment
-         * business rules.
-         */
         if (
             error.message ===
                 "Enrollment is not active" ||
@@ -205,16 +372,17 @@ const submitAssessment = async (
             error.message ===
                 "This assessment does not belong to the enrolled course"
         ) {
+
             return res.status(400).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
 
-        /*
-         * Invalid question/option submitted.
-         */
         if (
             error.message.startsWith(
                 "Question "
@@ -224,24 +392,32 @@ const submitAssessment = async (
                 "Invalid option for question"
             )
         ) {
+
             return res.status(400).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
 
         return res.status(500).json({
+
             success: false,
-            message: error.message
+
+            message:
+                error.message
         });
     }
 };
 
 
-/**
- * Get Assessment Analytics
- */
+// ============================================================
+// GET ASSESSMENT ANALYTICS
+// ============================================================
+
 const getAssessmentAnalytics = async (
     req,
     res
@@ -255,7 +431,9 @@ const getAssessmentAnalytics = async (
             );
 
         return res.status(200).json({
+
             success: true,
+
             data: analytics
         });
 
@@ -266,40 +444,21 @@ const getAssessmentAnalytics = async (
             error
         );
 
-
-        if (
-            error.message ===
-            "Assessment not found"
-        ) {
-            return res.status(404).json({
-                success: false,
-                message: error.message
-            });
-        }
-
-
-        if (
-            error.message.includes(
-                "must be a positive integer"
-            )
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: error.message
-            });
-        }
-
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Assessment not found"
+            ]
+        );
     }
 };
 
-/**
- * Get Assessment Submission Result
- */
+
+// ============================================================
+// GET ASSESSMENT SUBMISSION RESULT
+// ============================================================
+
 const getAssessmentSubmissionResult = async (
     req,
     res
@@ -313,7 +472,9 @@ const getAssessmentSubmissionResult = async (
             );
 
         return res.status(200).json({
+
             success: true,
+
             data: result
         });
 
@@ -324,42 +485,425 @@ const getAssessmentSubmissionResult = async (
             error
         );
 
-        if (
-            error.message.includes(
-                "must be a positive integer"
-            )
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: error.message
-            });
-        }
-
-        if (
-            error.message ===
-            "Assessment submission not found"
-        ) {
-            return res.status(404).json({
-                success: false,
-                message: error.message
-            });
-        }
-
-        return res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Assessment submission not found"
+            ]
+        );
     }
 };
 
+
+// ============================================================
+// ADMIN - CREATE CODING QUESTION
+// ============================================================
+
+const createCodingQuestion = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const question =
+            await service.createCodingQuestion(
+                req.body
+            );
+
+        return res.status(201).json({
+
+            success: true,
+
+            message:
+                "Coding question created successfully",
+
+            data: question
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Create coding question error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Assessment not found"
+            ]
+        );
+    }
+};
+
+
+// ============================================================
+// ADMIN - GET CODING QUESTIONS
+// ============================================================
+
+const getCodingQuestions = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const questions =
+            await service.getCodingQuestions(
+                req.params.assessmentId
+            );
+
+        return res.status(200).json({
+
+            success: true,
+
+            data: questions
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Get coding questions error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Assessment not found"
+            ]
+        );
+    }
+};
+
+
+// ============================================================
+// ADMIN - GET CODING QUESTION BY ID
+// ============================================================
+
+const getCodingQuestionById = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const question =
+            await service.getCodingQuestionById(
+                req.params.questionId
+            );
+
+        return res.status(200).json({
+
+            success: true,
+
+            data: question
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Get coding question error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Coding question not found"
+            ]
+        );
+    }
+};
+
+
+// ============================================================
+// ADMIN - UPDATE CODING QUESTION
+// ============================================================
+
+const updateCodingQuestion = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const question =
+            await service.updateCodingQuestion(
+                req.params.questionId,
+                req.body
+            );
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "Coding question updated successfully",
+
+            data: question
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Update coding question error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Coding question not found"
+            ]
+        );
+    }
+};
+
+
+// ============================================================
+// ADMIN - DELETE CODING QUESTION
+// ============================================================
+
+const deleteCodingQuestion = async (
+    req,
+    res
+) => {
+
+    try {
+
+        await service.deleteCodingQuestion(
+            req.params.questionId
+        );
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "Coding question deleted successfully"
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Delete coding question error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Coding question not found"
+            ]
+        );
+    }
+};
+
+
+// ============================================================
+// ADMIN - CREATE CODING TEST CASE
+// ============================================================
+
+const createCodingTestCase = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const testCase =
+            await service.createCodingTestCase(
+                req.params.questionId,
+                req.body
+            );
+
+        return res.status(201).json({
+
+            success: true,
+
+            message:
+                "Coding test case created successfully",
+
+            data: testCase
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Create coding test case error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Coding question not found"
+            ]
+        );
+    }
+};
+
+
+// ============================================================
+// ADMIN - GET CODING TEST CASES
+// ============================================================
+
+const getCodingTestCases = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const testCases =
+            await service.getCodingTestCases(
+                req.params.questionId
+            );
+
+        return res.status(200).json({
+
+            success: true,
+
+            data: testCases
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Get coding test cases error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Coding question not found"
+            ]
+        );
+    }
+};
+
+
+// ============================================================
+// ADMIN - UPDATE CODING TEST CASE
+// ============================================================
+
+const updateCodingTestCase = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const testCase =
+            await service.updateCodingTestCase(
+                req.params.testCaseId,
+                req.body
+            );
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "Coding test case updated successfully",
+
+            data: testCase
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Update coding test case error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Coding test case not found"
+            ]
+        );
+    }
+};
+
+
+// ============================================================
+// ADMIN - DELETE CODING TEST CASE
+// ============================================================
+
+const deleteCodingTestCase = async (
+    req,
+    res
+) => {
+
+    try {
+
+        await service.deleteCodingTestCase(
+            req.params.testCaseId
+        );
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "Coding test case deleted successfully"
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Delete coding test case error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Coding test case not found"
+            ]
+        );
+    }
+};
+
+
+// ============================================================
+// EXPORTS
+// ============================================================
+
 module.exports = {
 
+    // Existing assessment APIs
     createAssessment,
-
     getAssessmentById,
-
     submitAssessment,
-
+    startAssessment,
     getAssessmentAnalytics,
-    getAssessmentSubmissionResult
+    getAssessmentSubmissionResult,
+
+    // Admin coding question APIs
+    createCodingQuestion,
+    getCodingQuestions,
+    getCodingQuestionById,
+    updateCodingQuestion,
+    deleteCodingQuestion,
+
+    // Admin coding test case APIs
+    createCodingTestCase,
+    getCodingTestCases,
+    updateCodingTestCase,
+    deleteCodingTestCase
 };

@@ -3,6 +3,7 @@ const validateAssessmentCreate = (req, res, next) => {
     const {
         title,
         description,
+        type,
         totalMarks,
         duration,
         status,
@@ -13,7 +14,10 @@ const validateAssessmentCreate = (req, res, next) => {
     const errors = [];
 
 
+    // ----------------------------------------------------
     // Title
+    // ----------------------------------------------------
+
     if (
         !title ||
         typeof title !== "string" ||
@@ -23,7 +27,10 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
+    // ----------------------------------------------------
     // Description
+    // ----------------------------------------------------
+
     if (
         description !== undefined &&
         description !== null &&
@@ -38,7 +45,25 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
-    // Total marks
+    // ----------------------------------------------------
+    // Assessment Type
+    // ----------------------------------------------------
+
+    if (
+        type === undefined ||
+        type === null ||
+        !["MCQ", "CODING"].includes(type)
+    ) {
+        errors.push(
+            "type must be either MCQ or CODING"
+        );
+    }
+
+
+    // ----------------------------------------------------
+    // Total Marks
+    // ----------------------------------------------------
+
     if (
         totalMarks === undefined ||
         totalMarks === null ||
@@ -51,7 +76,10 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
+    // ----------------------------------------------------
     // Duration
+    // ----------------------------------------------------
+
     if (
         duration !== undefined &&
         duration !== null &&
@@ -66,7 +94,10 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
+    // ----------------------------------------------------
     // Status
+    // ----------------------------------------------------
+
     if (
         status !== undefined &&
         !["ACTIVE", "INACTIVE"].includes(status)
@@ -77,7 +108,10 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
+    // ----------------------------------------------------
     // Module ID
+    // ----------------------------------------------------
+
     if (
         moduleId === undefined ||
         moduleId === null ||
@@ -90,7 +124,10 @@ const validateAssessmentCreate = (req, res, next) => {
     }
 
 
+    // ----------------------------------------------------
     // Questions
+    // ----------------------------------------------------
+
     if (
         !Array.isArray(questions) ||
         questions.length === 0
@@ -102,183 +139,289 @@ const validateAssessmentCreate = (req, res, next) => {
 
     } else {
 
-        questions.forEach((question, index) => {
-
-            if (
-                !question ||
-                typeof question !== "object" ||
-                Array.isArray(question)
-            ) {
-                errors.push(
-                    `questions[${index}] must be a valid object`
-                );
-                return;
-            }
-
-
-            // Question text
-            if (
-                !question.questionText ||
-                typeof question.questionText !== "string" ||
-                !question.questionText.trim()
-            ) {
-                errors.push(
-                    `questions[${index}].questionText is required`
-                );
-            }
-
-
-            // Question type
-            const questionType =
-                question.questionType || "MCQ";
-
-            if (
-                !["MCQ", "CODING"].includes(
-                    questionType
-                )
-            ) {
-                errors.push(
-                    `questions[${index}].questionType must be MCQ or CODING`
-                );
-            }
-
-
-            // Marks
-            if (
-                question.marks === undefined ||
-                question.marks === null ||
-                !Number.isInteger(
-                    Number(question.marks)
-                ) ||
-                Number(question.marks) <= 0
-            ) {
-                errors.push(
-                    `questions[${index}].marks must be a positive integer`
-                );
-            }
-
-
-            // Order
-            if (
-                question.order !== undefined &&
-                (
-                    !Number.isInteger(
-                        Number(question.order)
-                    ) ||
-                    Number(question.order) < 0
-                )
-            ) {
-                errors.push(
-                    `questions[${index}].order must be a non-negative integer`
-                );
-            }
-
-
-            /*
-             * MCQ validation
-             */
-            if (questionType === "MCQ") {
+        questions.forEach(
+            (question, index) => {
 
                 if (
-                    !Array.isArray(question.options) ||
-                    question.options.length < 2
+                    !question ||
+                    typeof question !== "object" ||
+                    Array.isArray(question)
                 ) {
 
                     errors.push(
-                        `questions[${index}].options must contain at least 2 options`
+                        `questions[${index}] must be a valid object`
                     );
 
-                } else {
-
-                    let correctOptionCount = 0;
-
-                    question.options.forEach(
-                        (option, optionIndex) => {
-
-                            if (
-                                !option ||
-                                typeof option !== "object" ||
-                                Array.isArray(option)
-                            ) {
-                                errors.push(
-                                    `questions[${index}].options[${optionIndex}] must be a valid object`
-                                );
-                                return;
-                            }
+                    return;
+                }
 
 
-                            // Option text
-                            if (
-                                !option.optionText ||
-                                typeof option.optionText !== "string" ||
-                                !option.optionText.trim()
-                            ) {
-                                errors.push(
-                                    `questions[${index}].options[${optionIndex}].optionText is required`
-                                );
-                            }
+                // ----------------------------------------
+                // Question Text
+                // ----------------------------------------
 
+                if (
+                    !question.questionText ||
+                    typeof question.questionText !== "string" ||
+                    !question.questionText.trim()
+                ) {
 
-                            // isCorrect
-                            if (
-                                option.isCorrect !== undefined &&
-                                typeof option.isCorrect !== "boolean"
-                            ) {
-                                errors.push(
-                                    `questions[${index}].options[${optionIndex}].isCorrect must be a boolean`
-                                );
-                            }
-
-
-                            if (
-                                option.isCorrect === true
-                            ) {
-                                correctOptionCount++;
-                            }
-
-                        }
+                    errors.push(
+                        `questions[${index}].questionText is required`
                     );
+                }
 
+
+                // ----------------------------------------
+                // Question Type
+                // ----------------------------------------
+
+                const questionType =
+                    question.questionType || "MCQ";
+
+                if (
+                    !["MCQ", "CODING"].includes(
+                        questionType
+                    )
+                ) {
+
+                    errors.push(
+                        `questions[${index}].questionType must be MCQ or CODING`
+                    );
+                }
+
+
+                // ----------------------------------------
+                // Marks
+                // ----------------------------------------
+
+                if (
+                    question.marks === undefined ||
+                    question.marks === null ||
+                    !Number.isInteger(
+                        Number(question.marks)
+                    ) ||
+                    Number(question.marks) <= 0
+                ) {
+
+                    errors.push(
+                        `questions[${index}].marks must be a positive integer`
+                    );
+                }
+
+
+                // ----------------------------------------
+                // Order
+                // ----------------------------------------
+
+                if (
+                    question.order !== undefined &&
+                    (
+                        !Number.isInteger(
+                            Number(question.order)
+                        ) ||
+                        Number(question.order) < 0
+                    )
+                ) {
+
+                    errors.push(
+                        `questions[${index}].order must be a non-negative integer`
+                    );
+                }
+
+
+                // ====================================================
+                // MCQ VALIDATION
+                // ====================================================
+
+                if (questionType === "MCQ") {
 
                     if (
-                        correctOptionCount !== 1
+                        !Array.isArray(question.options) ||
+                        question.options.length < 2
                     ) {
+
                         errors.push(
-                            `questions[${index}] must have exactly one correct option`
+                            `questions[${index}].options must contain at least 2 options`
+                        );
+
+                    } else {
+
+                        let correctOptionCount = 0;
+
+                        question.options.forEach(
+                            (option, optionIndex) => {
+
+                                if (
+                                    !option ||
+                                    typeof option !== "object" ||
+                                    Array.isArray(option)
+                                ) {
+
+                                    errors.push(
+                                        `questions[${index}].options[${optionIndex}] must be a valid object`
+                                    );
+
+                                    return;
+                                }
+
+
+                                if (
+                                    !option.optionText ||
+                                    typeof option.optionText !== "string" ||
+                                    !option.optionText.trim()
+                                ) {
+
+                                    errors.push(
+                                        `questions[${index}].options[${optionIndex}].optionText is required`
+                                    );
+                                }
+
+
+                                if (
+                                    option.isCorrect !== undefined &&
+                                    typeof option.isCorrect !== "boolean"
+                                ) {
+
+                                    errors.push(
+                                        `questions[${index}].options[${optionIndex}].isCorrect must be a boolean`
+                                    );
+                                }
+
+
+                                if (
+                                    option.isCorrect === true
+                                ) {
+                                    correctOptionCount++;
+                                }
+
+                            }
+                        );
+
+
+                        if (
+                            correctOptionCount !== 1
+                        ) {
+
+                            errors.push(
+                                `questions[${index}] must have exactly one correct option`
+                            );
+                        }
+                    }
+                }
+
+
+                // ====================================================
+                // CODING QUESTION VALIDATION
+                // ====================================================
+
+                if (questionType === "CODING") {
+
+                    if (
+                        question.options !== undefined &&
+                        !Array.isArray(question.options)
+                    ) {
+
+                        errors.push(
+                            `questions[${index}].options must be an array`
+                        );
+                    }
+
+
+                    // Coding questions need test cases
+                    if (
+                        !Array.isArray(
+                            question.testCases
+                        )
+                    ) {
+
+                        errors.push(
+                            `Coding question ${index + 1} must contain testCases`
+                        );
+
+                    } else if (
+                        question.testCases.length === 0
+                    ) {
+
+                        errors.push(
+                            `Coding question ${index + 1} must contain at least one test case`
                         );
                     }
                 }
+
             }
-
-
-            /*
-             * Coding question validation
-             */
-            if (questionType === "CODING") {
-
-                if (
-                    question.options !== undefined &&
-                    !Array.isArray(question.options)
-                ) {
-                    errors.push(
-                        `questions[${index}].options must be an array`
-                    );
-                }
-            }
-
-        });
+        );
     }
 
+
+    // ====================================================
+    // ASSESSMENT TYPE ↔ QUESTION TYPE VALIDATION
+    // ====================================================
+
+    if (
+        type === "MCQ" &&
+        Array.isArray(questions)
+    ) {
+
+        questions.forEach(
+            (question, index) => {
+
+                if (
+                    question &&
+                    question.questionType &&
+                    question.questionType !== "MCQ"
+                ) {
+
+                    errors.push(
+                        `questions[${index}].questionType must be MCQ because assessment type is MCQ`
+                    );
+                }
+
+            }
+        );
+    }
+
+
+    if (
+        type === "CODING" &&
+        Array.isArray(questions)
+    ) {
+
+        questions.forEach(
+            (question, index) => {
+
+                if (
+                    question &&
+                    question.questionType &&
+                    question.questionType !== "CODING"
+                ) {
+
+                    errors.push(
+                        `questions[${index}].questionType must be CODING because assessment type is CODING`
+                    );
+                }
+
+            }
+        );
+    }
+
+
+    // ----------------------------------------------------
+    // Return validation errors
+    // ----------------------------------------------------
 
     if (errors.length > 0) {
 
         return res.status(400).json({
+
             success: false,
+
             message:
                 "Assessment validation failed",
-            errors
-        });
 
+            errors
+
+        });
     }
 
 
@@ -286,9 +429,10 @@ const validateAssessmentCreate = (req, res, next) => {
 };
 
 
-/*
- * Validate /assessments/:id
- */
+// ============================================================
+// VALIDATE ASSESSMENT ID
+// ============================================================
+
 const validateAssessmentId = (
     req,
     res,
@@ -304,20 +448,44 @@ const validateAssessmentId = (
     ) {
 
         return res.status(400).json({
+
             success: false,
+
             message:
                 "Assessment ID must be a positive integer"
-        });
 
+        });
     }
 
     next();
 };
 
 
-/*
- * Validate assessment submission
- */
+// ============================================================
+// VALIDATE ASSESSMENT SUBMISSION
+// ============================================================
+//
+// Supports:
+//
+// MCQ:
+// {
+//     questionId: 1,
+//     selectedOptionId: 2
+// }
+//
+// CODING:
+// {
+//     questionId: 23,
+//     code: "print('Hello')"
+// }
+//
+// Descriptive:
+// {
+//     questionId: 10,
+//     answerText: "answer"
+// }
+// ============================================================
+
 const validateAssessmentSubmit = (
     req,
     res,
@@ -332,7 +500,10 @@ const validateAssessmentSubmit = (
     const errors = [];
 
 
+    // ----------------------------------------------------
     // Enrollment ID
+    // ----------------------------------------------------
+
     if (
         enrollmentId === undefined ||
         enrollmentId === null ||
@@ -341,13 +512,17 @@ const validateAssessmentSubmit = (
         ) ||
         Number(enrollmentId) <= 0
     ) {
+
         errors.push(
             "enrollmentId must be a positive integer"
         );
     }
 
 
+    // ----------------------------------------------------
     // Answers
+    // ----------------------------------------------------
+
     if (
         !Array.isArray(answers) ||
         answers.length === 0
@@ -367,41 +542,127 @@ const validateAssessmentSubmit = (
                     typeof answer !== "object" ||
                     Array.isArray(answer)
                 ) {
+
                     errors.push(
                         `answers[${index}] must be a valid object`
                     );
+
                     return;
                 }
 
 
+                // ----------------------------------------
                 // Question ID
+                // ----------------------------------------
+
                 if (
                     answer.questionId === undefined ||
+                    answer.questionId === null ||
                     !Number.isInteger(
                         Number(answer.questionId)
                     ) ||
                     Number(answer.questionId) <= 0
                 ) {
+
                     errors.push(
                         `answers[${index}].questionId must be a positive integer`
                     );
                 }
 
 
-                // Selected option ID
-                if (
-                    answer.selectedOptionId === undefined ||
-                    !Number.isInteger(
+                // ----------------------------------------
+                // MCQ
+                // ----------------------------------------
+
+                const hasSelectedOption =
+                    answer.selectedOptionId !== undefined &&
+                    answer.selectedOptionId !== null;
+
+
+                if (hasSelectedOption) {
+
+                    if (
+                        !Number.isInteger(
+                            Number(
+                                answer.selectedOptionId
+                            )
+                        ) ||
                         Number(
                             answer.selectedOptionId
-                        )
-                    ) ||
-                    Number(
-                        answer.selectedOptionId
-                    ) <= 0
+                        ) <= 0
+                    ) {
+
+                        errors.push(
+                            `answers[${index}].selectedOptionId must be a positive integer`
+                        );
+                    }
+                }
+
+
+                // ----------------------------------------
+                // Coding
+                // ----------------------------------------
+
+                const hasCode =
+                    answer.code !== undefined &&
+                    answer.code !== null;
+
+
+                if (hasCode) {
+
+                    if (
+                        typeof answer.code !== "string"
+                    ) {
+
+                        errors.push(
+                            `answers[${index}].code must be a string`
+                        );
+
+                    } else if (
+                        !answer.code.trim()
+                    ) {
+
+                        errors.push(
+                            `answers[${index}].code cannot be empty`
+                        );
+                    }
+                }
+
+
+                // ----------------------------------------
+                // Descriptive
+                // ----------------------------------------
+
+                const hasAnswerText =
+                    answer.answerText !== undefined &&
+                    answer.answerText !== null;
+
+
+                if (hasAnswerText) {
+
+                    if (
+                        typeof answer.answerText !== "string"
+                    ) {
+
+                        errors.push(
+                            `answers[${index}].answerText must be a string`
+                        );
+                    }
+                }
+
+
+                // ----------------------------------------
+                // At least one answer value
+                // ----------------------------------------
+
+                if (
+                    !hasSelectedOption &&
+                    !hasCode &&
+                    !hasAnswerText
                 ) {
+
                     errors.push(
-                        `answers[${index}].selectedOptionId must be a positive integer`
+                        `answers[${index}] must contain selectedOptionId, code, or answerText`
                     );
                 }
 
@@ -410,15 +671,22 @@ const validateAssessmentSubmit = (
     }
 
 
+    // ----------------------------------------------------
+    // Return validation errors
+    // ----------------------------------------------------
+
     if (errors.length > 0) {
 
         return res.status(400).json({
+
             success: false,
+
             message:
                 "Assessment submission validation failed",
-            errors
-        });
 
+            errors
+
+        });
     }
 
 
@@ -433,4 +701,5 @@ module.exports = {
     validateAssessmentId,
 
     validateAssessmentSubmit
+
 };
