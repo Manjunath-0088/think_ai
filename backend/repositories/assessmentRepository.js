@@ -408,6 +408,98 @@ const createAssessment = async (data) => {
     });
 };
 
+const getAllAssessments = async (moduleId) => {
+    const where = {};
+
+    if (moduleId) {
+        where.moduleId = Number(moduleId);
+    }
+
+    return await prisma.assessment.findMany({
+        where,
+        include: {
+            questions: {
+                include: {
+                    options: true
+                },
+                orderBy: {
+                    order: "asc"
+                }
+            }
+        },
+        orderBy: {
+            id: "asc"
+        }
+    });
+};
+
+const updateAssessment = async (id, data) => {
+
+    return await prisma.$transaction(async (tx) => {
+
+        await tx.assessment.update({
+            where: { id },
+            data: {
+                title: data.title,
+                description: data.description,
+                totalMarks:
+                    data.totalMarks !== undefined
+                        ? Number(data.totalMarks)
+                        : undefined,
+                duration:
+                    data.duration !== undefined
+                        ? (data.duration ? Number(data.duration) : null)
+                        : undefined,
+                status: data.status || undefined
+            }
+        });
+
+        // If questions were sent, replace them entirely
+        // (simplest consistent approach for a full-form edit)
+        if (Array.isArray(data.questions)) {
+
+            await tx.question.deleteMany({
+                where: { assessmentId: id }
+            });
+
+            for (const question of data.questions) {
+                await tx.question.create({
+                    data: {
+                        assessmentId: id,
+                        questionText: question.questionText,
+                        questionType: question.questionType || "MCQ",
+                        marks: Number(question.marks),
+                        order: question.order ? Number(question.order) : 0,
+                        options: {
+                            create: question.options.map((option) => ({
+                                optionText: option.optionText,
+                                isCorrect: option.isCorrect === true
+                            }))
+                        }
+                    }
+                });
+            }
+        }
+
+        return await tx.assessment.findUnique({
+            where: { id },
+            include: {
+                questions: {
+                    include: { options: true },
+                    orderBy: { order: "asc" }
+                }
+            }
+        });
+    });
+};
+
+
+const deleteAssessment = async (id) => {
+    return await prisma.assessment.delete({
+        where: { id }
+    });
+};
+
 
 /*
  * ============================================================
@@ -4043,7 +4135,7 @@ module.exports = {
     submitAssessment,
 
     getAssessmentAnalytics,
-
+    getSubmissionsByAssessmentId,
     saveJudge0Token,
 
     getSubmissionByJudge0Token,

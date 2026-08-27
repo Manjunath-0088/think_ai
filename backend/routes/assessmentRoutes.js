@@ -4,6 +4,9 @@ const router = express.Router();
 
 const {
     createAssessment,
+    getAllAssessments,
+    updateAssessment,
+    deleteAssessment, 
     getAssessmentById,
     submitAssessment,
     startAssessment,
@@ -245,6 +248,40 @@ router.post(
 
 /**
  * @swagger
+ * /api/assessments/{id}/submissions:
+ *   get:
+ *     summary: List all submissions for an assessment
+ *     description: >
+ *       Returns every submission for the given assessment, joined with
+ *       the enrollment's student name/email. Used by the instructor's
+ *       "Student Submissions" page.
+ *     tags: [Assessments]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: List of submissions
+ *       400:
+ *         description: Invalid assessment ID
+ *       404:
+ *         description: Assessment not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+    "/:id/submissions",
+    validateAssessmentId,
+    getAssessmentSubmissions
+);
+
+
+/**
+ * @swagger
  * /api/assessments/{id}:
  *   get:
  *     summary: Get assessment by ID
@@ -339,6 +376,12 @@ router.post(
     validateAssessmentSubmit,
     submitAssessment
 );
+
+router.get("/", getAllAssessments);
+
+router.put("/:id", validateAssessmentId, updateAssessment);
+router.delete("/:id", validateAssessmentId, deleteAssessment);
+router.get("/enrollment/:enrollmentId/status", getEnrollmentAssessmentStatus);
 
 
 // ============================================================
