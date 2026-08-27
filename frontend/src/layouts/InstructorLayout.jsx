@@ -11,7 +11,7 @@ const INSTRUCTOR_NAV_LINKS = [
   { to: '/instructor/dashboard', label: 'Dashboard' },
   { to: '/instructor/modules', label: 'Modules & Lessons' },
   { to: '/instructor/assignments', label: 'Assignments' },
-  { to: '/instructor/assessments/:assessmentId/submissions', label: 'Student Submissions' },
+  { to: '/instructor/student-submissions', label: 'Student Submissions' },
   { to: '/instructor/analytics', label: 'Analytics' },
 ];
 

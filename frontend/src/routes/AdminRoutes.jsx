@@ -69,11 +69,6 @@ function AdminRoutes() {
         <Route path="lessons/add" element={<AddLesson />} />
         <Route path="lessons/edit/:id" element={<EditLesson />} />
         <Route path="lessons/:id" element={<LessonDetails />} />
-{/* 
-        <Route path="assessments/create" element={<CreateAssessment />} />
-        <Route path="assessments/:id/edit" element={<AssessmentDetails />} />
-        <Route path="assessments" element={<Assessmentlist  />} /> */}
-
       </Route>
     </Routes>
   );

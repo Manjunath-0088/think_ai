@@ -1,68 +1,36 @@
 const prisma = require("../config/database");
 
 
-/*
- * Create assessment
- */
 const createAssessment = async (data) => {
-
     return await prisma.assessment.create({
         data: {
             title: data.title,
-            description: data.description || null,
-
-            totalMarks:
-                Number(data.totalMarks),
-
-            duration:
-                data.duration !== undefined &&
-                data.duration !== null
-                    ? Number(data.duration)
-                    : null,
-
-            status:
-                data.status || "ACTIVE",
-
-            moduleId:
-                Number(data.moduleId),
+            description: data.description,
+            totalMarks: Number(data.totalMarks),
+            duration: data.duration
+                ? Number(data.duration)
+                : null,
+            status: data.status || "ACTIVE",
+            moduleId: Number(data.moduleId),
 
             questions: {
-                create: data.questions.map(
-                    (question, index) => ({
-                        questionText:
-                            question.questionText,
+                create: data.questions.map((question) => ({
+                    questionText: question.questionText,
+                    questionType:
+                        question.questionType || "MCQ",
+                    marks: Number(question.marks),
+                    order: question.order
+                        ? Number(question.order)
+                        : 0,
 
-                        questionType:
-                            question.questionType ||
-                            "MCQ",
-
-                        marks:
-                            Number(question.marks),
-
-                        order:
-                            question.order !== undefined
-                                ? Number(question.order)
-                                : index,
-
-                        options:
-                            Array.isArray(
-                                question.options
-                            )
-                                ? {
-                                    create:
-                                        question.options.map(
-                                            (option) => ({
-                                                optionText:
-                                                    option.optionText,
-
-                                                isCorrect:
-                                                    option.isCorrect === true
-                                            })
-                                        )
-                                }
-                                : undefined
-                    })
-                )
+                    options: {
+                        create: question.options.map((option) => ({
+                            optionText: option.optionText,
+                            isCorrect:
+                                option.isCorrect === true
+                        }))
+                    }
+                }))
             }
         },
 
@@ -172,22 +140,16 @@ const deleteAssessment = async (id) => {
 };
 
 
-/*
- * Get assessment by ID
- */
 const getAssessmentById = async (id) => {
-
     return await prisma.assessment.findUnique({
         where: {
-            id: Number(id)
+            id
         },
-
         include: {
             questions: {
                 include: {
                     options: true
                 },
-
                 orderBy: {
                     order: "asc"
                 }
@@ -197,61 +159,21 @@ const getAssessmentById = async (id) => {
 };
 
 
-/*
- * Submit assessment
- *
- * Calculates the score using the
- * correct options stored in the database.
- */
 const submitAssessment = async (
     assessmentId,
     data
 ) => {
 
-    const id =
-        Number(assessmentId);
-
-    const enrollmentId =
-        Number(data.enrollmentId);
-
-
-    /*
-     * Fetch assessment and its course
-     * in one database query.
-     */
     const assessment =
         await prisma.assessment.findUnique({
-
             where: {
-                id
+                id: assessmentId
             },
-
-            select: {
-                id: true,
-                title: true,
-                totalMarks: true,
-                status: true,
-
-                module: {
-                    select: {
-                        courseId: true
-                    }
-                },
-
+            include: {
                 questions: {
-                    select: {
-                        id: true,
-                        marks: true,
-                        questionType: true,
-
-                        options: {
-                            select: {
-                                id: true,
-                                isCorrect: true
-                            }
-                        }
+                    include: {
+                        options: true
                     },
-
                     orderBy: {
                         order: "asc"
                     }
@@ -267,43 +189,10 @@ const submitAssessment = async (
     }
 
 
-    /*
-     * Do not allow submissions to
-     * inactive assessments.
-     */
-    if (assessment.status !== "ACTIVE") {
-        throw new Error(
-            "Assessment is not active"
-        );
-    }
-
-
-    /*
-     * Get enrollment and course information.
-     */
     const enrollment =
         await prisma.enrollment.findUnique({
-
             where: {
-                id: enrollmentId
-            },
-
-            select: {
-                id: true,
-                enrollmentStatus: true,
-
-                batch: {
-                    select: {
-                        courseId: true,
-                        status: true,
-
-                        course: {
-                            select: {
-                                status: true
-                            }
-                        }
-                    }
-                }
+                id: Number(data.enrollmentId)
             }
         });
 
@@ -315,257 +204,101 @@ const submitAssessment = async (
     }
 
 
-    /*
-     * Validate enrollment status.
-     */
-    if (
-        ![
-            "ACTIVE",
-            "ENROLLED"
-        ].includes(
-            enrollment.enrollmentStatus
-        )
-    ) {
-        throw new Error(
-            "Enrollment is not active"
-        );
-    }
-
-
-    /*
-     * Validate batch status.
-     */
-    if (
-        enrollment.batch?.status !==
-        "ACTIVE"
-    ) {
-        throw new Error(
-            "Batch is not active"
-        );
-    }
-
-
-    /*
-     * Validate course status.
-     */
-    if (
-        enrollment.batch?.course?.status !==
-        "ACTIVE"
-    ) {
-        throw new Error(
-            "Course is not active"
-        );
-    }
-
-
-    /*
-     * Make sure the assessment belongs
-     * to the enrolled course.
-     */
-    if (
-        !assessment.module ||
-        assessment.module.courseId !==
-        enrollment.batch.courseId
-    ) {
-        throw new Error(
-            "This assessment does not belong to the enrolled course"
-        );
-    }
-
-
-    /*
-     * Validate answers.
-     */
-    if (!Array.isArray(data.answers)) {
-        throw new Error(
-            "Answers must be an array"
-        );
-    }
-
-
-    if (data.answers.length === 0) {
-        throw new Error(
-            "At least one answer is required"
-        );
-    }
-
-
-    /*
-     * Prevent submitting the same
-     * question multiple times.
-     */
-    const questionIds =
-        data.answers.map(
-            (answer) =>
-                Number(answer.questionId)
-        );
-
-    const uniqueQuestionIds =
-        new Set(questionIds);
-
-    if (
-        uniqueQuestionIds.size !==
-        questionIds.length
-    ) {
-        throw new Error(
-            "Duplicate question answers are not allowed"
-        );
-    }
-
-
     let score = 0;
 
 
-    /*
-     * Calculate answer results.
-     */
     const answers =
-        data.answers.map(
-            (answer) => {
+        data.answers.map((answer) => {
 
-                const question =
-                    assessment.questions.find(
-                        (item) =>
-                            item.id ===
-                            Number(
-                                answer.questionId
-                            )
-                    );
+            const question =
+                assessment.questions.find(
+                    (item) =>
+                        item.id ===
+                        Number(answer.questionId)
+                );
 
 
-                if (!question) {
-                    throw new Error(
-                        `Question ${answer.questionId} not found in this assessment`
-                    );
-                }
-
-
-                /*
-                 * Coding questions don't use
-                 * MCQ options.
-                 */
-                if (
-                    question.questionType ===
-                    "CODING"
-                ) {
-                    return {
-                        questionId:
-                            question.id,
-
-                        selectedOptionId:
-                            null,
-
-                        isCorrect:
-                            false,
-
-                        marksObtained:
-                            0
-                    };
-                }
-
-
-                const selectedOption =
-                    question.options.find(
-                        (option) =>
-                            option.id ===
-                            Number(
-                                answer.selectedOptionId
-                            )
-                    );
-
-
-                if (!selectedOption) {
-                    throw new Error(
-                        `Invalid option for question ${question.id}`
-                    );
-                }
-
-
-                const isCorrect =
-                    selectedOption.isCorrect ===
-                    true;
-
-
-                const marksObtained =
-                    isCorrect
-                        ? Number(question.marks)
-                        : 0;
-
-
-                score += marksObtained;
-
-
-                return {
-                    questionId:
-                        question.id,
-
-                    selectedOptionId:
-                        selectedOption.id,
-
-                    isCorrect,
-
-                    marksObtained
-                };
+            if (!question) {
+                throw new Error(
+                    `Question ${answer.questionId} not found in this assessment`
+                );
             }
-        );
 
 
-    /*
-     * Calculate percentage.
-     */
+            const selectedOption =
+                question.options.find(
+                    (option) =>
+                        option.id ===
+                        Number(answer.selectedOptionId)
+                );
+
+
+            if (!selectedOption) {
+                throw new Error(
+                    `Invalid option for question ${question.id}`
+                );
+            }
+
+
+            const isCorrect =
+                selectedOption.isCorrect === true;
+
+
+            const marksObtained =
+                isCorrect
+                    ? question.marks
+                    : 0;
+
+
+            score += marksObtained;
+
+
+            return {
+                questionId:
+                    question.id,
+
+                selectedOptionId:
+                    selectedOption.id,
+
+                isCorrect,
+
+                marksObtained
+            };
+        });
+
+
     const percentage =
-        Number(
-            (
-                assessment.totalMarks > 0
-                    ? (
-                        score /
-                        assessment.totalMarks
-                    ) * 100
-                    : 0
-            ).toFixed(2)
-        );
+        assessment.totalMarks > 0
+            ? (score / assessment.totalMarks) * 100
+            : 0;
 
 
-    /*
-     * Create submission and answers
-     * inside a transaction.
-     */
     const submission =
-        await prisma.$transaction(
-            async (tx) => {
+        await prisma.assessmentSubmission.create({
+            data: {
+                assessmentId,
 
-                return await tx
-                    .assessmentSubmission
-                    .create({
+                enrollmentId:
+                    Number(data.enrollmentId),
 
-                        data: {
-                            assessmentId: id,
+                score,
 
-                            enrollmentId:
-                                enrollmentId,
+                totalMarks:
+                    assessment.totalMarks,
 
-                            score,
+                percentage,
 
-                            totalMarks:
-                                assessment.totalMarks,
+                status: "SUBMITTED",
 
-                            percentage,
+                answers: {
+                    create: answers
+                }
+            },
 
-                            status:
-                                "SUBMITTED",
-
-                            answers: {
-                                create:
-                                    answers
-                            }
-                        },
-
-                        include: {
-                            answers: true
-                        }
-                    });
+            include: {
+                answers: true
             }
-        );
+        });
 
 
     return submission;
@@ -578,23 +311,21 @@ const submitAssessment = async (
 const getAssessmentAnalytics =
     async (assessmentId) => {
 
-        const id =
-            Number(assessmentId);
-
-
-        /*
-         * Check assessment exists first.
-         */
         const assessment =
             await prisma.assessment.findUnique({
-
                 where: {
-                    id
+                    id: assessmentId
                 },
 
-                select: {
-                    id: true,
-                    title: true
+                include: {
+                    submissions: {
+                        select: {
+                            score: true,
+                            totalMarks: true,
+                            percentage: true,
+                            status: true
+                        }
+                    }
                 }
             });
 
@@ -606,54 +337,97 @@ const getAssessmentAnalytics =
         }
 
 
-        /*
-         * Aggregate submission statistics.
-         */
-        const result =
-            await prisma.assessmentSubmission
-                .aggregate({
-
-                    where: {
-                        assessmentId: id
-                    },
-
-                    _count: {
-                        id: true
-                    },
-
-                    _avg: {
-                        score: true,
-                        percentage: true
-                    },
-
-                    _max: {
-                        score: true
-                    },
-
-                    _min: {
-                        score: true
-                    }
-                });
-
-
-        /*
-         * Count passed submissions.
-         */
-        const passed =
-            await prisma.assessmentSubmission.count({
-
-                where: {
-                    assessmentId: id,
-
-                    percentage: {
-                        gte: 40
-                    }
-                }
-            });
+        const submissions =
+            assessment.submissions;
 
 
         const totalSubmissions =
-            result._count.id;
+            submissions.length;
+
+
+        if (totalSubmissions === 0) {
+
+            return {
+                assessmentId:
+                    assessment.id,
+
+                title:
+                    assessment.title,
+
+                totalSubmissions: 0,
+
+                averageScore: 0,
+
+                averagePercentage: 0,
+
+                highestScore: 0,
+
+                lowestScore: 0,
+
+                passed: 0,
+
+                failed: 0
+            };
+        }
+
+
+        const scores =
+            submissions.map(
+                (submission) =>
+                    Number(
+                        submission.score || 0
+                    )
+            );
+
+
+        const percentages =
+            submissions.map(
+                (submission) =>
+                    Number(
+                        submission.percentage || 0
+                    )
+            );
+
+
+        const totalScore =
+            scores.reduce(
+                (sum, score) =>
+                    sum + score,
+                0
+            );
+
+
+        const totalPercentage =
+            percentages.reduce(
+                (sum, percentage) =>
+                    sum + percentage,
+                0
+            );
+
+
+        const averageScore =
+            totalScore /
+            totalSubmissions;
+
+
+        const averagePercentage =
+            totalPercentage /
+            totalSubmissions;
+
+
+        const highestScore =
+            Math.max(...scores);
+
+
+        const lowestScore =
+            Math.min(...scores);
+
+
+        const passed =
+            percentages.filter(
+                (percentage) =>
+                    percentage >= 40
+            ).length;
 
 
         const failed =
@@ -661,7 +435,6 @@ const getAssessmentAnalytics =
 
 
         return {
-
             assessmentId:
                 assessment.id,
 
@@ -672,31 +445,17 @@ const getAssessmentAnalytics =
 
             averageScore:
                 Number(
-                    (
-                        result._avg.score || 0
-                    ).toFixed(2)
+                    averageScore.toFixed(2)
                 ),
 
             averagePercentage:
                 Number(
-                    (
-                        result._avg.percentage || 0
-                    ).toFixed(2)
+                    averagePercentage.toFixed(2)
                 ),
 
-            highestScore:
-                Number(
-                    (
-                        result._max.score || 0
-                    )
-                ),
+            highestScore,
 
-            lowestScore:
-                Number(
-                    (
-                        result._min.score || 0
-                    )
-                ),
+            lowestScore,
 
             passed,
 
@@ -748,18 +507,15 @@ const saveJudge0Token = async (
     }
 
 
-    return await prisma
-        .assessmentSubmission
-        .update({
+    return await prisma.assessmentSubmission.update({
+        where: {
+            id: Number(submissionId)
+        },
 
-            where: {
-                id: Number(submissionId)
-            },
-
-            data: {
-                judge0Token
-            }
-        });
+        data: {
+            judge0Token
+        }
+    });
 };
 
 
@@ -777,75 +533,56 @@ const getSubmissionByJudge0Token =
         }
 
 
-        return await prisma
-            .assessmentSubmission
-            .findUnique({
+        return await prisma.assessmentSubmission.findUnique({
+            where: {
+                judge0Token
+            },
 
-                where: {
-                    judge0Token
-                },
-
-                include: {
-                    assessment: true,
-                    answers: true
-                }
-            });
+            include: {
+                assessment: true,
+                answers: true
+            }
+        });
     };
 
 
 /*
  * Update assessment submission
- * with Judge0 result.
+ * with complete Judge0 result.
  */
-const updateAssessmentSubmissionStatus = async (
-    submissionId,
-    data
-) => {
+const updateAssessmentSubmissionStatus =
+    async (
+        submissionId,
+        data
+    ) => {
 
-    const submission =
-        await prisma.assessmentSubmission.findUnique({
+        if (!data) {
+            throw new Error(
+                "Judge0 result data is required"
+            );
+        }
+
+
+        return await prisma.assessmentSubmission.update({
             where: {
                 id: Number(submissionId)
             },
-            include: {
-                assessment: {
-                    include: {
-                        questions: true
-                    }
-                },
-                answers: true
-            }
-        });
 
-    if (!submission) {
-        throw new Error(
-            "Assessment submission not found"
-        );
-    }
+            data: {
+                status:
+                    data.status || "FAILED",
 
-    const judge0Status =
-        data.judge0Status || null;
+                judge0Status:
+                    data.judge0Status || null,
 
-    let status = "FAILED";
+                stdout:
+                    data.stdout || null,
 
-    if (judge0Status === "Accepted") {
-        status = "COMPLETED";
-    }
+                stderr:
+                    data.stderr || null,
 
-    /*
-     * Find the coding answer associated
-     * with this submission.
-     */
-    const codingAnswer =
-        submission.answers.find(
-            answer => answer.code
-        );
-
-    /*
-     * If Judge0 accepted the code,
-     * mark the coding answer correct.
-     */
-    if (codingAnswer) {
+                compileOutput:
+                    data.compileOutput || null,
 
                 executionTime:
                     data.executionTime !== null &&
@@ -860,6 +597,7 @@ const updateAssessmentSubmissionStatus = async (
                         : null
             }
         });
+    };
 
 /*
 * Check assessment completion for an enrollment.
@@ -873,259 +611,193 @@ const getEnrollmentAssessmentStatus = async (
     enrollmentId
 ) => {
 
-        const id =
-            Number(enrollmentId);
+    enrollmentId = Number(enrollmentId);
 
+    const enrollment =
+        await prisma.enrollment.findUnique({
+            where: {
+                id: enrollmentId
+            },
 
-        /*
-         * Get course ID.
-         */
-        const enrollment =
-            await prisma.enrollment.findUnique({
+            include: {
+                batch: {
+                    include: {
+                        course: {
+                            include: {
+                                modules: {
+                                    include: {
+                                        assessments: {
+                                            select: {
+                                                id: true,
+                                                title: true,
+                                                submissions: {
+                                                    where: {
+                                                        enrollmentId
+                                                    },
 
-                where: {
-                    id
-                },
+                                                    select: {
+                                                        id: true,
+                                                        percentage: true,
+                                                        status: true,
+                                                        submittedAt: true
+                                                    },
 
-                select: {
-                    id: true,
-
-                    batch: {
-                        select: {
-                            courseId: true
+                                                    orderBy: {
+                                                        submittedAt: "desc"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            });
-
-
-        if (!enrollment) {
-            throw new Error(
-                "Enrollment not found"
-            );
-        }
-
-
-        const courseId =
-            enrollment.batch.courseId;
-
-
-        /*
-         * Get active assessments and only
-         * the latest submission.
-         */
-        const assessments =
-            await prisma.assessment.findMany({
-
-                where: {
-                    module: {
-                        courseId
-                    },
-
-                    status: "ACTIVE"
-                },
-
-                select: {
-                    id: true,
-                    title: true,
-
-                    submissions: {
-                        where: {
-                            enrollmentId: id
-                        },
-
-                        select: {
-                            id: true,
-                            percentage: true,
-                            status: true,
-                            submittedAt: true
-                        },
-
-                        orderBy: {
-                            submittedAt: "desc"
-                        },
-
-                        take: 1
-                    }
-                },
-
-                orderBy: {
-                    id: "asc"
-                }
-            });
-
-
-        const totalAssessments =
-            assessments.length;
-
-
-        let passedAssessments = 0;
-        let failedAssessments = 0;
-
-
-        const assessmentResults =
-            assessments.map(
-                (assessment) => {
-
-                    const latestSubmission =
-                        assessment.submissions?.[0];
-
-
-                    /*
-                     * No submission.
-                     */
-                    if (!latestSubmission) {
-
-                        failedAssessments++;
-
-                        return {
-
-                            assessmentId:
-                                assessment.id,
-
-                            title:
-                                assessment.title,
-
-                            attempted:
-                                false,
-
-                            passed:
-                                false,
-
-                            percentage:
-                                null
-                        };
-                    }
-
-
-                    const percentage =
-                        Number(
-                            latestSubmission
-                                .percentage || 0
-                        );
-
-
-                    /*
-                     * Passing percentage = 40%.
-                     */
-                    const passed =
-                        percentage >= 40;
-
-
-                    if (passed) {
-                        passedAssessments++;
-                    } else {
-                        failedAssessments++;
-                    }
-
-
-                    return {
-
-                        assessmentId:
-                            assessment.id,
-
-                        title:
-                            assessment.title,
-
-                        attempted:
-                            true,
-
-                        passed,
-
-                        percentage
-                    };
-                }
-            );
-
-
-        /*
-         * No assessments should not block
-         * certificate generation.
-         */
-        const allPassed =
-            totalAssessments === 0 ||
-            passedAssessments ===
-                totalAssessments;
-
-
-        return {
-
-            enrollmentId: id,
-
-            totalAssessments,
-
-            passedAssessments,
-
-            failedAssessments,
-
-            allPassed,
-
-            assessments:
-                assessmentResults
-        };
-    };
-
-    const getAssessmentSubmissionResult = async (submissionId) => {
-
-    const submission =
-        await prisma.assessmentSubmission.findUnique({
-            where: {
-                id: Number(submissionId)
-            },
-
-            select: {
-                id: true,
-                assessmentId: true,
-                enrollmentId: true,
-
-                judge0Token: true,
-                judge0Status: true,
-
-                stdout: true,
-                stderr: true,
-                compileOutput: true,
-
-                executionTime: true,
-                memory: true,
-
-                score: true,
-                totalMarks: true,
-                percentage: true,
-
-                status: true,
-
-                submittedAt: true,
-                createdAt: true,
-                updatedAt: true
             }
         });
 
-    if (!submission) {
-        throw new Error("Assessment submission not found");
+
+    if (!enrollment) {
+        throw new Error("Enrollment not found");
     }
 
-    return submission;
+
+    /*
+     * Get all assessments belonging
+     * to the enrolled course.
+     */
+    const assessments =
+        enrollment.batch.course.modules.flatMap(
+            (module) => module.assessments
+        );
+
+
+    const totalAssessments =
+        assessments.length;
+
+
+    let passedAssessments = 0;
+    let failedAssessments = 0;
+
+
+    const assessmentResults =
+        assessments.map((assessment) => {
+
+            /*
+             * No submission means assessment
+             * has not been completed.
+             */
+            if (
+                !assessment.submissions ||
+                assessment.submissions.length === 0
+            ) {
+
+                failedAssessments++;
+
+                return {
+                    assessmentId: assessment.id,
+                    title: assessment.title,
+                    attempted: false,
+                    passed: false,
+                    percentage: null
+                };
+            }
+
+
+            /*
+             * Check whether the student has
+             * passed this assessment.
+             *
+             * Any submission >= 40% is considered
+             * a passed assessment(Change the cndition according to the requirements).
+             */
+            const passedSubmission =
+                assessment.submissions.find(
+                    (submission) =>
+                        Number(
+                            submission.percentage || 0
+                        ) >= 40
+                );
+
+
+            if (passedSubmission) {
+
+                passedAssessments++;
+
+                return {
+                    assessmentId: assessment.id,
+                    title: assessment.title,
+                    attempted: true,
+                    passed: true,
+                    percentage:
+                        Number(
+                            passedSubmission.percentage
+                        )
+                };
+            }
+
+
+            /*
+             * Assessment attempted but not passed.
+             */
+            failedAssessments++;
+
+            const latestSubmission =
+                assessment.submissions[0];
+
+
+            return {
+                assessmentId: assessment.id,
+                title: assessment.title,
+                attempted: true,
+                passed: false,
+                percentage:
+                    Number(
+                        latestSubmission.percentage || 0
+                    )
+            };
+        });
+
+
+    /*
+     * If there are no assessments,
+     * don't block certificate generation.
+     */
+    const allPassed =
+        totalAssessments === 0 ||
+        passedAssessments === totalAssessments;
+
+
+    return {
+
+        enrollmentId,
+
+        totalAssessments,
+
+        passedAssessments,
+
+        failedAssessments,
+
+        allPassed,
+
+        assessments:
+            assessmentResults
+    };
 };
 
 
 module.exports = {
-
     createAssessment,
-
     getAssessmentById,
     getAllAssessments,
     updateAssessment,
     deleteAssessment,
     submitAssessment,
-
     getAssessmentAnalytics,
     getSubmissionsByAssessmentId,
     saveJudge0Token,
-
     getSubmissionByJudge0Token,
-
     updateAssessmentSubmissionStatus,
-
-    getEnrollmentAssessmentStatus,
-    getAssessmentSubmissionResult
+    getEnrollmentAssessmentStatus
 };

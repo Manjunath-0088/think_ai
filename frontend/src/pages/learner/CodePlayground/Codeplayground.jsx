@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '../../../components/ThemeContext';
-import { executeCode  } from '../../../api/codeExecutionApi';
+import { submitCode, resetExecution } from '../../../features/codeExecution/codeExecutionSlice';
 
 const LANGUAGES = [
   { id: 'javascript', label: 'JavaScript', monacoId: 'javascript' },
@@ -34,40 +35,81 @@ function SpinnerIcon() {
   );
 }
 
-export default function CodePlayground() {
+const STATUS_LABEL = {
+  idle: 'idle',
+  submitting: 'sending…',
+  polling: 'running…',
+  success: 'success',
+  error: 'error',
+};
+
+/**
+ * `submissionId` identifies the assessment/practice submission row this
+ * run belongs to. In a standalone practice playground (no assessment
+ * context) the backend should accept a scratch/practice submission id;
+ * swap this prop wiring for whatever your route provides.
+ */
+export default function CodePlayground({ submissionId }) {
   const { isDarkMode } = useTheme();
+  const dispatch = useDispatch();
+  const execution = useSelector((state) => state.codeExecution) ?? {
+    status: 'idle',
+    compileOutput: '',
+    stdout: '',
+    stderr: '',
+    errorMessage: null,
+    time: null,
+    memory: null,
+  };
+
   const [language, setLanguage] = useState('javascript');
   const [code, setCode] = useState(DEFAULT_SNIPPETS.javascript);
-  const [status, setStatus] = useState('idle'); // idle | running | success | error
-  const [output, setOutput] = useState('');
+  const [localError, setLocalError] = useState(null); // client-side guard, never reaches Redux/server
+  const abortRef = useRef(null);
 
-  const handleRun = useCallback(async () => {
-    setStatus('running');
-    setOutput('');
+  useEffect(() => () => abortRef.current?.abort?.(), []);
 
-    try {
-     const result = await executeCode({ language, code });
-      const combined = [result.stdout, result.stderr].filter(Boolean).join('\n');
-      setStatus(result.exitCode === 0 ? 'success' : 'error');
-      setOutput(combined || (result.exitCode === 0 ? '(no output)' : 'Execution failed.'));
-    } catch (err) {
-      setStatus('error');
-      setOutput(err.message || 'Something went wrong running your code.');
+  const status = execution.status; // idle | submitting | polling | success | error
+  const isRunning = status === 'submitting' || status === 'polling';
+
+  const handleRun = useCallback(() => {
+    if (!submissionId) {
+      setLocalError('No submission context — this playground needs a valid submissionId to run code.');
+      return;
     }
-  }, [language, code]);
+    setLocalError(null);
+    const thunkPromise = dispatch(submitCode({ language, code, submissionId }));
+    abortRef.current = thunkPromise;
+  }, [dispatch, language, code, submissionId]);
 
   const handleLanguageChange = (e) => {
     const next = e.target.value;
     setLanguage(next);
     setCode(DEFAULT_SNIPPETS[next] ?? '');
-    setStatus('idle');
-    setOutput('');
+    setLocalError(null);
+    dispatch(resetExecution());
   };
+
+  const output = [execution.compileOutput, execution.stdout, execution.stderr]
+    .filter(Boolean)
+    .join('\n');
+
+  const outputText = localError
+    ? localError
+    : status === 'idle'
+      ? 'Run your code to see output here.'
+      : output || (status === 'success' ? '(no output)' : execution.errorMessage || 'Execution failed.');
+
+  const badgeLabel = localError
+    ? 'error'
+    : execution.errorMessage && status === 'error'
+      ? 'error'
+      : STATUS_LABEL[status] || status;
 
   return (
     <div className="flex h-[calc(100vh-8.5rem)] flex-col gap-4">
       {/* toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent-to)]/80">
             Code Playground
@@ -75,13 +117,15 @@ export default function CodePlayground() {
           <h1 className="text-xl font-bold text-[var(--text-primary)]">Practice &amp; Experiment</h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <select
             value={language}
             onChange={handleLanguageChange}
             aria-label="Select language"
-            className="rounded-lg border border-[var(--border)] bg-purple-600 px-3 py-2 text-sm
-                       text-blue-200 outline-none focus:border-[var(--border-hover)]"
+            disabled={isRunning}
+            className="rounded-lg border border-[var(--border)] bg-[var(--surface-glass)] px-3 py-2 text-sm
+                       text-[var(--text-primary)] outline-none focus:border-[var(--border-hover)]
+                       disabled:opacity-60"
           >
             {LANGUAGES.map((l) => (
               <option key={l.id} value={l.id}>
@@ -92,13 +136,13 @@ export default function CodePlayground() {
 
           <button
             onClick={handleRun}
-            disabled={status === 'running'}
+            disabled={isRunning || !submissionId}
             className="flex items-center gap-2 rounded-lg bg-green-600
                px-4 py-2 text-sm font-semibold text-green-100 transition-all
-               hover:bg-green-700 disabled:opacity-60"
+               hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {status === 'running' ? <SpinnerIcon /> : <PlayIcon />}
-            {status === 'running' ? 'Running…' : 'Run'}
+            {isRunning ? <SpinnerIcon /> : <PlayIcon />}
+            {status === 'submitting' ? 'Submitting…' : status === 'polling' ? 'Running…' : 'Run'}
           </button>
         </div>
       </div>
@@ -127,22 +171,27 @@ export default function CodePlayground() {
               Output
             </span>
             <span
-              className={`rounded-full px-2 py-0.5 font-mono text-[11px] ${
-                status === 'success'
+              className={`rounded-full px-2 py-0.5 font-mono text-[11px] ${status === 'success'
                   ? 'bg-[var(--success)]/15 text-[var(--success)]'
                   : status === 'error'
                     ? 'bg-[var(--danger)]/15 text-[var(--danger)]'
-                    : status === 'running'
+                    : isRunning
                       ? 'bg-[var(--accent-to)]/15 text-[var(--accent-to)]'
                       : 'bg-[var(--surface-hover)] text-[var(--text-muted)]'
-              }`}
+                }`}
             >
-              {status}
+              {badgeLabel}
             </span>
           </div>
           <pre className="flex-1 overflow-auto whitespace-pre-wrap p-4 font-mono text-sm text-[var(--text-secondary)]">
-            {output || 'Run your code to see output here.'}
+            {outputText}
           </pre>
+          {(execution.time || execution.memory) && (
+            <div className="flex gap-4 border-t border-[var(--border)] px-4 py-2 text-[11px] text-[var(--text-muted)]">
+              {execution.time && <span>Time: {execution.time}s</span>}
+              {execution.memory && <span>Memory: {execution.memory} KB</span>}
+            </div>
+          )}
         </div>
       </div>
     </div>
