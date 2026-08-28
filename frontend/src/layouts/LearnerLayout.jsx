@@ -7,6 +7,18 @@ import GlobalSearch from '../pages/search/GlobalSearch';
 import NotificationContainer from '../components/preferenceNotification/PreferenceNotificationContainer';
 import NotificationDropdown from '../components/preferenceNotification/PreferenceNotificationsDropDown';
 
+const NAV_LINKS = [
+  { to: '/learner', label: 'Dashboard' },
+  { to: '/learner/courses', label: 'Courses' },
+  { to: '/learner/assessments', label: 'Assignments' },
+  { to: '/learner/playground', label: 'Playground' },
+  { to: '/learner/certificates', label: 'Certificates' },
+  { to: '/learner/live', label: 'Live Classes' },
+
+  { to: '/forum', label: 'Community' },
+];
+
+
 export default function LearnerLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
