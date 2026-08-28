@@ -1,3 +1,4 @@
+const { roleSatisfies } = require("../config/roleHierarchy");
 // TEMPORARY: role passed via header or bearer token until real login/auth system exists
 function requireRole(allowedRoles) {
   return (req, res, next) => {
@@ -7,7 +8,7 @@ function requireRole(allowedRoles) {
       userRole = req.headers.authorization.split(" ")[1];
     }
 
-    if (!userRole || !allowedRoles.includes(userRole)) {
+    if (!userRole || !roleSatisfies(userRole,allowedRoles)) {
       return res.status(403).json({ success: false, message: "Forbidden: insufficient role" });
     }
     req.user = { role: userRole };
