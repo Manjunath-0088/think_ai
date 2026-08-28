@@ -24,7 +24,7 @@ const assessmentRoutes = require("./routes/assessmentRoutes");
 const certificateRoutes = require("./routes/certificateRoutes");
 const lessonProgressRoutes = require("./routes/lessonProgressRoutes");
 const codeExecutionRoutes = require("./routes/codeExecutionRoutes");
-
+const sessionRoutes = require("./routes/sessionRoutes");
 
 const app = express();
 
@@ -44,6 +44,7 @@ app.use("/api/batches", batchRoutes);
 app.use("/api/modules", moduleRoutes);
 app.use("/api/enrollments", enrollmentRoutes);   // <-- added
 app.use("/api/lessons", lessonRoutes);           // <-- added
+app.use("/api/v1", sessionRoutes);
 app.use("/admin", adminUsersRoutes);
 app.use("/api/audit-log", auditLogRoutes);
 app.use("/api/notifications", notificationPreferenceRoutes);
@@ -54,6 +55,7 @@ app.use("/api/code", codeExecutionRoutes);
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, { cors: { origin: "*" } });
+app.set("io", io);
 initSockets(io);
 
 const PORT = process.env.PORT || 5000;
