@@ -6,26 +6,85 @@ const path = require("path");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 
-const courseRoutes = require("./routes/courseRoutes");
-const batchRoutes = require("./routes/batchRoutes");
-const enrollmentRoutes = require("./routes/enrollmentRoutes");
-const authRoutes = require("./routes/authRoutes")
-const adminUsers = require("./routes/adminUsers");
-const roleRoutes = require("./routes/roleRoutes");
-const demoRoutes = require("./routes/demoRoutes");
-const moduleRoutes = require("./routes/moduleRoutes");
-const lessonRoutes = require("./routes/lessonRoutes");
-const lessonProgressRoutes = require("./routes/lessonProgressRoutes");
-const certificateRoutes = require("./routes/certificateRoutes");
-const assessmentRoutes = require("./routes/assessmentRoutes");
-const codeExecutionRoutes = require("./routes/codeExecutionRoutes");
-const auditLogRoutes = require("./routes/auditLogs");
-const analyticsRoutes = require("./routes/analytics");
+
+// ============================================================
+// ROUTES
+// ============================================================
+
+const courseRoutes =
+    require("./routes/courseRoutes");
+
+const batchRoutes =
+    require("./routes/batchRoutes");
+
+const enrollmentRoutes =
+    require("./routes/enrollmentRoutes");
+
+const moduleRoutes =
+    require("./routes/moduleRoutes");
+
+const lessonRoutes =
+    require("./routes/lessonRoutes");
+
+const lessonProgressRoutes =
+    require("./routes/lessonProgressRoutes");
+
+const certificateRoutes =
+    require("./routes/certificateRoutes");
+
+const assessmentRoutes =
+    require("./routes/assessmentRoutes");
+
+const codeExecutionRoutes =
+    require("./routes/codeExecutionRoutes");
+
+const auditLogRoutes =
+    require("./routes/auditLogs");
+
+const analyticsRoutes =
+    require("./routes/analytics");
+
+
+// ============================================================
+// ADMIN CODING QUESTION ROUTES
+// ============================================================
+//
+// This file will contain:
+//
+// POST   /api/admin/coding-questions
+// GET    /api/admin/assessments/:assessmentId/coding-questions
+// GET    /api/admin/coding-questions/:questionId
+// PUT    /api/admin/coding-questions/:questionId
+// DELETE /api/admin/coding-questions/:questionId
+//
+// POST   /api/admin/coding-questions/:questionId/test-cases
+// GET    /api/admin/coding-questions/:questionId/test-cases
+// PUT    /api/admin/coding-test-cases/:testCaseId
+// DELETE /api/admin/coding-test-cases/:testCaseId
+//
+// ============================================================
+
+const adminCodingQuestionRoutes = require("./routes/adminCodingQuestionRoutes");
+
+
+// ============================================================
+// APP
+// ============================================================
 
 const app = express();
 
+
+// ============================================================
+// GLOBAL MIDDLEWARE
+// ============================================================
+
 app.use(cors());
-app.use(express.json());
+
+app.use(
+    express.json({
+        limit: "1mb"
+    })
+);
 
 app.use(
     express.urlencoded({
@@ -33,69 +92,106 @@ app.use(
     })
 );
 
-app.use(morgan("dev"));
-const session = require('express-session');
-const passport = require('passport');
-require('./config/passport');
+app.use(
+    morgan("dev")
+);
 
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'your_secret_fallback',
-    resave: false,
-    saveUninitialized: false
-}));
-app.use(passport.initialize());
-app.use(passport.session());
 
-// Mount Demo Routes
-app.use('/api/demo', demoRoutes);
+// ============================================================
+// AUDIT LOGS
+// ============================================================
 
 app.use(
     "/api/audit-logs",
     auditLogRoutes
 );
 
+
+// ============================================================
+// ANALYTICS
+// ============================================================
+
 app.use(
     "/api/analytics",
     analyticsRoutes
 );
 
+
+// ============================================================
+// SWAGGER
+// ============================================================
+
 const swaggerOptions = {
+
     definition: {
+
         openapi: "3.0.0",
 
         info: {
-            title: "Thinkz LMS API",
-            version: "1.0.0",
+
+            title:
+                "Thinkz LMS API",
+
+            version:
+                "1.0.0",
+
             description:
                 "Course, Batch, Enrollment, Assessment and Code Execution APIs"
         },
 
         servers: [
+
             {
-                url: "http://localhost:5000"
+                url:
+                    "http://localhost:5000"
             }
+
         ]
     },
 
-    apis: ["./routes/*.js"]
+    apis: [
+        "./routes/*.js"
+    ]
 };
 
+
 const swaggerSpec =
-    swaggerJsdoc(swaggerOptions);
+    swaggerJsdoc(
+        swaggerOptions
+    );
+
 
 app.use(
     "/api-docs",
     swaggerUi.serve,
-    swaggerUi.setup(swaggerSpec)
+    swaggerUi.setup(
+        swaggerSpec
+    )
 );
 
-app.get("/", (req, res) => {
-    res.status(200).json({
-        success: true,
-        message:
-            "Thinkz LMS Backend Running Successfully"
-    });
-});
+
+// ============================================================
+// HEALTH CHECK
+// ============================================================
+
+app.get(
+    "/",
+    (req, res) => {
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "Thinkz LMS Backend Running Successfully"
+        });
+    }
+);
+
+
+// ============================================================
+// CERTIFICATE STATIC FILES
+// ============================================================
 
 // API Routes
 app.use("/api/courses", courseRoutes);
@@ -115,67 +211,186 @@ app.use(
     )
 );
 
+
+// ============================================================
+// COURSE ROUTES
+// ============================================================
+
 app.use(
     "/api/courses",
     courseRoutes
 );
+
+
+// ============================================================
+// BATCH ROUTES
+// ============================================================
 
 app.use(
     "/api/batches",
     batchRoutes
 );
 
+
+// ============================================================
+// ENROLLMENT ROUTES
+// ============================================================
+
 app.use(
     "/api/enrollments",
     enrollmentRoutes
 );
+
+
+// ============================================================
+// MODULE ROUTES
+// ============================================================
 
 app.use(
     "/api/modules",
     moduleRoutes
 );
 
+
+// ============================================================
+// LESSON ROUTES
+// ============================================================
+
 app.use(
     "/api/lessons",
     lessonRoutes
 );
+
+
+// ============================================================
+// LESSON PROGRESS ROUTES
+// ============================================================
 
 app.use(
     "/api/lesson-progress",
     lessonProgressRoutes
 );
 
+
+// ============================================================
+// CERTIFICATE ROUTES
+// ============================================================
+
 app.use(
     "/api/certificates",
     certificateRoutes
 );
+
+
+// ============================================================
+// ASSESSMENT ROUTES
+// ============================================================
+//
+// Existing:
+//
+// POST /api/assessments
+// GET  /api/assessments/:id
+// GET  /api/assessments/:id/analytics
+// POST /api/assessments/:id/submit
+//
+// ============================================================
 
 app.use(
     "/api/assessments",
     assessmentRoutes
 );
 
+
+// ============================================================
+// ADMIN CODING QUESTION ROUTES
+// ============================================================
+//
+// New:
+//
+// POST   /api/admin/coding-questions
+// GET    /api/admin/assessments/:assessmentId/coding-questions
+// GET    /api/admin/coding-questions/:questionId
+// PUT    /api/admin/coding-questions/:questionId
+// DELETE /api/admin/coding-questions/:questionId
+//
+// POST   /api/admin/coding-questions/:questionId/test-cases
+// GET    /api/admin/coding-questions/:questionId/test-cases
+// PUT    /api/admin/coding-test-cases/:testCaseId
+// DELETE /api/admin/coding-test-cases/:testCaseId
+//
+// ============================================================
+
+app.use("/api/admin", adminCodingQuestionRoutes);
+
+
+// ============================================================
+// CODE EXECUTION / JUDGE0
+// ============================================================
+//
+// Existing:
+//
+// POST /api/code/execute
+// PUT  /api/code/callback
+// GET  /api/code/submissions/:submissionId
+//
+// ============================================================
+
 app.use(
     "/api/code",
     codeExecutionRoutes
 );
 
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "healthy",
-    service: "think-ai-backend",
-    timestamp: new Date().toISOString()
-  });
-});
 
-// ----------------------------------------------------
-// Export App
-// ----------------------------------------------------
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "healthy",
-    service: "think-ai-backend",
-    timestamp: new Date().toISOString()
-  });
-});
+// ============================================================
+// 404 HANDLER
+// ============================================================
+
+app.use(
+    (req, res) => {
+
+        return res.status(404).json({
+
+            success: false,
+
+            message:
+                `Route not found: ${req.method} ${req.originalUrl}`
+        });
+    }
+);
+
+
+// ============================================================
+// GLOBAL ERROR HANDLER
+// ============================================================
+
+app.use(
+    (error, req, res, next) => {
+
+        console.error(
+            "Global error:",
+            error
+        );
+
+        if (res.headersSent) {
+            return next(error);
+        }
+
+        return res.status(
+            error.status || 500
+        ).json({
+
+            success: false,
+
+            message:
+                error.message ||
+                "Internal server error"
+        });
+    }
+);
+
+
+// ============================================================
+// EXPORT
+// ============================================================
+
 module.exports = app;

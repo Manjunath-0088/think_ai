@@ -12,7 +12,7 @@ const INSTRUCTOR_NAV_LINKS = [
   { to: '/instructor/modules', label: 'Modules & Lessons' },
   { to: '/instructor/assignments', label: 'Assignments' },
   { to: '/instructor/student-submissions', label: 'Student Submissions' },
-  { to: '/instructor/analytics', label: 'Analytics' },
+  { to: '/instructor/certificates', label: 'Certificates' },
 ];
 
 export default function InstructorLayout() {

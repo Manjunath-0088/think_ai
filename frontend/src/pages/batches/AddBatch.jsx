@@ -25,8 +25,16 @@ function AddBatch() {
 
   const loadCourses = async () => {
     try {
-      const response = await getCourses();
-      setCourses(response.data.data || []);
+      const response = await getCourses("", 1, 100); // pull enough for a dropdown
+      const payload = response.data?.data;
+      const list = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.courses)
+          ? payload.courses
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : [];
+      setCourses(list);
     } catch (error) {
       console.error(error);
       toast.error("Failed to load courses", { theme: "dark" });
@@ -94,7 +102,7 @@ function AddBatch() {
               required
             >
               <option value="">Select Course</option>
-              {courses.map((course) => (
+              {(Array.isArray(courses) ? courses : []).map((course) => (
                 <option key={course.id} value={course.id}>
                   {course.title}
                 </option>

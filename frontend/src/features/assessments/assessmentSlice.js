@@ -5,17 +5,22 @@ import {
   updateAssessment, 
   deleteAssessment, 
   getAssessmentById, 
+  startAssessment,
   submitAssessment, 
   getAssessmentAnalytics,
-  getEnrollmentAssessmentStatus 
+  getEnrollmentAssessmentStatus,
+  createCodingQuestion,
+  updateCodingQuestion,
+  deleteCodingQuestion
 } from '../../api/assessmentApi';
 
 const initialState = {
   assessments: [],
   currentAssessment: null,
+  activeSubmission: null,
   analyticsMap: {},
-  enrollmentStatus: null,        // add
-  enrollmentStatusLoading: false, // add
+  enrollmentStatus: null,
+  enrollmentStatusLoading: false,
   loading: false,
   submitting: false,
   submitResult: null,
@@ -27,7 +32,7 @@ export const fetchAssessmentsByModuleId = createAsyncThunk(
   async (moduleId, { rejectWithValue }) => {
     try {
       const res = await getAllAssessments(moduleId);
-      return { moduleId, assessments: res.data.data };
+      return { moduleId, assessments: res.data.data || res.data };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to load assessments');
     }
@@ -39,9 +44,21 @@ export const fetchAssessmentById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const res = await getAssessmentById(id);
-      return res.data.data;
+      return res.data.data || res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to load assessment');
+    }
+  }
+);
+
+export const startAssessmentThunk = createAsyncThunk(
+  'assessments/start',
+  async ({ assessmentId, enrollmentId }, { rejectWithValue }) => {
+    try {
+      const res = await startAssessment(assessmentId, enrollmentId);
+      return res.data.data || res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to start assessment');
     }
   }
 );
@@ -51,7 +68,7 @@ export const createAssessmentThunk = createAsyncThunk(
   async (payload, { rejectWithValue }) => {
     try {
       const res = await createAssessment(payload);
-      return res.data.data;
+      return res.data.data || res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to create assessment');
     }
@@ -63,7 +80,7 @@ export const updateAssessmentThunk = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const res = await updateAssessment(id, data);
-      return res.data.data;
+      return res.data.data || res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to update assessment');
     }
@@ -87,7 +104,7 @@ export const fetchAssessmentAnalytics = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const res = await getAssessmentAnalytics(id);
-      return { id, analytics: res.data.data };
+      return { id, analytics: res.data.data || res.data };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to fetch assessment analytics');
     }
@@ -99,7 +116,7 @@ export const fetchEnrollmentAssessmentStatus = createAsyncThunk(
   async (enrollmentId, { rejectWithValue }) => {
     try {
       const res = await getEnrollmentAssessmentStatus(enrollmentId);
-      return res.data.data;
+      return res.data.data || res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to load assessment status');
     }
@@ -111,7 +128,7 @@ export const submitAssessmentAnswers = createAsyncThunk(
   async ({ assessmentId, enrollmentId, answers }, { rejectWithValue }) => {
     try {
       const res = await submitAssessment(assessmentId, { enrollmentId, answers });
-      return res.data.data;
+      return res.data.data || res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || 'Failed to submit assessment');
     }
@@ -125,12 +142,13 @@ const assessmentSlice = createSlice({
     clearAssessmentError: (state) => { state.error = null; },
     clearCurrentAssessment: (state) => {
       state.currentAssessment = null;
+      state.activeSubmission = null;
       state.submitResult = null;
     },
   },
   extraReducers: (builder) => {
     builder
-          .addCase(fetchEnrollmentAssessmentStatus.pending, (state) => {
+      .addCase(fetchEnrollmentAssessmentStatus.pending, (state) => {
         state.enrollmentStatusLoading = true;
       })
       .addCase(fetchEnrollmentAssessmentStatus.fulfilled, (state, action) => {
@@ -141,7 +159,6 @@ const assessmentSlice = createSlice({
         state.enrollmentStatusLoading = false;
         state.error = action.payload;
       })
-      // Fetch By Module ID
       .addCase(fetchAssessmentsByModuleId.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -158,7 +175,6 @@ const assessmentSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Fetch By ID
       .addCase(fetchAssessmentById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -171,14 +187,12 @@ const assessmentSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Create Assessment
+      .addCase(startAssessmentThunk.fulfilled, (state, action) => {
+        state.activeSubmission = action.payload;
+      })
       .addCase(createAssessmentThunk.fulfilled, (state, action) => {
         state.assessments.push(action.payload);
       })
-      .addCase(createAssessmentThunk.rejected, (state, action) => {
-        state.error = action.payload;
-      })
-      // Update Assessment
       .addCase(updateAssessmentThunk.fulfilled, (state, action) => {
         const index = state.assessments.findIndex((a) => a.id === action.payload.id);
         if (index !== -1) {
@@ -188,23 +202,14 @@ const assessmentSlice = createSlice({
           state.currentAssessment = action.payload;
         }
       })
-      .addCase(updateAssessmentThunk.rejected, (state, action) => {
-        state.error = action.payload;
-      })
-      // Delete Assessment
       .addCase(deleteAssessmentThunk.fulfilled, (state, action) => {
         const id = action.payload;
         state.assessments = state.assessments.filter((a) => a.id !== id);
       })
-      .addCase(deleteAssessmentThunk.rejected, (state, action) => {
-        state.error = action.payload;
-      })
-      // Analytics
       .addCase(fetchAssessmentAnalytics.fulfilled, (state, action) => {
         const { id, analytics } = action.payload;
         state.analyticsMap[id] = analytics;
       })
-      // Submit
       .addCase(submitAssessmentAnswers.pending, (state) => {
         state.submitting = true;
       })
@@ -228,6 +233,7 @@ export const selectAssessmentsByModuleId = (moduleId) =>
   );
 
 export const selectCurrentAssessment = (state) => state.assessments.currentAssessment;
+export const selectActiveSubmission = (state) => state.assessments.activeSubmission;
 export const selectAssessmentsLoading = (state) => state.assessments.loading;
 export const selectAssessmentSubmitting = (state) => state.assessments.submitting;
 export const selectSubmitResult = (state) => state.assessments.submitResult;

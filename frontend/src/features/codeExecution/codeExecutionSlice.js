@@ -1,91 +1,103 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { runCode } from '../../api/codeExecutionApi'; 
+import { runCode as runCodeApi, submitSolution as submitSolutionApi,  practiceRun as practiceRunApi, } from '../../api/codeExecutionApi';
 
 const initialState = {
-  status: 'idle', // idle | submitting | polling | success | error
-  submissionId: null,
-  judge0Token: null,
-  stdout: '',
-  stderr: '',
-  compileOutput: '',
+  status: 'idle', // idle | running | success | error
+  mode: null,     // 'run' | 'submit'
   errorMessage: null,
-  time: null,
-  memory: null,
+
+  // populated after a Run
+  run: null, // { status, stdout, stderr, compileOutput, time, memory }
+
+  // populated after a Submit
+  submission: null, // { verdict, score, totalMarks, percentage, testCases, results }
 };
 
-export const submitCode = createAsyncThunk(
-  'codeExecution/submitCode',
-  async ({ language, code, stdin = '', submissionId }, { dispatch, signal, rejectWithValue }) => {
+export const runCode = createAsyncThunk(
+  'codeExecution/runCode',
+  async ({ language, code, stdin = '', submissionId, questionId, testCaseId }, { rejectWithValue }) => {
     try {
-      const result = await runCode({
-        language,
-        code,
-        stdin,
-        submissionId,
-        signal,
-        onStatusChange: (status) => {
-          // fires once right after the 202, then again after each poll
-          dispatch(codeExecutionSlice.actions.statusUpdated(status));
-        },
-      });
-
-      if (result.status?.id !== 3) {
-        // Compile Error / Runtime Error / Wrong Answer / etc — not a thrown
-        // error, but not a clean run either. Let the reducer decide the badge.
-        return rejectWithValue(result);
-      }
-
-      return result;
+      return await runCodeApi({ language, code, stdin, submissionId, questionId, testCaseId });
     } catch (err) {
-      return rejectWithValue({ errorMessage: err.message || 'Execution failed' });
+      return rejectWithValue(err.response?.data?.message || err.message || 'Run failed');
     }
   }
 );
+
+export const submitSolution = createAsyncThunk(
+  'codeExecution/submitSolution',
+  async ({ submissionId, questionId, language, code }, { rejectWithValue }) => {
+    try {
+      return await submitSolutionApi({ submissionId, questionId, language, code });
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message || 'Submit failed');
+    }
+  }
+);
+
+export const practiceRun = createAsyncThunk(
+  'codeExecution/practiceRun',
+  async ({ language, code, stdin = '' }, { rejectWithValue }) => {
+    try {
+      return await practiceRunApi({ language, code, stdin });
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message || 'Run failed');
+    }
+  }
+);
+
 
 const codeExecutionSlice = createSlice({
   name: 'codeExecution',
   initialState,
   reducers: {
     resetExecution: () => initialState,
-    statusUpdated: (state, action) => {
-      const statusId = action.payload?.id;
-      state.status = statusId === 1 || statusId === 2 ? 'polling' : state.status;
-    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(submitCode.pending, (state) => {
-        Object.assign(state, initialState, { status: 'submitting' });
+      // ---- Run ----
+      .addCase(runCode.pending, (state) => {
+        Object.assign(state, initialState, { status: 'running', mode: 'run' });
       })
-      .addCase(submitCode.fulfilled, (state, action) => {
+      .addCase(runCode.fulfilled, (state, action) => {
         const r = action.payload;
-        state.status = 'success';
-        state.submissionId = r.submissionId;
-        state.judge0Token = r.judge0Token;
-        state.stdout = r.stdout;
-        state.stderr = r.stderr;
-        state.compileOutput = r.compileOutput;
-        state.time = r.time;
-        state.memory = r.memory;
+        state.status = r.status?.id === 3 ? 'success' : 'error';
+        state.run = r;
+        state.errorMessage = r.status?.id === 3 ? null : (r.message || r.status?.description || 'Execution failed');
       })
-      .addCase(submitCode.rejected, (state, action) => {
-        const r = action.payload;
+      .addCase(runCode.rejected, (state, action) => {
         state.status = 'error';
-        if (r?.status) {
-          // a real Judge0 terminal status (compile error, runtime error, etc.)
-          state.submissionId = r.submissionId;
-          state.judge0Token = r.judge0Token;
-          state.stdout = r.stdout;
-          state.stderr = r.stderr;
-          state.compileOutput = r.compileOutput;
-          state.time = r.time;
-          state.memory = r.memory;
-          state.errorMessage = r.status.description || 'Execution failed';
-        } else {
-          // network error, timeout, or cancellation
-          state.errorMessage = r?.errorMessage || 'Execution failed';
-        }
+        state.errorMessage = action.payload || 'Run failed';
+      })
+
+      // ---- Submit ----
+      .addCase(submitSolution.pending, (state) => {
+        Object.assign(state, initialState, { status: 'running', mode: 'submit' });
+      })
+      .addCase(submitSolution.fulfilled, (state, action) => {
+        const r = action.payload;
+        state.status = r.verdict === 'ACCEPTED' ? 'success' : 'error';
+        state.submission = r;
+        state.errorMessage = r.verdict === 'ACCEPTED' ? null : r.verdict;
+      })
+      .addCase(submitSolution.rejected, (state, action) => {
+        state.status = 'error';
+        state.errorMessage = action.payload || 'Submit failed';
+      })
+      .addCase(practiceRun.pending, (state) => {
+        Object.assign(state, initialState, { status: 'running', mode: 'practice' });
+      })
+      .addCase(practiceRun.fulfilled, (state, action) => {
+        const r = action.payload;
+        state.status = r.status?.id === 3 ? 'success' : 'error';
+        state.run = r;
+        state.errorMessage = r.status?.id === 3 ? null : (r.message || r.status?.description || 'Execution failed');
+      })
+      .addCase(practiceRun.rejected, (state, action) => {
+        state.status = 'error';
+        state.errorMessage = action.payload || 'Run failed';
       });
+
   },
 });
 

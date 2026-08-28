@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Award, CheckCircle, Loader2, RotateCcw } from "lucide-react";
+import { Award, CheckCircle, Loader2, RotateCcw, Code } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
 
@@ -13,11 +13,11 @@ export default function StudentAssessmentTaker() {
   const [assessment, setAssessment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [codingAnswers, setCodingAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [attemptNumber, setAttemptNumber] = useState(1);
 
-  // Fetch assessment questions and options from backend database
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -40,24 +40,27 @@ export default function StudentAssessmentTaker() {
     setSelectedAnswers({ ...selectedAnswers, [questionId]: optionId });
   };
 
+  const handleCodingChange = (questionId, codeText) => {
+    setCodingAnswers({ ...codingAnswers, [questionId]: codeText });
+  };
+
   const handleSubmitQuiz = async () => {
     if (!assessment || !assessment.questions) return;
 
-    // Retrieve active student enrollment ID (stored during login/enrollment or defaults to 1)
     const enrollmentId = localStorage.getItem("activeEnrollmentId") || 1;
 
-    // Build payload matching backend controller expectations: { enrollmentId, answers: [{ questionId, selectedOptionId }] }
-    const answersPayload = assessment.questions.map((q) => ({
-      questionId: Number(q.id),
-      selectedOptionId: selectedAnswers[q.id] ? Number(selectedAnswers[q.id]) : null
-    }));
-
-    const unanswered = answersPayload.filter((a) => !a.selectedOptionId).length;
-    if (unanswered > 0) {
-      if (!window.confirm(`You have ${unanswered} unanswered question(s). Do you still want to submit?`)) {
-        return;
+    const answersPayload = assessment.questions.map((q) => {
+      if (q.questionType === "CODING") {
+        return {
+          questionId: Number(q.id),
+          code: codingAnswers[q.id] || ""
+        };
       }
-    }
+      return {
+        questionId: Number(q.id),
+        selectedOptionId: selectedAnswers[q.id] ? Number(selectedAnswers[q.id]) : null
+      };
+    });
 
     try {
       setSubmitting(true);
@@ -66,7 +69,6 @@ export default function StudentAssessmentTaker() {
         answers: answersPayload
       };
 
-      // Post submission to backend for auto-grading via Prisma repository
       const response = await api.post(`/assessments/${assessmentId}/submit`, payload);
       const submissionData = response.data?.data || response.data;
 
@@ -77,7 +79,7 @@ export default function StudentAssessmentTaker() {
         status: submissionData.status || "SUBMITTED"
       });
 
-      toast.success("Assessment submitted and graded successfully!", { theme: "dark" });
+      toast.success("Assessment submitted successfully!", { theme: "dark" });
     } catch (err) {
       console.error("Failed to submit assessment", err);
       toast.error(err.response?.data?.message || "Failed to submit assessment", { theme: "dark" });
@@ -104,7 +106,6 @@ export default function StudentAssessmentTaker() {
       <div className="max-w-4xl mx-auto space-y-6">
 
         {result ? (
-          /* Result Card Screen showing marks, percentage, and database status */
           <div className="p-8 rounded-3xl backdrop-blur-2xl bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-slate-800 text-center space-y-6 shadow-2xl animate-fade-in relative">
             <div className="absolute top-6 left-6">
               <span className="text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -145,7 +146,7 @@ export default function StudentAssessmentTaker() {
                 Back to Assignments
               </button>
               <button
-                onClick={() => { setResult(null); setSelectedAnswers({}); setAttemptNumber(c => c + 1); }}
+                onClick={() => { setResult(null); setSelectedAnswers({}); setCodingAnswers({}); setAttemptNumber(c => c + 1); }}
                 className="px-6 py-2.5 rounded-xl text-xs font-semibold bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer flex items-center gap-1.5"
               >
                 <RotateCcw size={14} /> Retake Quiz
@@ -153,13 +154,11 @@ export default function StudentAssessmentTaker() {
             </div>
           </div>
         ) : (
-          /* Question Form */
           <div className="p-6 sm:p-8 rounded-3xl backdrop-blur-2xl bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-slate-800 space-y-6 shadow-2xl relative">
             
-            {/* Attempt badge inside the box */}
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                 Active Assessment Quiz
+                Active Assessment Quiz
               </span>
               <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
                 Attempt #{attemptNumber}
@@ -185,32 +184,52 @@ export default function StudentAssessmentTaker() {
                     <span className="text-xs font-mono text-slate-400 shrink-0">{q.marks} {q.marks === 1 ? 'Mark' : 'Marks'}</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    {q.options?.map((opt) => {
-                      const isSelected = selectedAnswers[q.id] === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => handleSelectOption(q.id, opt.id)}
-                          className={`text-left px-4 py-3.5 rounded-2xl border transition-all duration-300 cursor-pointer flex items-center gap-3 shadow-sm ${
-                            isSelected 
-                              ? "bg-emerald-500/15 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-semibold ring-2 ring-emerald-500/20" 
-                              : "bg-white/60 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800"
-                          }`}
-                        >
-                          <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs shrink-0 transition-colors ${
-                            isSelected 
-                              ? 'border-emerald-600 bg-emerald-600 text-white font-bold shadow-md shadow-emerald-500/30' 
-                              : 'border-slate-300 dark:border-slate-600 bg-transparent'
-                          }`}>
-                            {isSelected && <span className="w-2 h-2 rounded-full bg-white animate-scaleIn" />}
-                          </span>
-                          <span className="truncate text-xs sm:text-sm">{opt.optionText}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {q.questionType === "CODING" ? (
+                    <div className="space-y-3 pt-2">
+                      {q.problemStatement && (
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">{q.problemStatement}</p>
+                      )}
+                      <div>
+                        <label className="text-[11px] font-mono text-slate-400 flex items-center gap-1 pb-1">
+                          <Code size={13} /> Solution Code (Python / Java / JavaScript / C++)
+                        </label>
+                        <textarea
+                          value={codingAnswers[q.id] || ""}
+                          onChange={(e) => handleCodingChange(q.id, e.target.value)}
+                          placeholder="// Write your solution here..."
+                          rows={6}
+                          className="w-full p-4 rounded-xl font-mono text-xs bg-slate-950 text-emerald-400 border border-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      {q.options?.map((opt) => {
+                        const isSelected = selectedAnswers[q.id] === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => handleSelectOption(q.id, opt.id)}
+                            className={`text-left px-4 py-3.5 rounded-2xl border transition-all duration-300 cursor-pointer flex items-center gap-3 shadow-sm ${
+                              isSelected 
+                                ? "bg-emerald-500/15 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-semibold ring-2 ring-emerald-500/20" 
+                                : "bg-white/60 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800"
+                            }`}
+                          >
+                            <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-xs shrink-0 transition-colors ${
+                              isSelected 
+                                ? 'border-emerald-600 bg-emerald-600 text-white font-bold shadow-md shadow-emerald-500/30' 
+                                : 'border-slate-300 dark:border-slate-600 bg-transparent'
+                            }`}>
+                              {isSelected && <span className="w-2 h-2 rounded-full bg-white animate-scaleIn" />}
+                            </span>
+                            <span className="truncate text-xs sm:text-sm">{opt.optionText}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

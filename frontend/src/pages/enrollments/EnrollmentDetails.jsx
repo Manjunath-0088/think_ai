@@ -9,6 +9,7 @@ import {
 import {
   generateCertificate,
   getCertificateByEnrollment,
+  checkCertificateEligibility,
   downloadCertificateUrl,
 } from "../../api/certificateApi";
 import { DetailsSkeleton } from "../../components/common/LoadingSkeleton";
@@ -52,12 +53,14 @@ export default function EnrollmentDetails() {
 
   const [certificate, setCertificate] = useState(null);
   const [certificateLoading, setCertificateLoading] = useState(true);
+  const [eligibility, setEligibility] = useState(null);
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     loadEnrollment();
     loadProgress();
     loadCertificate();
+    loadEligibility();
   }, [id]);
 
   const loadEnrollment = async () => {
@@ -105,6 +108,15 @@ export default function EnrollmentDetails() {
     }
   };
 
+  const loadEligibility = async () => {
+    try {
+      const response = await checkCertificateEligibility(id);
+      setEligibility(response.data.data || null);
+    } catch (error) {
+      console.error("Failed to check eligibility", error);
+    }
+  };
+
   const handleGenerateCertificate = async () => {
     try {
       setGenerating(true);
@@ -113,7 +125,7 @@ export default function EnrollmentDetails() {
       toast.success("Certificate generated successfully", { theme: "dark" });
     } catch (error) {
       console.error(error);
-      toast.error(error.response?.data?.message || "Certificate not available yet", { theme: "dark" });
+      toast.error(error.response?.data?.message || "Certificate not available yet (Requires >=80% videos & >=40% assessment scores)", { theme: "dark" });
     } finally {
       setGenerating(false);
     }
@@ -140,10 +152,11 @@ export default function EnrollmentDetails() {
     summary?.percentComplete ??
     (totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0);
 
-  // Resolve associated course thumbnail or tech watermark image
   const courseTitle = enrollment.batch?.course?.title || "";
   const courseCategory = enrollment.batch?.course?.category || "";
   const watermarkImg = enrollment.batch?.course?.thumbnail || getFallbackImage(courseTitle, courseCategory);
+
+  const isEligible = eligibility?.eligible ?? (percent >= 80);
 
   return (
     <div className="h-full overflow-y-auto px-2 sm:px-4 py-4 custom-scrollbar text-gray-900 dark:text-gray-100 transition-colors duration-200">
@@ -164,8 +177,6 @@ export default function EnrollmentDetails() {
         </div>
 
         <div className="bg-white dark:bg-[#2b2b2b] border border-gray-200 dark:border-[#3f3f3f] rounded-2xl p-8 shadow-xl relative overflow-hidden">
-          
-          {/* Centered Original Color Course Watermark Background Graphic */}
           {watermarkImg && (
             <div className="absolute inset-0 flex items-center justify-center opacity-[0.50] dark:opacity-[0.50] pointer-events-none select-none">
               <img src={watermarkImg} alt="" className="w-80 h-80 object-contain" />
@@ -222,8 +233,8 @@ export default function EnrollmentDetails() {
         <div className="bg-white dark:bg-[#2b2b2b] border border-gray-200 dark:border-[#3f3f3f] rounded-2xl p-8 shadow-xl relative overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Lesson Progress</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Auto-tracked as the student completes lessons.</p>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Lesson Video Watch Progress</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Requires at least 80% video viewing completion.</p>
             </div>
             {!progressLoading && totalCount > 0 && (
               <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
@@ -272,12 +283,14 @@ export default function EnrollmentDetails() {
           )}
         </div>
 
-        {/* Certificate */}
+        {/* Certificate Section with Rule Verification */}
         <div className="bg-white dark:bg-[#2b2b2b] border border-gray-200 dark:border-[#3f3f3f] rounded-2xl p-8 shadow-xl relative overflow-hidden">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Certificate</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Issued once the course is fully completed.</p>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Certificate Issuance</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Issued automatically when video watch progress &ge; 80% and all course assessments &ge; 40%.
+              </p>
             </div>
           </div>
 
@@ -303,23 +316,26 @@ export default function EnrollmentDetails() {
                 Download Certificate
               </a>
             </div>
-          ) : totalCount > 0 && percent >= 100 ? (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 py-4 rounded-xl border-2 border-dashed border-amber-500/30 bg-amber-500/5">
-              <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
-                Course complete, but the certificate hasn't been issued yet.
+          ) : isEligible ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 py-4 rounded-xl border-2 border-dashed border-emerald-500/30 bg-emerald-500/5">
+              <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                Student meets all criteria (Videos &ge; 80%, Assessments passed)!
               </p>
               <button
                 onClick={handleGenerateCertificate}
                 disabled={generating}
-                className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white rounded-xl transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90 text-white rounded-xl transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
-                {generating ? "Generating..." : "Retry Generate"}
+                {generating ? "Generating..." : "Generate Certificate"}
               </button>
             </div>
           ) : (
-            <div className="px-4 py-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-transparent">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Issued automatically once the student completes every lesson.
+            <div className="px-4 py-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-transparent space-y-1">
+              <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                Not yet eligible for a certificate.
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Requirements: Video progress &ge; 80% (Current: {percent}%) and all module assessments passed &ge; 40%.
               </p>
             </div>
           )}

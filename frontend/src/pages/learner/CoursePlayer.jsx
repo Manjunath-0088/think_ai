@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Award, CheckCircle, Clock } from 'lucide-react';
+import { Award, CheckCircle, Clock, Video, Code, HelpCircle } from 'lucide-react';
 
 import { selectUser } from '../../features/auth/authSlice';
 import { fetchMyEnrollments, selectMyEnrollments } from '../../features/enrollments/enrollmentSlice';
@@ -53,12 +53,8 @@ function LessonRow({ lesson, isActive, onSelect }) {
         : 'hover:bg-slate-100 dark:hover:bg-[#222736] text-slate-600 dark:text-slate-400'
         }`}
     >
-      <span className="flex items-center space-x-2 truncate pr-2">
-        {isComplete ? (
-          <i className="fa-solid fa-circle-check text-emerald-500"></i>
-        ) : (
-          <i className="fa-regular fa-circle text-slate-400 text-[10px]"></i>
-        )}
+      <span className="flex items-center space-x-2.5 truncate pr-2">
+        <Video size={13} className={isComplete ? "text-emerald-500 shrink-0" : "text-purple-400 shrink-0"} />
         <span className="truncate">{lesson.title}</span>
       </span>
       <span className="shrink-0 opacity-70 text-[10px]">{lesson.duration || ''}</span>
@@ -226,20 +222,42 @@ export default function CoursePlayer() {
                           onSelectLesson={setCurrentLesson}
                         />
 
-                        {/* Module Assessments Button inside Sidebar */}
+                        {/* Module Assessments Button inside Sidebar with Differentiated Icons */}
                         {assessments?.length > 0 && (
                           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 px-2 space-y-2">
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold block">Module Quizzes</span>
-                            {assessments.map((asm) => (
-                              <button
-                                key={asm.id}
-                                onClick={() => navigate(`/learner/assessments/${asm.id}/take`)}
-                                className="w-full text-left p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition text-xs font-semibold flex items-center justify-between cursor-pointer border border-emerald-500/20"
-                              >
-                                <span className="truncate pr-1">{asm.title}</span>
-                                <CheckCircle size={13} className="shrink-0" />
-                              </button>
-                            ))}
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold block">Module Tasks &amp; Quizzes</span>
+                            {assessments.map((asm) => {
+                              const isCoding = asm.type === "CODING";
+                              return (
+                                <button
+                                  key={asm.id}
+                                  onClick={() => {
+                                    if (isCoding) {
+                                      navigate(`/learner/code-execution/${asm.id}`);
+                                    } else {
+                                      navigate(`/learner/assessments/${asm.id}/take`);
+                                    }
+                                  }}
+                                  className={`w-full text-left p-2.5 rounded-xl transition text-xs font-semibold flex items-center justify-between cursor-pointer border ${
+                                    isCoding
+                                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
+                                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                                  }`}
+                                >
+                                  <span className="flex items-center space-x-2 truncate pr-1">
+                                    {isCoding ? (
+                                      <Code size={13} className="shrink-0 text-amber-500" />
+                                    ) : (
+                                      <HelpCircle size={13} className="shrink-0 text-emerald-500" />
+                                    )}
+                                    <span className="truncate">{asm.title}</span>
+                                  </span>
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 bg-black/10 dark:bg-white/10">
+                                    {isCoding ? "Coding" : "MCQ"}
+                                  </span>
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
                       </div>

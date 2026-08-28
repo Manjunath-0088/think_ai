@@ -5,7 +5,9 @@ import {
   BookOpen, 
   Clock, 
   Loader2, 
-  CheckCircle 
+  CheckCircle,
+  Code,
+  HelpCircle
 } from "lucide-react";
 
 import { getEnrollments } from "../../../api/enrollmentApi";
@@ -185,38 +187,60 @@ export default function AssignmentsPage() {
 
                     <div className="space-y-3 pt-1">
                       {moduleAssessments.length > 0 ? (
-                        moduleAssessments.map((asm) => (
-                          <div 
-                            key={asm.id} 
-                            className="p-4 rounded-2xl bg-white/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-emerald-500/40"
-                          >
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Award size={15} className="text-emerald-500" />
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white">{asm.title}</h4>
-                              </div>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">{asm.description || "Test your knowledge on this module's curriculum."}</p>
-                              <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 pt-1">
-                                <span>Total Marks: {asm.totalMarks || 10}</span>
-                                <span>•</span>
-                                <span>{asm.questions?.length || 0} Questions</span>
-                                {asm.duration && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="flex items-center gap-1"><Clock size={11} /> {asm.duration} mins</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => navigate(`/learner/assessments/${asm.id}/take`)}
-                              className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20 hover:from-emerald-500 hover:to-teal-500 transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                        moduleAssessments.map((asm) => {
+                          const isCoding = asm.type === "CODING";
+                          return (
+                            <div 
+                              key={asm.id} 
+                              className="p-4 rounded-2xl bg-white/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-emerald-500/40"
                             >
-                              <CheckCircle size={14} /> Participate Task
-                            </button>
-                          </div>
-                        ))
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  {isCoding ? (
+                                    <Code size={15} className="text-amber-500 shrink-0" />
+                                  ) : (
+                                    <HelpCircle size={15} className="text-emerald-500 shrink-0" />
+                                  )}
+                                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{asm.title}</h4>
+                                  <span className={`text-[9px] font-mono px-2 py-0.5 rounded uppercase tracking-wider ${
+                                    isCoding ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                  }`}>
+                                    {isCoding ? "Coding Task" : "MCQ Quiz"}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{asm.description || "Test your knowledge on this module's curriculum."}</p>
+                                <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 pt-1">
+                                  <span>Total Marks: {asm.totalMarks || 10}</span>
+                                  <span>•</span>
+                                  <span>{asm.questions?.length || 0} Questions</span>
+                                  {asm.duration && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="flex items-center gap-1"><Clock size={11} /> {asm.duration} mins</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={() => {
+                                  if (isCoding) {
+                                    navigate(`/learner/code-execution/${asm.id}`);
+                                  } else {
+                                    navigate(`/learner/assessments/${asm.id}/take`);
+                                  }
+                                }}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white shadow-md transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                                  isCoding 
+                                    ? "bg-gradient-to-r from-amber-600 to-orange-600 shadow-amber-500/20 hover:from-amber-500 hover:to-orange-500" 
+                                    : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-500 hover:to-teal-500"
+                                }`}
+                              >
+                                <CheckCircle size={14} /> Participate Task
+                              </button>
+                            </div>
+                          );
+                        })
                       ) : (
                         <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/20 border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
                           No assignments or quizzes published for this module yet.

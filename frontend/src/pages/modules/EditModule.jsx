@@ -23,8 +23,16 @@ function EditModule() {
 
   const loadCourses = async () => {
     try {
-      const response = await getCourses();
-      setCourses(response.data.data || []);
+      const response = await getCourses("", 1, 100);
+      const payload = response.data?.data;
+      const list = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.courses)
+          ? payload.courses
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : [];
+      setCourses(list);
     } catch (error) {
       console.error(error);
       toast.error("Failed to load courses", { theme: "dark" });
@@ -108,7 +116,7 @@ function EditModule() {
             className="bg-gray-100 dark:bg-[#212121] border border-gray-300 dark:border-[#3f3f3f] rounded-xl p-3 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-60 text-sm"
           >
             <option value="">Select Course</option>
-            {courses.map((course) => (
+            {(Array.isArray(courses) ? courses : []).map((course) => (
               <option key={course.id} value={course.id}>
                 {course.title}
               </option>

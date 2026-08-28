@@ -14,9 +14,11 @@ import CheckoutPage from "../pages/checkout/CheckoutPage";
 import NotificationPreferencesPage from "../pages/settings/NotificationsPreferencesPage";
 
 import AssignmentsPage from "../pages/learner/assessment/AssignmentsPage";
-
 import StudentAssessmentTaker from "../pages/learner/StudentAssessmentTaker";
 import StudentGradesView from "../pages/learner/StudentGradesView";
+
+// Import your newly created Code Execution Workspace page
+import CodeExecutionPage from "../pages/learner/CodePlayground/CodeExecutionPage";
 
 function LearnerRoutes() {
   return (
@@ -30,7 +32,7 @@ function LearnerRoutes() {
 
         <Route path="courses/:id/courseDetails" element={<CourseDetails />} />
         <Route path="courses/:courseId/checkout" element={<CheckoutPage />} />
-        <Route path="playground" element={<CodePlayground />} />
+        <Route path="playground" element={<CodePlayground mode="practice" />} />
 
         <Route path="live" element={<LiveClassesListPage />} />
         <Route path="live/:classId" element={<LiveClassJoinPage />} />
@@ -39,6 +41,9 @@ function LearnerRoutes() {
 
         <Route path="assessments" element={<AssignmentsPage />} />
         <Route path="assessments/:assessmentId/take" element={<StudentAssessmentTaker />} />
+        
+        {/* NEW: Code Execution / IDE workspace for coding assignments */}
+        <Route path="code-execution/:assessmentId" element={<CodeExecutionPage />} />
       </Route>
       
       <Route path="*" element={<div className="p-6 text-sm text-neutral-400">Page not found.</div>} />
