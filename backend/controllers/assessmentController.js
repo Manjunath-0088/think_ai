@@ -547,6 +547,7 @@ module.exports = {
     submitAssessment,
 
     getAssessmentAnalytics,
-    getAssessmentSubmissions
+    getAssessmentSubmissions,
+    getAssessmentSubmissionResult,
 
 };
