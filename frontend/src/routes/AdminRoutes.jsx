@@ -31,9 +31,11 @@ import EditLesson from '../pages/lessons/EditLesson';
 import LessonDetails from '../pages/lessons/LessonDetails';
 import RBACMatrix from "../pages/admin/RBACMatrix";
 
-// import CreateAssessment from "../pages/assessment/CreateAssessment";
-// import AssessmentDetails from "../pages/assessment/Assessmentdetails";
-// import Assessmentlist from "../pages/assessment/Assessmentlist";
+// Assessment Management (create/update/view/delete assessments, per-module)
+import AssessmentManager from "../pages/AssessmentPage/Assessmentmanager";
+
+// Import Instructor Certificates Portal Page
+import InstructorCertificates from "../pages/instructor_portal/InstructorCertificates";
 
 function AdminRoutes() {
   return (
@@ -42,9 +44,13 @@ function AdminRoutes() {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboardHome />} />
         <Route path="users" element={<AdminUsersPage />} />
+
         <Route path="profile" element={<AdminProfilePage />} />
         <Route path="profile/edit" element={<AdminEditProfilePage />} />
         <Route path="rbac" element={<RBACMatrix />} />
+
+        {/* Instructor Student Certificates & Progress Tracker */}
+        <Route path="certificates" element={<InstructorCertificates />} />
 
         <Route path="courses" element={<CoursesPage />} />
         <Route path="courses/:id" element={<CourseDetails />} />
@@ -69,6 +75,10 @@ function AdminRoutes() {
         <Route path="lessons/add" element={<AddLesson />} />
         <Route path="lessons/edit/:id" element={<EditLesson />} />
         <Route path="lessons/:id" element={<LessonDetails />} />
+
+        {/* Assessments — module-scoped create/edit/view/delete + submission analytics */}
+        <Route path="assessments" element={<AssessmentManager />} />
+        <Route path="assessments/:courseId" element={<AssessmentManager />} />
       </Route>
     </Routes>
   );

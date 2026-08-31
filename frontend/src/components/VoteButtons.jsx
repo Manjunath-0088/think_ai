@@ -32,4 +32,8 @@ export default function VoteButtons({ upvotes, downvotes, onVote, disabled, user
       </button>
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> cd43e95 (Integrate JWT auth and MongoDB with frontend login)
