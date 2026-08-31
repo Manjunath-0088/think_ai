@@ -7,13 +7,15 @@ import CoursePlayer from "../pages/learner/CoursePlayer";
 import LearnerCoursesPage from "../pages/learner/LearnerCoursesPage";
 import CourseDetails from '../pages/courses/CourseDetails';
 import CodePlayground from "../pages/learner/CodePlayground/Codeplayground";
-import AssessmentSubmissionPage from "../pages/learner/assessment/AssessmentSubmissionPage";
 import LiveClassJoinPage from "../pages/learner/live-class/LiveClassJoinPage";
 import LiveClassesListPage from "../pages/learner/live-class/LiveClassesListPage";
-import AssignmentsPage from "../pages/learner/assessment/AssignmentsPage";
 import CertificatesPage from "../pages/learner/CertificatesPage";
 import CheckoutPage from "../pages/checkout/CheckoutPage";
 import NotificationPreferencesPage from "../pages/settings/NotificationsPreferencesPage";
+
+import AssignmentsPage from "../pages/learner/assessment/AssignmentsPage";
+import TakeAssessment from "../pages/learner/assessment/Takeassessment";
+import AssessmentResult from "../pages/learner/assessment/AssessmentResult";
 
 function LearnerRoutes() {
   return (
@@ -25,12 +27,15 @@ function LearnerRoutes() {
         <Route path="courses/:id/courseDetails" element={<CourseDetails />} />
         <Route path="courses/:courseId/checkout" element={<CheckoutPage />} />
         <Route path="playground" element={<CodePlayground />} />
-        <Route path="assessments/:assessmentId" element={<AssessmentSubmissionPage />} />
-        <Route path="assignments" element={<AssignmentsPage />} />
+
         <Route path="live" element={<LiveClassesListPage />} />
         <Route path="live/:classId" element={<LiveClassJoinPage />} />
         <Route path="certificates" element={<CertificatesPage />} />
         <Route path="settings/notifications" element={<NotificationPreferencesPage />} /> 
+
+        <Route path="assessments" element={<AssignmentsPage />} />
+        <Route path="assessments/:id" element={<TakeAssessment />} />
+        <Route path="assessments/:id/result" element={<AssessmentResult />} />
       </Route>
       
       <Route path="*" element={<div className="p-6 text-sm text-neutral-400">Page not found.</div>} />

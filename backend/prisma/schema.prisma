@@ -62,6 +62,18 @@ model Batch {
 }
 
 // ====================================================
+// USER
+// ====================================================
+
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  hashedPassword String
+  role           String   @default("USER")
+  createdAt      DateTime @default(now())
+}
+
+// ====================================================
 // ENROLLMENT
 // ====================================================
 
@@ -73,10 +85,8 @@ model Enrollment {
 
   batch Batch @relation(fields: [batchId], references: [id])
 
-  enrollmentStatus String @default("ENROLLED")
-
-  // Course access is unlocked after successful payment verification.
-  courseAccess Boolean @default(false)
+  enrollmentStatus String  @default("ENROLLED")
+  courseAccess     Boolean @default(false)
 
   enrolledAt DateTime @default(now())
 
