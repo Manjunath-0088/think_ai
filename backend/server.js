@@ -7,6 +7,8 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 
 const { startWorker } = require("./services/notificationQueueService");
+const initSockets = require("./sockets/index");
+
 require("./config/db");
 
 const roleMatrixRoutes = require("./routes/roleMatrix");

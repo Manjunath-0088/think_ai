@@ -18,24 +18,32 @@ export default defineConfig({
     }
   },
   test: {
-    projects: [{
-      extends: true,
-      plugins: [
-      
-      storybookTest({
-        configDir: path.join(dirname, '.storybook')
-      })],
-      test: {
-        name: 'storybook',
-        browser: {
-          enabled: true,
-          headless: true,
-          provider: playwright({}),
-          instances: [{
-            browser: 'chromium'
-          }]
+    projects: [
+      {
+        extends: true,
+        plugins: [storybookTest({ configDir: path.join(dirname, '.storybook') })],
+        test: {
+          name: 'storybook',
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({}),
+            instances: [{
+              browser: 'chromium'
+            }]
+          }
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'forum',
+          environment: 'jsdom',
+          globals: true,
+          include: ['src/tests/**/*.test.{js,jsx}'],
+          setupFiles: ['./src/tests/setup.js']
         }
       }
-    }]
+    ]
   }
 });
