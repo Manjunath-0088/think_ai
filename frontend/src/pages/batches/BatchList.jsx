@@ -73,12 +73,7 @@ export default function BatchList() {
     }
   };
 
-  const enrolledCountFor = (batch) =>
-    batch.enrollments?.filter(
-      (enrollment) =>
-        enrollment.enrollmentStatus === "ACTIVE" ||
-        enrollment.enrollmentStatus === "ENROLLED"
-    ).length || 0;
+  const enrolledCountFor = (batch) => batch._count?.enrollments || 0;
 
   if (loading) {
     return <BatchListSkeleton />;

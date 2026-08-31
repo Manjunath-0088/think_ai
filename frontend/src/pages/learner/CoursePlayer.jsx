@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { Award, CheckCircle, Clock, Video, Code, HelpCircle } from 'lucide-react';
 
 import { selectUser } from '../../features/auth/authSlice';
 import { fetchMyEnrollments, selectMyEnrollments } from '../../features/enrollments/enrollmentSlice';
 import { fetchModulesByCourseId, selectModules, selectModulesLoading } from '../../features/modules/moduleSlice';
 import { fetchLessonsByModuleId, selectLessonsByModuleId } from '../../features/lessons/lessonSlice';
+import { fetchAssessmentsByModuleId, selectAssessmentsByModuleId } from '../../features/assessments/assessmentSlice';
 import {
   fetchProgressByEnrollment,
   fetchProgressSummary,
@@ -51,12 +53,8 @@ function LessonRow({ lesson, isActive, onSelect }) {
         : 'hover:bg-slate-100 dark:hover:bg-[#222736] text-slate-600 dark:text-slate-400'
         }`}
     >
-      <span className="flex items-center space-x-2 truncate pr-2">
-        {isComplete ? (
-          <i className="fa-solid fa-circle-check text-emerald-500"></i>
-        ) : (
-          <i className="fa-regular fa-circle text-slate-400 text-[10px]"></i>
-        )}
+      <span className="flex items-center space-x-2.5 truncate pr-2">
+        <Video size={13} className={isComplete ? "text-emerald-500 shrink-0" : "text-purple-400 shrink-0"} />
         <span className="truncate">{lesson.title}</span>
       </span>
       <span className="shrink-0 opacity-70 text-[10px]">{lesson.duration || ''}</span>
@@ -66,7 +64,11 @@ function LessonRow({ lesson, isActive, onSelect }) {
 
 export default function CoursePlayer() {
   const { id: courseId } = useParams();
+  const [searchParams] = useSearchParams();
+  const targetLessonId = searchParams.get('lessonId');
+
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const videoContainerRef = useRef(null);
 
@@ -80,6 +82,9 @@ export default function CoursePlayer() {
   const [feedback, setFeedback] = useState(null);
   const [activeTab, setActiveTab] = useState('notes');
   const [noteText, setNoteText] = useState('');
+
+  // Fetch assessments for the currently expanded module
+  const assessments = useSelector(selectAssessmentsByModuleId(activeModule));
 
   useEffect(() => {
     if (enrollments.length === 0 && user?.email) {
@@ -111,6 +116,12 @@ export default function CoursePlayer() {
   }, [dispatch, enrollmentId]);
 
   useEffect(() => {
+    if (activeModule) {
+      dispatch(fetchAssessmentsByModuleId(activeModule));
+    }
+  }, [dispatch, activeModule]);
+
+  useEffect(() => {
     if (modules.length > 0 && !activeModule) {
       setActiveModule(modules[0].id);
     }
@@ -140,29 +151,6 @@ export default function CoursePlayer() {
         e.preventDefault();
         video.currentTime = Math.max(0, video.currentTime - 5);
         showFeedback('⏪ -5s');
-      }
-      if (e.code === 'ArrowUp') {
-        e.preventDefault();
-        const v = Math.min(1, video.volume + 0.05);
-        video.volume = v;
-        showFeedback(`Volume: ${Math.round(v * 100)}% 🔊`);
-      }
-      if (e.code === 'ArrowDown') {
-        e.preventDefault();
-        const v = Math.max(0, video.volume - 0.05);
-        video.volume = v;
-        showFeedback(`Volume: ${Math.round(v * 100)}% 🔉`);
-      }
-      if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
-        e.preventDefault();
-        const container = videoContainerRef.current;
-        if (!document.fullscreenElement) {
-          container?.requestFullscreen?.();
-          showFeedback('Fullscreen ON ⛶');
-        } else {
-          document.exitFullscreen?.();
-          showFeedback('Fullscreen OFF ⛶');
-        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -196,10 +184,18 @@ export default function CoursePlayer() {
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-[#151821] text-slate-900 dark:text-[#f1f3f9] font-sans transition-colors duration-300 py-8">
       <main className="max-w-[90rem] w-full mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* Left Sidebar (3 spans): Course Curriculum */}
+        {/* Left Sidebar (3 spans): Course Curriculum & Module Assessments */}
         <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white dark:bg-[#1a1e2b] border border-slate-200 dark:border-[#262b38] rounded-3xl p-6 shadow-xl">
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">Course Curriculum</h3>
+          <div className="bg-white dark:bg-[#1a1e2b] border border-slate-200 dark:border-[#262b38] rounded-3xl p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Course Curriculum</h3>
+              <button
+                onClick={() => navigate(`/learner/courses/${courseId}/grades`)}
+                className="text-[11px] font-mono text-emerald-400 hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <Award size={13} /> Grades
+              </button>
+            </div>
 
             <div className="space-y-3 text-sm">
               {modules.length === 0 && (
@@ -219,12 +215,51 @@ export default function CoursePlayer() {
                     </button>
 
                     {isExpanded && (
-                      <div className="px-2 pb-2">
+                      <div className="px-2 pb-2 space-y-3">
                         <ModuleLessons
                           moduleId={module.id}
                           currentLessonId={currentLesson?.id}
                           onSelectLesson={setCurrentLesson}
                         />
+
+                        {/* Module Assessments Button inside Sidebar with Differentiated Icons */}
+                        {assessments?.length > 0 && (
+                          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 px-2 space-y-2">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold block">Module Tasks &amp; Quizzes</span>
+                            {assessments.map((asm) => {
+                              const isCoding = asm.type === "CODING";
+                              return (
+                                <button
+                                  key={asm.id}
+                                  onClick={() => {
+                                    if (isCoding) {
+                                      navigate(`/learner/code-execution/${asm.id}`);
+                                    } else {
+                                      navigate(`/learner/assessments/${asm.id}/take`);
+                                    }
+                                  }}
+                                  className={`w-full text-left p-2.5 rounded-xl transition text-xs font-semibold flex items-center justify-between cursor-pointer border ${
+                                    isCoding
+                                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
+                                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                                  }`}
+                                >
+                                  <span className="flex items-center space-x-2 truncate pr-1">
+                                    {isCoding ? (
+                                      <Code size={13} className="shrink-0 text-amber-500" />
+                                    ) : (
+                                      <HelpCircle size={13} className="shrink-0 text-emerald-500" />
+                                    )}
+                                    <span className="truncate">{asm.title}</span>
+                                  </span>
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 bg-black/10 dark:bg-white/10">
+                                    {isCoding ? "Coding" : "MCQ"}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -310,12 +345,6 @@ export default function CoursePlayer() {
               >
                 Resources (3)
               </button>
-              <button
-                onClick={() => setActiveTab('discussion')}
-                className={`${activeTab === 'discussion' ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400 pb-3 -mb-3' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'} transition cursor-pointer`}
-              >
-                Discussion (12)
-              </button>
             </div>
 
             {activeTab === 'notes' && (
@@ -323,7 +352,7 @@ export default function CoursePlayer() {
                 <textarea
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
-                  placeholder="Take private notes for this lesson... (saved locally)"
+                  placeholder="Take private notes for this lesson..."
                   className="w-full bg-slate-50 dark:bg-[#222736] border border-slate-200 dark:border-[#3e4658] rounded-xl p-3 text-sm text-slate-800 dark:text-white focus:outline-none focus:border-purple-500 resize-none h-24 shadow-inner"
                 />
                 <div className="flex justify-end">
@@ -340,19 +369,9 @@ export default function CoursePlayer() {
             {activeTab === 'resources' && (
               <div className="mt-4 text-sm text-slate-600 dark:text-slate-300 space-y-2">
                 <div className="p-3 bg-slate-50 dark:bg-[#222736] rounded-xl border border-slate-200 dark:border-[#3e4658] flex justify-between items-center">
-                  <span><i className="fa-solid fa-file-pdf text-rose-500 mr-2"></i> Lecture_Slides_Module3.pdf</span>
-                  <button className="text-purple-600 dark:text-purple-400 font-medium hover:underline text-xs cursor-pointer">Download</button>
+                  <span>Lecture Slides.pdf</span>
+                  <button className="text-purple-400 font-medium hover:underline text-xs cursor-pointer">Download</button>
                 </div>
-                <div className="p-3 bg-slate-50 dark:bg-[#222736] rounded-xl border border-slate-200 dark:border-[#3e4658] flex justify-between items-center">
-                  <span><i className="fa-solid fa-code text-cyan-500 mr-2"></i> starter-code-repo.zip</span>
-                  <button className="text-purple-600 dark:text-purple-400 font-medium hover:underline text-xs cursor-pointer">Download</button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'discussion' && (
-              <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-                <p className="text-xs italic">Discussion stream loaded. Join the community thread below.</p>
               </div>
             )}
           </div>

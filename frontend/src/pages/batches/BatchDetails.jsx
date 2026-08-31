@@ -69,13 +69,7 @@ export default function BatchDetails() {
     );
   }
 
-  const enrolledCount =
-    batch.enrollments?.filter(
-      (enrollment) =>
-        enrollment.enrollmentStatus === "ACTIVE" ||
-        enrollment.enrollmentStatus === "ENROLLED"
-    ).length || 0;
-
+  const enrolledCount = batch._count?.enrollments || 0;
   const isFull = enrolledCount >= batch.capacity;
 
   // Resolve course thumbnail or tech watermark image
@@ -101,7 +95,7 @@ export default function BatchDetails() {
       </div>
 
       <div className="bg-white dark:bg-[#2b2b2b] border border-gray-200 dark:border-[#3f3f3f] rounded-2xl p-8 shadow-xl relative overflow-hidden">
-        
+
         {/* Centered Original Color Course Watermark Background Graphic */}
         {watermarkImg && (
           <div className="absolute inset-0 flex items-center justify-center opacity-[0.50] dark:opacity-[0.50] pointer-events-none select-none">
@@ -110,18 +104,17 @@ export default function BatchDetails() {
         )}
 
         <div className="space-y-6 relative z-10">
-          
+
           {/* Top Header Row with Status Badge moved to Right Side */}
           <div className="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-[#3f3f3f]">
             <div>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Batch Status</p>
               <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Current operational state</p>
             </div>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border ${
-              batch.status === "ACTIVE"
+            <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase border ${batch.status === "ACTIVE"
                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                 : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30"
-            }`}>
+              }`}>
               {batch.status}
             </span>
           </div>
