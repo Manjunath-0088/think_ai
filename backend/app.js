@@ -193,14 +193,6 @@ app.get(
 // CERTIFICATE STATIC FILES
 // ============================================================
 
-// API Routes
-app.use("/api/courses", courseRoutes);
-app.use("/api/batches", batchRoutes);
-app.use("/api/enrollments", enrollmentRoutes);
-// The New Routes Anand Requested
-app.use("/api/auth", authRoutes);
-app.use("/api/admin", adminUsers);
-app.use("/api/roles", roleRoutes);
 app.use(
     "/certificates",
     express.static(

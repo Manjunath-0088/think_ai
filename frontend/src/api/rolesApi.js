@@ -1,5 +1,5 @@
 const BASE = '/api/roles';
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export const ROLE_HIERARCHY = ['Admin', 'Instructor', 'TA', 'Learner',];
 

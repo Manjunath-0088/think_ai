@@ -14,6 +14,11 @@ const NAV_LINKS = [
   { to: '/learner/playground', label: 'Playground' },
   { to: '/learner/certificates', label: 'Certificates' },
   { to: '/learner/live', label: 'Live Classes' },
+
+  { to: '/forum', label: 'Community' },
+];
+
+
 ];
 
 export default function LearnerLayout() {

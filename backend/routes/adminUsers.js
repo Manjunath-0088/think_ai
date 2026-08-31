@@ -4,6 +4,8 @@ const { users } = require("../data/users");
 const { roles } = require("../data/roles");
 const requireRole = require("../middleware/requireRole");
 const { logRoleChange } = require("../services/auditLogService");
+const { successResponse, errorResponse } = require("../utils/response");
+const { logAction } = require("../utils/auditLogger");
 /**
  * GET /admin/users
  * Lists every user, with their current role.
@@ -41,15 +43,18 @@ router.post("/users/:id/assign-role", requireRole(["Admin"]), (req, res) => {
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
-logRoleChange({
+
+  const oldRole = user.role;
+  user.role = role;
+
+  logRoleChange({
     actorRole: req.user.role,
     targetUserId: userId,
     targetUserName: user.name,
-    oldRole: null,
+    oldRole: oldRole,
     newRole: role,
   });
 
-  user.role = role;
   res.status(200).json({ success: true, message: "Role assigned" });
   
 });
@@ -64,7 +69,18 @@ router.put("/users/:id/role",requireRole(["Admin"]), (req, res) => {
   const { role } = req.body;
   const user = users.find((u) => u.id === userId);
   if (!user) return errorResponse(res, 404, "User not found");
+
+  const oldRole = user.role;
   user.role = role;
+
+  logRoleChange({
+    actorRole: req.user.role,
+    targetUserId: userId,
+    targetUserName: user.name,
+    oldRole: oldRole,
+    newRole: role,
+  });
+
   return successResponse(res, 200, "Role updated", user);
 });
 
@@ -88,7 +104,7 @@ router.patch("/users/:id/status", async(req, res) => {
 });
 
 // 2. Trigger Password Reset
-router.post("/users/:id/reset-password",async (req, res) => {
+router.post("/users/:id/reset-password", requireRole(["Admin"]), async (req, res) => {
   const userId = parseInt(req.params.id);
   
   const user = users.find((u) => u.id === userId);
@@ -98,13 +114,13 @@ router.post("/users/:id/reset-password",async (req, res) => {
     action:'PASSWORD_RESET',
     targetType:'user',
     targetId:String(userId),
-    metadata:{ newStatus: status},
+    metadata:{ },
   });
   return successResponse(res, 200, "Password reset email sent successfully", { userId });
 });
 
 // 3. Bulk Role Assignment
-router.post("/users/bulk-role", (req, res) => {
+router.post("/users/bulk-role", requireRole(["Admin"]), (req, res) => {
   const { userIds, role } = req.body; // Array of IDs and target role
   
   if (!Array.isArray(userIds) || !role) {

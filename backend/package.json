@@ -4,46 +4,33 @@
   "description": "Thinkz AI LMS Backend",
   "main": "server.js",
   "type": "commonjs",
- "scripts": {
-  "start": "node server.js",
-  "dev": "nodemon server.js",
-  "lint": "node --check server.js && node --check app.js",
-  "build": "node --check server.js && node --check app.js",
-  "test": "node --test tests/*.test.js"
-},
   "scripts": {
-  "start": "node server.js",
-  "dev": "nodemon server.js",
-  "lint": "node --check app.js && node --check server.js",
-  "build": "node --check app.js && node --check server.js",
-  "test": "node --test"
-},
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "lint": "node --check server.js && node --check app.js",
+    "build": "node --check server.js && node --check app.js",
+    "test": "node --test tests/*.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^6.19.3",
+    "cors": "^2.8.5",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "morgan": "^1.11.0",
-    "pg": "^8.22.0",
-    "prisma": "^5.22.0",
-    "jsonwebtoken": "^9.0.3",
-    "morgan": "^1.11.0",
-    "pg": "^8.22.0",
-    "prisma": "^5.22.0",
     "is-promise": "^4.0.0",
     "jsonwebtoken": "^9.0.3",
     "media-typer": "^2.0.0",
-
     "morgan": "^1.11.0",
+    "nodemailer": "^9.0.6",
     "path-to-regexp": "^8.4.2",
     "pdfkit": "^0.19.1",
     "pg": "^8.22.0",
     "prisma": "^6.19.3",
+    "side-channel": "^1.1.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "swagger-jsdoc": "^6.3.0",
@@ -51,7 +38,6 @@
   },
   "devDependencies": {
     "artillery": "^2.0.33",
-
     "artillery-engine-socketio-v3": "^1.2.0",
     "nodemon": "^3.1.14"
   },
