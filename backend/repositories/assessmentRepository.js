@@ -845,22 +845,22 @@ const updateAssessmentSubmissionStatus = async (
      * If Judge0 accepted the code,
      * mark the coding answer correct.
      */
-    if (codingAnswer) {
-
-                executionTime:
-                    data.executionTime !== null &&
-                        data.executionTime !== undefined
-                        ? Number(data.executionTime)
-                        : null,
-
-                memory:
-                    data.memory !== null &&
-                        data.memory !== undefined
-                        ? Number(data.memory)
-                        : null
-            }
-        });
-
+   if (codingAnswer) {
+    await prisma.codingAnswer.update({
+        where: { id: codingAnswer.id },
+        data: {
+            status: judge0Status === "Accepted" ? "CORRECT" : "INCORRECT",
+            executionTime:
+                data.executionTime !== null && data.executionTime !== undefined
+                    ? Number(data.executionTime)
+                    : null,
+            memory:
+                data.memory !== null && data.memory !== undefined
+                    ? Number(data.memory)
+                    : null,
+        },
+    });
+}
 /*
 * Check assessment completion for an enrollment.
 *
@@ -1129,3 +1129,4 @@ module.exports = {
     getEnrollmentAssessmentStatus,
     getAssessmentSubmissionResult
 };
+}
