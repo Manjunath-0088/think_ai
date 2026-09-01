@@ -40,6 +40,14 @@
   }
 }
 
+@media (min-width: 768px) {
+  .moderation-container { padding: 24px 20px 64px; }
+}
+
+@media (min-width: 1440px) {
+  .moderation-container { max-width: 1200px; }
+}
+
 .moderation-column {
   display: flex;
   flex-direction: column;
@@ -116,4 +124,59 @@
 /* Moderation toasts reuse the shared toast styles; accent the shield type. */
 .notification-toast--moderation {
   border-color: var(--forum-warning, #f59e0b);
+}
+
+/* ---------- confirmation dialog ---------- */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 6, 12, 0.72);
+  backdrop-filter: blur(2px);
+  box-sizing: border-box;
+}
+
+.confirm-dialog {
+  width: 100%;
+  max-width: 380px;
+  background: var(--forum-surface, #141a2b);
+  border: 1px solid var(--forum-border, #2a3555);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-sizing: border-box;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: confirm-in 0.16s ease-out;
+}
+
+@keyframes confirm-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.confirm-dialog__title {
+  font-size: 1.05rem;
+  margin: 0 0 6px;
+  color: var(--forum-text, #e6eaf5);
+}
+
+.confirm-dialog__message {
+  font-size: 0.87rem;
+  line-height: 1.5;
+  margin: 0 0 16px;
+  color: var(--forum-text-dim, #93a0bf);
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 375px) {
+  .confirm-dialog { max-width: none; padding: 16px; }
 }

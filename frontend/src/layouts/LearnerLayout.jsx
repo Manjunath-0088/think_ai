@@ -18,9 +18,6 @@ const NAV_LINKS = [
   { to: '/forum', label: 'Community' },
 ];
 
-
-];
-
 export default function LearnerLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -82,7 +79,6 @@ export default function LearnerLayout() {
                   const isActive = link.to === '/forum'
                     ? location.pathname.startsWith('/forum')
                     : location.pathname === link.to;
-                  const isActive = location.pathname === link.to;
                   return (
                     <Link
                       key={link.to}
@@ -221,7 +217,6 @@ export default function LearnerLayout() {
                 to={link.to}
                 onClick={handleLinkClick}
                 className={`block px-3 py-2 rounded-lg text-sm font-medium ${(link.to === '/forum' ? location.pathname.startsWith('/forum') : location.pathname === link.to)
-                className={`block px-3 py-2 rounded-lg text-sm font-medium ${location.pathname === link.to
                   ? 'text-purple-400 bg-purple-500/10 font-semibold'
                   : isDarkMode ? 'text-[#94a3b8] hover:bg-[#2a3040] hover:text-white' : 'text-slate-600 hover:bg-slate-100'
                   }`}

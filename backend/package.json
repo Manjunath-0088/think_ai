@@ -16,7 +16,6 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.19.3",
-    "cors": "^2.8.5",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -25,7 +24,7 @@
     "jsonwebtoken": "^9.0.3",
     "media-typer": "^2.0.0",
     "morgan": "^1.11.0",
-    "nodemailer": "^9.0.6",
+    "nodemailer": "^9.1.0",
     "path-to-regexp": "^8.4.2",
     "pdfkit": "^0.19.1",
     "pg": "^8.22.0",

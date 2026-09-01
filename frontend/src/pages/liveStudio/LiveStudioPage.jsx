@@ -6,6 +6,8 @@ import VideoPlaceholder from "../../components/liveStudio/VideoPlaceholder";
 import AttendeeList from "../../components/liveStudio/AttendeeList";
 import ChatPanel from "../../components/liveStudio/ChatPanel";
 import PollPanel from "../../components/liveStudio/PollPanel";
+import BreakoutRooms from "../../components/liveStudio/BreakoutRooms";
+import CameraModal from "../../components/liveStudio/CameraModal";
 import StudioToolbar from "../../components/liveStudio/StudioToolbar";
 import NotificationToast from "../../components/forum/NotificationToast";
 
@@ -22,6 +24,14 @@ import { STUDIO_EVENTS } from "../../services/websocket";
 const DEFAULT_SESSION_ID = "s1";
 const MODERATOR_ROLES = ["Moderator", "Admin"];
 
+const ACTIVE_PANELS = {
+  CAMERA: "camera",
+  CHAT: "chat",
+  ATTENDEES: "attendees",
+  POLLS: "polls",
+  BREAKOUT: "breakout",
+};
+
 /** Live Class Studio (Phase 6/7). */
 export default function LiveStudioPage() {
   const sessionId = DEFAULT_SESSION_ID;
@@ -35,6 +45,7 @@ export default function LiveStudioPage() {
   const [cameraOn, setCameraOn] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [handRaised, setHandRaised] = useState(false);
+  const [activePanel, setActivePanel] = useState(null);
 
   const user = useMemo(
     () => ({ id: getCurrentUserId(), name: "You" }),
@@ -101,6 +112,45 @@ export default function LiveStudioPage() {
     setToasts((previous) => [...previous.slice(-2), notification]);
   }, []);
 
+  // Open contextual panel on matching notifications (chat/poll).
+  useEffect(() => {
+    const unsubChatNotify = subscribe(STUDIO_EVENTS.CHAT_NEW, (message) => {
+      if (message.userId !== user.id) {
+        pushToast({
+          id: `chat-${Date.now()}`,
+          type: "chat",
+          panel: ACTIVE_PANELS.CHAT,
+          message: `New message from ${message.userName || "attendee"}`,
+        });
+      }
+    });
+
+    const unsubPollNotify = subscribe(STUDIO_EVENTS.POLL_UPDATE, (poll) => {
+      if (poll.status === "open") {
+        pushToast({
+          id: `poll-${Date.now()}`,
+          type: "poll",
+          panel: ACTIVE_PANELS.POLLS,
+          message: "A new poll is available.",
+        });
+      }
+    });
+
+    return () => {
+      unsubChatNotify();
+      unsubPollNotify();
+    };
+  }, [subscribe, pushToast, user.id]);
+
+  // Close focused UI when Escape is pressed.
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setActivePanel(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const patchSelf = useCallback((patch) => {
     emit(STUDIO_EVENTS.PRESENCE, { sessionId, userId: user.id, patch });
     setSession((previous) =>
@@ -138,6 +188,21 @@ export default function LiveStudioPage() {
     }
   };
 
+  const handleTogglePanel = useCallback((panel) => {
+    setActivePanel((previous) => (previous === panel ? null : panel));
+  }, []);
+
+  const handleOpenPanel = useCallback(
+    (panel) => setActivePanel((previous) => (previous === panel ? previous : panel)),
+    []
+  );
+
+  const handleCloseCamera = useCallback(() => {
+    setCameraOn(false);
+    patchSelf({ cameraOn: false });
+    setActivePanel(null);
+  }, [patchSelf]);
+
   const canModerate = MODERATOR_ROLES.includes("Moderator"); // demo identity is moderator-capable host
   const attendees = session?.attendees || [];
   const onlineCount = attendees.filter((a) => a.online).length;
@@ -164,32 +229,65 @@ export default function LiveStudioPage() {
           <Link to="/forum" className="btn btn--ghost btn--small">← Forum</Link>
         </header>
 
+        {/* Main live class workspace stays compact. */}
         <div className="studio-grid">
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
+          <div className="studio-main-col">
             <VideoPlaceholder
               title={session?.title || "Waiting for session…"}
               isSharing={sharing}
               attendeeCount={onlineCount}
-            />
-            <ChatPanel
-              messages={messages}
-              onSend={handleSend}
-              onDeleteMessage={(messageId) =>
-                emit(STUDIO_EVENTS.DELETE_MESSAGE, { sessionId, messageId })
-              }
-              canModerate={canModerate}
+              onOpenCamera={() => handleOpenPanel(ACTIVE_PANELS.CAMERA)}
             />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
-            <AttendeeList attendees={attendees} hostId={session?.hostId} currentUserId={user.id} />
-            <PollPanel
-              polls={polls}
-              onVote={handleVotePoll}
-              onCreatePoll={handleCreatePoll}
-              canCreatePoll={canModerate}
-            />
-          </div>
+          {/* Contextual side panels open only when activated. */}
+          {activePanel === ACTIVE_PANELS.CHAT && (
+            <div className="studio-side-col">
+              <ChatPanel
+                messages={messages}
+                onSend={handleSend}
+                onDeleteMessage={(messageId) =>
+                  emit(STUDIO_EVENTS.DELETE_MESSAGE, { sessionId, messageId })
+                }
+                canModerate={canModerate}
+                onClose={() => setActivePanel(null)}
+              />
+            </div>
+          )}
+
+          {activePanel === ACTIVE_PANELS.ATTENDEES && (
+            <div className="studio-side-col">
+              <AttendeeList
+                attendees={attendees}
+                hostId={session?.hostId}
+                currentUserId={user.id}
+                onClose={() => setActivePanel(null)}
+              />
+            </div>
+          )}
+
+          {activePanel === ACTIVE_PANELS.POLLS && (
+            <div className="studio-side-col">
+              <PollPanel
+                polls={polls}
+                onVote={handleVotePoll}
+                onCreatePoll={handleCreatePoll}
+                canCreatePoll={canModerate}
+                onClose={() => setActivePanel(null)}
+              />
+            </div>
+          )}
+
+          {activePanel === ACTIVE_PANELS.BREAKOUT && (
+            <div className="studio-side-col">
+              <BreakoutRooms
+                sessionId={sessionId}
+                isHost={canModerate}
+                currentUserId={user.id}
+                onClose={() => setActivePanel(null)}
+              />
+            </div>
+          )}
         </div>
 
         <StudioToolbar
@@ -197,13 +295,19 @@ export default function LiveStudioPage() {
           cameraOn={cameraOn}
           sharing={sharing}
           handRaised={handRaised}
+          activePanel={activePanel}
           onToggleMute={() => {
             setMuted((previous) => !previous);
             patchSelf({ muted: !muted });
           }}
           onToggleCamera={() => {
-            setCameraOn((previous) => !previous);
-            patchSelf({ cameraOn: !cameraOn });
+            if (!cameraOn) {
+              setCameraOn(true);
+              patchSelf({ cameraOn: true });
+              handleOpenPanel(ACTIVE_PANELS.CAMERA);
+            } else {
+              handleCloseCamera();
+            }
           }}
           onToggleShare={() => {
             setSharing((previous) => !previous);
@@ -219,12 +323,28 @@ export default function LiveStudioPage() {
             setHandRaised((previous) => !previous);
             patchSelf({ raisedHand: !handRaised });
           }}
+          onOpenChat={() => handleTogglePanel(ACTIVE_PANELS.CHAT)}
+          onOpenAttendees={() => handleTogglePanel(ACTIVE_PANELS.ATTENDEES)}
+          onOpenPolls={() => handleTogglePanel(ACTIVE_PANELS.POLLS)}
+          onOpenBreakout={() => handleTogglePanel(ACTIVE_PANELS.BREAKOUT)}
         />
       </div>
+
+      {/* Focused camera overlay — opens only when requested; real WebRTC
+          preview (CameraModal) starts/stops on mount/unmount. */}
+      {activePanel === ACTIVE_PANELS.CAMERA && (
+        <CameraModal
+          title={session?.title || "Camera preview"}
+          onClose={handleCloseCamera}
+        />
+      )}
 
       <NotificationToast
         notifications={toasts}
         onDismiss={(id) => setToasts((previous) => previous.filter((t) => t.id !== id))}
+        onAction={(notification) => {
+          if (notification.panel) handleOpenPanel(notification.panel);
+        }}
       />
     </div>
   );

@@ -2,11 +2,58 @@ const express = require("express");
 
 const router = express.Router();
 
-const studioController = require("../controllers/studioController");
+const liveController = require("../live/liveController");
+const liveValidation = require("../live/liveValidation");
 
-router.get("/sessions/:id", studioController.getSession);
-router.post("/sessions/:id/join", studioController.joinSession);
-router.post("/sessions/:id/polls", studioController.createPoll);
-router.post("/polls/:pollId/vote", studioController.votePoll);
+// Sessions
+router.get("/sessions/:id", liveValidation.validateSessionId, liveController.getSession);
+router.post("/sessions/:id/join", liveValidation.validateSessionId, liveController.joinSession);
+
+// Messages
+router.get("/sessions/:id/messages", liveValidation.validateSessionId, liveController.getMessages);
+router.post(
+    "/sessions/:id/messages",
+    liveValidation.validateSessionId,
+    liveValidation.validateSendMessage,
+    liveController.sendMessage
+);
+router.delete(
+    "/sessions/:id/messages/:messageId",
+    liveValidation.validateSessionId,
+    liveValidation.validateMessageId,
+    liveController.deleteMessage
+);
+
+// Polls
+router.post(
+    "/sessions/:id/polls",
+    liveValidation.validateSessionId,
+    liveValidation.validateCreatePoll,
+    liveController.createPoll
+);
+router.post(
+    "/polls/:pollId/vote",
+    liveValidation.validateVote,
+    liveController.votePoll
+);
+
+// Breakout rooms
+router.get("/sessions/:id/breakouts", liveValidation.validateSessionId, liveController.getBreakoutRooms);
+router.post(
+    "/sessions/:id/breakouts",
+    liveValidation.validateSessionId,
+    liveValidation.validateCreateBreakout,
+    liveController.createBreakoutRoom
+);
+router.post(
+    "/breakouts/:roomId/join",
+    liveValidation.validateBreakoutRoomId,
+    liveController.joinBreakoutRoom
+);
+router.post(
+    "/breakouts/:roomId/leave",
+    liveValidation.validateBreakoutRoomId,
+    liveController.leaveBreakoutRoom
+);
 
 module.exports = router;

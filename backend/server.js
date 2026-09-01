@@ -8,6 +8,7 @@ const swaggerSpec = require("./config/swagger");
 
 const { startWorker } = require("./services/notificationQueueService");
 const initSockets = require("./sockets/index");
+const initLiveSocket = require("./src/live/liveSocket");
 
 require("./config/db");
 
@@ -20,7 +21,6 @@ const lessonRoutes = require("./routes/lessonRoutes");           // <-- added
 const adminUsersRoutes = require("./routes/adminUsers");
 const auditLogRoutes = require("./routes/auditLog");
 const notificationPreferenceRoutes = require("./routes/notificationPreferences");
-const initSockets = require("./sockets/index");
 const assessmentRoutes = require("./routes/assessmentRoutes");
 // ...also add these if you need them and they're missing here too:
 const certificateRoutes = require("./routes/certificateRoutes");
@@ -55,10 +55,16 @@ app.use("/api/certificates", certificateRoutes);
 app.use("/api/lesson-progress", lessonProgressRoutes);
 app.use("/api/code", codeExecutionRoutes);
 
+// Forum module (self-contained: discussions, comments, categories, bookmarks,
+// notifications, moderation, live studio). Mounted last on purpose so it can
+// never shadow the routes above.
+app.use("/api", require("./src/routes"));
+
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, { cors: { origin: "*" } });
 app.set("io", io);
 initSockets(io);
+initLiveSocket(io);
 
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {

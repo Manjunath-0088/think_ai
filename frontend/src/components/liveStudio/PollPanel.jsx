@@ -9,6 +9,7 @@ export default function PollPanel({
   onVote,
   onCreatePoll,
   canCreatePoll = false,
+  onClose,
 }) {
   const [question, setQuestion] = useState("");
   const [optionsText, setOptionsText] = useState("");
@@ -36,8 +37,20 @@ export default function PollPanel({
   };
 
   return (
-    <div className="studio-panel" data-testid="poll-panel">
-      <h2>Polls</h2>
+    <div className="studio-panel studio-drawer" data-testid="poll-panel">
+      <div className="studio-drawer__header">
+        <h2>Polls</h2>
+        {onClose && (
+          <button
+            type="button"
+            className="studio-close-btn"
+            onClick={onClose}
+            aria-label="Close polls"
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
       {polls.length === 0 && <p className="loading-note">No polls yet.</p>}
 

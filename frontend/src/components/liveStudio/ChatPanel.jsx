@@ -18,6 +18,7 @@ export default function ChatPanel({
   onSend,
   onDeleteMessage,
   canModerate = false,
+  onClose,
 }) {
   const [draft, setDraft] = useState("");
   const listRef = useRef(null);
@@ -36,8 +37,20 @@ export default function ChatPanel({
   };
 
   return (
-    <div className="studio-panel chat-panel" data-testid="chat-panel">
-      <h2>Chat</h2>
+    <div className="studio-panel studio-drawer chat-panel" data-testid="chat-panel">
+      <div className="studio-drawer__header">
+        <h2>Chat</h2>
+        {onClose && (
+          <button
+            type="button"
+            className="studio-close-btn"
+            onClick={onClose}
+            aria-label="Close chat"
+          >
+            ✕
+          </button>
+        )}
+      </div>
       <div className="chat-messages" ref={listRef}>
         {messages.length === 0 && (
           <p className="loading-note">No messages yet — say hello!</p>

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./components/ThemeContext";
@@ -10,7 +10,7 @@ import LandingPage from "./pages/public/Landingpage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import LearnerRoutes from "./routes/LearnerRoutes";
 import AdminRoutes from "./routes/AdminRoutes";
-import InstructorRoutes from "./routes/InstructorRoutes"; 
+import ForumModuleRoutes from "./routes/ForumModuleRoutes";
 import { fetchCurrentUser } from "./features/auth/authSlice";
 
 function RolePlaceholder({ label }) {
@@ -26,7 +26,6 @@ function RolePlaceholder({ label }) {
 function App() {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.token);
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
 useEffect(() => {
   if (token) {
@@ -142,101 +141,6 @@ useEffect(() => {
       />
 
     </Routes>
-      <Routes>
-
-        {/* =========================
-            PUBLIC ROUTES
-        ========================= */}
-
-        <Route
-          path="/"
-          element={<LandingPage />}
-        />
-
-        <Route
-          path="/home"
-          element={<LandingPage />}
-        />
-
-        <Route
-          path="/login"
-          element={<LoginPage />}
-        />
-
-        <Route
-          path="/register"
-          element={<RegisterPage />}
-        />
-
-        <Route
-          path="/org-login"
-          element={
-            <RolePlaceholder label="Organization Login" />
-          }
-        />
-
-        {/* =========================
-            ADMIN
-        ========================= */}
-
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute allowedRoles={["Admin"]}>
-              <AdminRoutes />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* =========================
-            LEARNER
-        ========================= */}
-
-        <Route
-          path="/learner/*"
-          element={
-            <ProtectedRoute allowedRoles={["Learner", "Admin"]}>
-              <LearnerRoutes />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* =========================
-            INSTRUCTOR
-        ========================= */}
-
-        <Route
-          path="/instructor/*"
-          element={
-            <ProtectedRoute allowedRoles={["Instructor", "Admin"]}>
-              <InstructorRoutes />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* =========================
-            TA
-        ========================= */}
-
-        <Route
-          path="/ta/*"
-          element={
-            <ProtectedRoute allowedRoles={["TA"]}>
-              <RolePlaceholder label="TA" />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* =========================
-            404
-        ========================= */}
-
-        <Route
-          path="*"
-          element={<Navigate to="/login" replace />}
-        />
-
-      </Routes>
     </ThemeProvider>
   );
 }

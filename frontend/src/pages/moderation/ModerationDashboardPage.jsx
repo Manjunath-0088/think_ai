@@ -6,6 +6,7 @@ import FlaggedPosts from "../../components/moderation/FlaggedPosts";
 import UserModeration from "../../components/moderation/UserModeration";
 import ContentModeration from "../../components/moderation/ContentModeration";
 import RichTextEditor from "../../components/moderation/RichTextEditor";
+import ConfirmDialog from "../../components/moderation/ConfirmDialog";
 import NotificationToast from "../../components/forum/NotificationToast";
 
 import {
@@ -25,6 +26,7 @@ export default function ModerationDashboardPage() {
   const [error, setError] = useState(null);
   const [busyIds, setBusyIds] = useState(() => new Set());
   const [toasts, setToasts] = useState([]);
+  const [confirmState, setConfirmState] = useState(null);
   const [editorValue, setEditorValue] = useState(
     "**Notice:** Keep the community friendly.\n- Be kind\n- No spam"
   );
@@ -35,6 +37,9 @@ export default function ModerationDashboardPage() {
       { id: `mod-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`, type: "moderation", message },
     ]);
   }, []);
+
+  const askConfirm = useCallback((config) => setConfirmState(config), []);
+  const closeConfirm = useCallback(() => setConfirmState(null), []);
 
   const markBusy = (key, busy) =>
     setBusyIds((previous) => {
@@ -62,7 +67,7 @@ export default function ModerationDashboardPage() {
     load();
   }, [load]);
 
-  const handleToggleHidden = async (item) => {
+  const runToggleHidden = async (item) => {
     const key = `${item.type}:${item.id}`;
     markBusy(key, true);
     try {
@@ -82,7 +87,19 @@ export default function ModerationDashboardPage() {
     }
   };
 
-  const handleResolve = async (item) => {
+  const handleToggleHidden = (item) => {
+    askConfirm({
+      title: item.hidden ? "Show this content?" : "Hide this content?",
+      message: item.hidden
+        ? "This discussion/comment will become visible to members again."
+        : "This discussion/comment will be hidden from the community.",
+      confirmLabel: item.hidden ? "Show content" : "Hide content",
+      danger: !item.hidden,
+      action: () => runToggleHidden(item),
+    });
+  };
+
+  const runResolve = async (item) => {
     const key = `${item.type}:${item.id}`;
     markBusy(key, true);
     try {
@@ -98,7 +115,17 @@ export default function ModerationDashboardPage() {
     }
   };
 
-  const handleToggleVisibilityById = async (type, id) => {
+  const handleResolve = (item) => {
+    askConfirm({
+      title: "Resolve this flagged item?",
+      message: "It will be removed from the moderation queue.",
+      confirmLabel: "Resolve",
+      danger: false,
+      action: () => runResolve(item),
+    });
+  };
+
+  const runToggleVisibilityById = async (type, id) => {
     const key = `${type}:${id}`;
     markBusy(key, true);
     try {
@@ -114,7 +141,19 @@ export default function ModerationDashboardPage() {
     }
   };
 
-  const handleToggleBan = async (user) => {
+  const handleToggleVisibilityById = (type, id) => {
+    const known = flagged.find((f) => f.id === id && f.type === type);
+    const nextHidden = !(known?.hidden ?? false);
+    askConfirm({
+      title: nextHidden ? "Hide this content?" : "Show this content?",
+      message: `${type} ${id} will be ${nextHidden ? "hidden from" : "shown to"} the community.`,
+      confirmLabel: nextHidden ? "Hide" : "Show",
+      danger: nextHidden,
+      action: () => runToggleVisibilityById(type, id),
+    });
+  };
+
+  const runToggleBan = async (user) => {
     markBusy(user.id, true);
     try {
       const updated = user.banned ? await unbanUser(user.id) : await banUser(user.id);
@@ -125,6 +164,18 @@ export default function ModerationDashboardPage() {
     } finally {
       markBusy(user.id, false);
     }
+  };
+
+  const handleToggleBan = (user) => {
+    askConfirm({
+      title: user.banned ? "Unban this member?" : "Ban this member?",
+      message: user.banned
+        ? `${user.name} will regain access to the community.`
+        : `${user.name} will be blocked from participating in the community.`,
+      confirmLabel: user.banned ? "Unban" : "Ban",
+      danger: !user.banned,
+      action: () => runToggleBan(user),
+    });
   };
 
   return (
@@ -187,6 +238,20 @@ export default function ModerationDashboardPage() {
         notifications={toasts}
         autoCloseMs={4000}
         onDismiss={(id) => setToasts((previous) => previous.filter((t) => t.id !== id))}
+      />
+
+      <ConfirmDialog
+        open={Boolean(confirmState)}
+        title={confirmState?.title}
+        message={confirmState?.message}
+        confirmLabel={confirmState?.confirmLabel}
+        danger={confirmState?.danger}
+        onCancel={closeConfirm}
+        onConfirm={() => {
+          const action = confirmState?.action;
+          closeConfirm();
+          if (action) action();
+        }}
       />
     </div>
   );

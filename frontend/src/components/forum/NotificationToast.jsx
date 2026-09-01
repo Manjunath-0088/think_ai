@@ -16,6 +16,7 @@ export default function NotificationToast({
   onDismiss,
   autoDismissMs,
   autoCloseMs,
+  onAction,
 }) {
   const items = useMemo(() => toasts || notifications || [], [toasts, notifications]);
   const delay =
@@ -42,6 +43,14 @@ export default function NotificationToast({
         >
           <span aria-hidden="true">{notification.type === "moderation" ? "🛡" : "🔔"}</span>
           <span className="notification-toast__message">{notification.message}</span>
+          <button
+            type="button"
+            className="notification-toast__action"
+            aria-label="Open related live panel"
+            onClick={() => onAction && onAction(notification)}
+          >
+            Open
+          </button>
           <button
             type="button"
             className="notification-toast__close"

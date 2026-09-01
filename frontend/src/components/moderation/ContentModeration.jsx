@@ -11,7 +11,7 @@ export default function ContentModeration({ onHideToggle, busy }) {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!contentId.trim() || !onHideToggle) return;
-    onHideToggle(type, contentId.trim(), (nextHidden) => nextHidden === false);
+    onHideToggle(type, contentId.trim());
     setContentId("");
   };
 

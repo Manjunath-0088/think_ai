@@ -63,7 +63,7 @@ describe("ModerationDashboard (Phase 8)", () => {
     expect(screen.getByText(/Flagged content \(2\)/)).toBeInTheDocument();
   });
 
-  it("hides content and shows a confirmation toast", async () => {
+  it("hides content only after confirmation", async () => {
     setContentVisibility.mockResolvedValue({ id: "d5", type: "discussion", hidden: true });
     renderPage();
 
@@ -72,19 +72,41 @@ describe("ModerationDashboard (Phase 8)", () => {
     );
     fireEvent.click(screen.getAllByRole("button", { name: "Hide content" })[0]);
 
+    // A confirmation dialog must appear before the action is executed.
+    expect(screen.getByTestId("confirm-dialog")).toBeInTheDocument();
+    expect(setContentVisibility).not.toHaveBeenCalled();
+    const dialog = screen.getByTestId("confirm-dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Hide content" }));
+
+    await waitFor(() => expect(setContentVisibility).toHaveBeenCalledWith("d5", "discussion", true));
     await waitFor(() => {
       const toast = document.querySelector('[data-notification-id]');
       expect(toast).toHaveTextContent("Discussion is now hidden");
     });
-    expect(setContentVisibility).toHaveBeenCalledWith("d5", "discussion", true);
   });
 
-  it("resolves items and removes them from the queue", async () => {
+  it("cancelling the confirmation does not run the hide action", async () => {
+    renderPage();
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: "Hide content" }).length).toBeGreaterThan(0)
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Hide content" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByTestId("confirm-dialog")).not.toBeInTheDocument();
+    expect(setContentVisibility).not.toHaveBeenCalled();
+  });
+
+  it("resolves items only after confirmation", async () => {
     resolveContent.mockResolvedValue({ id: "d5", type: "discussion", resolved: true });
     renderPage();
 
     await waitFor(() => expect(screen.getAllByText("Resolve").length).toBeGreaterThan(0));
     fireEvent.click(screen.getAllByRole("button", { name: "Resolve" })[0]);
+    expect(screen.getByTestId("confirm-dialog")).toBeInTheDocument();
+    const resolveDialog = screen.getByTestId("confirm-dialog");
+    fireEvent.click(within(resolveDialog).getByRole("button", { name: "Resolve" }));
 
     await waitFor(() => {
       expect(screen.getByText(/Flagged content \(1\)/)).toBeInTheDocument();
@@ -92,14 +114,16 @@ describe("ModerationDashboard (Phase 8)", () => {
     expect(resolveContent).toHaveBeenCalledWith("d5", "discussion");
   });
 
-  it("bans and unbans members via the user table", async () => {
+  it("bans and unbans members via the user table, after confirmation", async () => {
     banUser.mockResolvedValue(moderationUserFixture({ banned: true }));
     renderPage();
 
     await waitFor(() => expect(screen.getByText("@priya")).toBeInTheDocument());
 
-    // Ban an active user.
+    // Ban an active user (requires confirmation).
     fireEvent.click(screen.getAllByRole("button", { name: "Ban" })[0]);
+    const confirm = screen.getByTestId("confirm-dialog");
+    fireEvent.click(within(confirm).getByRole("button", { name: "Ban" }));
     await waitFor(() => expect(banUser).toHaveBeenCalledWith("u7"));
 
     // Unban a previously banned user (scoped to Priya's row — Dev was just
@@ -107,6 +131,8 @@ describe("ModerationDashboard (Phase 8)", () => {
     unbanUser.mockResolvedValue(moderationUserFixture({ id: "u2", banned: false }));
     const priyaRow = document.querySelector('[data-user-id="u2"]');
     fireEvent.click(within(priyaRow).getByRole("button", { name: "Unban" }));
+    const unbanDialog = screen.getByTestId("confirm-dialog");
+    fireEvent.click(within(unbanDialog).getByRole("button", { name: "Unban" }));
     await waitFor(() => expect(unbanUser).toHaveBeenCalledWith("u2"));
   });
 

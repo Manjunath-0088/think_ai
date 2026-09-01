@@ -8,6 +8,10 @@ function renderToolbar(overrides = {}) {
     onToggleCamera: vi.fn(),
     onToggleShare: vi.fn(),
     onToggleHand: vi.fn(),
+    onOpenChat: vi.fn(),
+    onOpenAttendees: vi.fn(),
+    onOpenPolls: vi.fn(),
+    onOpenBreakout: vi.fn(),
   };
   const props = {
     muted: true,
@@ -65,5 +69,24 @@ describe("StudioToolbar (Phase 6)", () => {
     expect(handlers.onToggleCamera).toHaveBeenCalledTimes(1);
     expect(handlers.onToggleShare).toHaveBeenCalledTimes(1);
     expect(handlers.onToggleHand).toHaveBeenCalledTimes(1);
+  });
+
+  it("invokes the matching handler for contextual panel buttons", () => {
+    const handlers = renderToolbar();
+
+    fireEvent.click(screen.getByRole("button", { name: /chat/i }));
+    fireEvent.click(screen.getByRole("button", { name: /attendees/i }));
+    fireEvent.click(screen.getByRole("button", { name: /polls/i }));
+    fireEvent.click(screen.getByRole("button", { name: /rooms/i }));
+
+    expect(handlers.onOpenChat).toHaveBeenCalledTimes(1);
+    expect(handlers.onOpenAttendees).toHaveBeenCalledTimes(1);
+    expect(handlers.onOpenPolls).toHaveBeenCalledTimes(1);
+    expect(handlers.onOpenBreakout).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks the active contextual tool button", () => {
+    renderToolbar({ activePanel: "chat" });
+    expect(screen.getByRole("button", { name: /chat/i })).toHaveClass("is-active-tool");
   });
 });
