@@ -166,11 +166,16 @@ const validateAssessmentCreate = (req, res, next) => {
             // ====================================================
             if (questionType === "MCQ") {
                 if (
-                    !Array.isArray(question.options) ||
-                    question.options.length < 2
+                    question.order !== undefined &&
+                    (
+                        !Number.isInteger(
+                            Number(question.order)
+                        ) ||
+                        Number(question.order) < 0
+                    )
                 ) {
                     errors.push(
-                        `questions[${index}].options must contain at least 2 options`
+                        `questions[${index}].order must be a non-negative integer`
                     );
                 } else {
                     let correctOptionCount = 0;
@@ -213,19 +218,24 @@ const validateAssessmentCreate = (req, res, next) => {
 
                     if (correctOptionCount !== 1) {
                         errors.push(
-                            `questions[${index}] must have exactly one correct option`
+                            `Coding question ${index + 1} must contain at least one test case`
                         );
                     }
                 }
+
             }
+        );
+    }
+
 
             // ====================================================
             // CODING QUESTION VALIDATION
             // ====================================================
             if (questionType === "CODING") {
                 if (
-                    question.options !== undefined &&
-                    !Array.isArray(question.options)
+                    question &&
+                    question.questionType &&
+                    question.questionType !== "MCQ"
                 ) {
                     errors.push(`questions[${index}].options must be an array`);
                 }
@@ -235,6 +245,7 @@ const validateAssessmentCreate = (req, res, next) => {
                 } else if (question.testCases.length === 0) {
                     errors.push(`Coding question ${index + 1} must contain at least one test case`);
                 }
+
             }
         });
     }
@@ -275,6 +286,7 @@ const validateAssessmentCreate = (req, res, next) => {
     // ----------------------------------------------------
     if (errors.length > 0) {
         return res.status(400).json({
+
             success: false,
             message: "Assessment validation failed",
             errors
@@ -293,6 +305,7 @@ const validateAssessmentId = (req, res, next) => {
 
     if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({
+
             success: false,
             message: "Assessment ID must be a positive integer"
         });
@@ -310,6 +323,8 @@ const validateAssessmentSubmit = (req, res, next) => {
     const errors = [];
 
     // Enrollment ID
+    // ----------------------------------------------------
+
     if (
         enrollmentId === undefined ||
         enrollmentId === null ||
@@ -396,6 +411,7 @@ const validateAssessmentSubmit = (req, res, next) => {
 
     if (errors.length > 0) {
         return res.status(400).json({
+
             success: false,
             message: "Assessment submission validation failed",
             errors
@@ -413,4 +429,5 @@ module.exports = {
     validateAssessmentCreate,
     validateAssessmentId,
     validateAssessmentSubmit
+
 };

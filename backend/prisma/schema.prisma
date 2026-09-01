@@ -474,3 +474,56 @@ model SubmissionAnswer {
   @@unique([submissionId, questionId])
   @@index([questionId])
 }
+
+// ====================================================
+// CODING TEST CASE EXECUTION
+// ====================================================
+
+model CodingTestCaseExecution {
+  id Int @id @default(autoincrement())
+
+  // ==================================================
+  // RELATIONS
+  // ==================================================
+
+  submissionId Int
+  submission   AssessmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  testCaseId Int
+  testCase   CodingTestCase @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  // ==================================================
+  // JUDGE0
+  // ==================================================
+
+  judge0Token String @unique
+
+  judge0Status String?
+
+  // ==================================================
+  // EXECUTION RESULT
+  // ==================================================
+
+  actualOutput   String?
+  expectedOutput String?
+
+  executionTime String?
+  memory        Int?
+
+  // ==================================================
+  // GRADING
+  // ==================================================
+
+  passed        Boolean @default(false)
+  marksObtained Float   @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([submissionId])
+  @@index([questionId])
+  @@index([testCaseId])
+}

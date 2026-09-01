@@ -57,6 +57,7 @@ const createAssessment = async (req, res) => {
             );
 
         return res.status(201).json({
+
             success: true,
             message: "Assessment created successfully",
             data: assessment
@@ -232,14 +233,18 @@ const getAssessmentById = async (req, res) => {
             );
 
         if (!assessment) {
+
             return res.status(404).json({
+
                 success: false,
                 message: "Assessment not found"
             });
         }
 
         return res.status(200).json({
+
             success: true,
+
             data: assessment
         });
 
@@ -321,13 +326,62 @@ const startAssessment = async (req, res) => {
             message ===
                 "This assessment does not belong to the enrolled course"
         ) {
+
             return res.status(400).json({
+
                 success: false,
                 message
             });
         }
 
+
+        if (
+            message ===
+                "Assessment not found" ||
+
+            message ===
+                "Enrollment not found"
+        ) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message
+
+            });
+        }
+
+
+        if (
+            message ===
+                "Assessment is not active" ||
+
+            message ===
+                "Enrollment is not active" ||
+
+            message ===
+                "Batch is not active" ||
+
+            message ===
+                "Course is not active" ||
+
+            message ===
+                "This assessment does not belong to the enrolled course"
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message
+
+            });
+        }
+
+
         return res.status(500).json({
+
             success: false,
             message: "Failed to start assessment"
         });
@@ -348,6 +402,7 @@ const submitAssessment = async (req, res) => {
             );
 
         return res.status(201).json({
+
             success: true,
             message: "Assessment submitted successfully",
             data: submission
@@ -361,8 +416,11 @@ const submitAssessment = async (req, res) => {
 
         if (isValidationError(error.message)) {
             return res.status(400).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
@@ -370,9 +428,13 @@ const submitAssessment = async (req, res) => {
             error.message === "Assessment not found" ||
             error.message === "Enrollment not found"
         ) {
+
             return res.status(404).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
@@ -383,9 +445,13 @@ const submitAssessment = async (req, res) => {
             error.message ===
                 "This assessment does not belong to the enrolled course"
         ) {
+
             return res.status(400).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
@@ -395,15 +461,22 @@ const submitAssessment = async (req, res) => {
                 "Invalid option for question"
             )
         ) {
+
             return res.status(400).json({
+
                 success: false,
-                message: error.message
+
+                message:
+                    error.message
             });
         }
 
         return res.status(500).json({
+
             success: false,
-            message: error.message
+
+            message:
+                error.message
         });
     }
 };
@@ -421,7 +494,9 @@ const getAssessmentAnalytics = async (req, res) => {
             );
 
         return res.status(200).json({
+
             success: true,
+
             data: analytics
         });
 
@@ -497,6 +572,7 @@ const getAssessmentSubmissions = async (req, res) => {
             );
 
         return res.status(200).json({
+
             success: true,
             data: submissions
         });
@@ -517,10 +593,46 @@ const getAssessmentSubmissions = async (req, res) => {
             });
         }
 
-        return res.status(500).json({
-            success: false,
-            message: error.message
+// ============================================================
+// ADMIN - CREATE CODING QUESTION
+// ============================================================
+
+const createCodingQuestion = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const question =
+            await service.createCodingQuestion(
+                req.body
+            );
+
+        return res.status(201).json({
+
+            success: true,
+
+            message:
+                "Coding question created successfully",
+
+            data: question
         });
+
+    } catch (error) {
+
+        console.error(
+            "Create coding question error:",
+            error
+        );
+
+        return sendControllerError(
+            res,
+            error,
+            [
+                "Assessment not found"
+            ]
+        );
     }
 };
 
