@@ -94,7 +94,7 @@ function CourseCard({ enrollment, navigate }) {
                   console.error("Course ID is missing:", course);
                 }
               }}
-              className="group/btn relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/25 transition-all duration-300 active:scale-95 cursor-pointer"
+              className="group/btn relative inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-md shadow-purple-500/25 hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
             >
               <span>Continue Learning</span>
               <span className="transition-transform duration-300 group-hover/btn:translate-x-1">→</span>
@@ -133,44 +133,44 @@ export default function LearnerDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 bg-slate-50 dark:bg-[#151821] text-slate-900 dark:text-[#f1f3f9] transition-colors duration-300 min-h-screen">
 
-      {/* Top Header Banner */}
+      {/* Top Header Banner with Integrated Upcoming Sessions & Enrollments Count Widget */}
       <div className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-[#262b38] bg-white dark:bg-[#1a1e2b] p-6 md:p-8 backdrop-blur-2xl shadow-2xl">
         <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 rounded-full bg-purple-600/10 blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
+          <div className="space-y-2 max-w-xl">
             <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
-              Dashboard &amp; Curriculum, <span className="bg-gradient-to-r from-purple-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">{user?.name || user?.email?.split('@')[0] || 'Learner'}</span>
+              Dashboard &amp; Curriculum <br/> <span className="bg-gradient-to-r from-purple-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">{user?.name || user?.email?.split('@')[0] || 'Learner'}</span>
             </h1>
-            <p className="text-sm text-slate-500 dark:text-[#94a3b8] max-w-xl">
+            <p className="text-sm text-slate-500 dark:text-[#94a3b8]">
               Monitor active bootcamps, resume your interactive curriculum, and follow your module progress streams effortlessly.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-slate-50 dark:bg-[#222736] border border-slate-200 dark:border-[#313849] backdrop-blur-xl">
-            <FlameIcon />
-            <div>
-              <p className="text-[10px] uppercase font-mono text-slate-400">Enrolled Programs</p>
-              <p className="text-lg font-bold text-slate-900 dark:text-white font-mono">{enrollments.length}</p>
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+            {/* Upcoming Live Sessions Widget */}
+            <div className="flex-1 sm:flex-initial bg-slate-50 dark:bg-[#222736] border border-slate-200 dark:border-[#313849] rounded-2xl p-4 flex items-center justify-between gap-4 backdrop-blur-xl">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                  <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider border border-emerald-500/20">Live Q&A</span>
+                </div>
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-white">React Router v6 Deep Dive</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Today, 5:00 PM</p>
+              </div>
+              <button className="bg-slate-200 dark:bg-purple-600/20 hover:bg-purple-600 hover:text-white text-slate-800 dark:text-purple-300 text-xs px-3.5 py-1.5 rounded-full transition font-medium cursor-pointer border border-purple-500/30">
+                Join
+              </button>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Upcoming Live Sessions Widget Added Here */}
-      <div className="bg-white dark:bg-[#1a1e2b] border border-slate-200 dark:border-[#262b38] rounded-3xl p-6 shadow-xl">
-        <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-3 flex items-center justify-between">
-          <span>Upcoming Sessions</span>
-          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
-        </h3>
-        <div className="space-y-3">
-          <div className="bg-slate-50 dark:bg-[#222736] p-3.5 rounded-2xl border border-slate-200 dark:border-[#3e4658] flex items-center justify-between">
-            <div>
-              <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-semibold uppercase tracking-wider border border-emerald-500/20">Live Q&A</span>
-              <h4 className="text-sm font-semibold text-slate-900 dark:text-white mt-1">React Router v6 Deep Dive</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><i className="fa-regular fa-clock mr-1"></i> Today, 5:00 PM</p>
+            {/* Enrolled Programs Count Widget */}
+            <div className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-slate-50 dark:bg-[#222736] border border-slate-200 dark:border-[#313849] backdrop-blur-xl">
+              <FlameIcon />
+              <div>
+                <p className="text-[10px] uppercase font-mono text-slate-400">Enrolled Programs</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white font-mono">{enrollments.length}</p>
+              </div>
             </div>
-            <button className="bg-slate-200 dark:bg-purple-600/20 hover:bg-purple-600 hover:text-white text-slate-800 dark:text-purple-300 text-xs px-3 py-2 rounded-xl transition font-medium cursor-pointer border border-purple-500/30">Join</button>
           </div>
         </div>
       </div>
@@ -194,7 +194,7 @@ export default function LearnerDashboard() {
                   <div className="h-4 w-24 bg-slate-200 dark:bg-[#222736] rounded-full" />
                   <div className="h-6 w-3/4 bg-slate-200 dark:bg-[#222736] rounded-lg" />
                 </div>
-                <div className="h-10 bg-slate-200 dark:bg-[#222736] rounded-xl" />
+                <div className="h-10 bg-slate-200 dark:bg-[#222736] rounded-full" />
               </div>
             ))}
           </div>
@@ -209,7 +209,7 @@ export default function LearnerDashboard() {
             </p>
             <button
               onClick={() => navigate('/learner/courses')}
-              className="px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
+              className="px-6 py-3 rounded-full text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
             >
               Browse Course Catalog →
             </button>
@@ -226,4 +226,3 @@ export default function LearnerDashboard() {
     </div>
   );
 }
-

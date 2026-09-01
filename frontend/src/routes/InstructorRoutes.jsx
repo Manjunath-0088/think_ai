@@ -6,7 +6,9 @@ import InstructorDashboard from "../pages/instructor_portal/InstructorDashboard"
 
 import AssessmentManager from "../pages/instructor_portal/AssessmentManager";
 import ModuleManager from '../pages/instructor_portal/ModuleManager';
-import StudentAssessmentTaker from "../pages/instructor_portal/StudentAssessmentTaker";
+import InstructorVideoPreview from "../pages/instructor_portal/InstructorVideoPreview";
+import StudentSubmissionsHub from "../pages/instructor_portal/StudentSubmissionsHub";
+import StudentSubmissions from "../pages/instructor_portal/StudentSubmissions";
 
 function InstructorRoutes() {
   return (
@@ -18,20 +20,12 @@ function InstructorRoutes() {
         <Route path="dashboard" element={<InstructorDashboard />} />
         <Route path="modules" element={<ModuleManager />} />
         <Route path="assignments" element={<AssessmentManager />} />
-        <Route path="assessments/:assessmentId/submissions" element={<StudentAssessmentTaker />} />
-        {/* <Route path="modules" element={<ModuleList />} />
-        <Route path="modules/add" element={<AddModule />} />
-        <Route path="modules/edit/:id" element={<EditModule />} />
-        <Route path="modules/:id" element={<ModuleDetails />} />
-
-        <Route path="lessons" element={<LessonList />} />
-        <Route path="lessons/add" element={<AddLesson />} />
-        <Route path="lessons/edit/:id" element={<EditLesson />} />
-        <Route path="lessons/:id" element={<LessonDetails />} /> */}
-
-        {/* Instructor Assignment / Assessment Engine */}
-        {/* <Route path="assignments/create" element={<AssessmentCreatePage />} />
-        <Route path="assignments/:id" element={<AssessmentDetailsPage />} /> */}
+        
+        {/* Student Submissions Hub & Individual Report Page */}
+        <Route path="student-submissions" element={<StudentSubmissionsHub />} />
+        <Route path="courses/:courseId/students/:enrollmentId/submissions" element={<StudentSubmissions />} />
+        
+        <Route path="courses/:courseId/videos/:lessonId" element={<InstructorVideoPreview />} />
       </Route>
     </Routes>
   );

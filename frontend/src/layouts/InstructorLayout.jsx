@@ -11,8 +11,8 @@ const INSTRUCTOR_NAV_LINKS = [
   { to: '/instructor/dashboard', label: 'Dashboard' },
   { to: '/instructor/modules', label: 'Modules & Lessons' },
   { to: '/instructor/assignments', label: 'Assignments' },
-  { to: '/instructor/assessments/:assessmentId/submissions', label: 'Student Submissions' },
-  { to: '/instructor/analytics', label: 'Analytics' },
+  { to: '/instructor/student-submissions', label: 'Student Submissions' },
+  { to: '/instructor/certificates', label: 'Certificates' },
 ];
 
 export default function InstructorLayout() {
@@ -55,67 +55,84 @@ export default function InstructorLayout() {
                 <span className={`tracking-normal font-bold text-xl ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Thinkz<span className="text-purple-500 font-bold">.ai</span></span>
               </Link>
 
-              {/* Search Toggle Icon Button */}
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className={`p-2 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center border ${
-                  isDarkMode 
-                    ? 'bg-[#2a3040] hover:bg-[#32394c] text-[#94a3b8] hover:text-white border-[#3e4658]' 
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
-                }`}
-                title="Search Platform"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
+              {/* Search Toggle Icon Button & Inline Search Container */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsSearchOpen((prev) => !prev)}
+                  className={`p-2.5 rounded-full transition-all duration-300 cursor-pointer flex items-center justify-center border ${
+                    isDarkMode 
+                      ? 'bg-[#2a3040] hover:bg-[#32394c] text-[#94a3b8] hover:text-white border-[#3e4658]' 
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                  }`}
+                  title="Search Platform"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
 
-              {/* Desktop Nav Links */}
-              <nav className="hidden md:flex items-center space-x-2">
-                {INSTRUCTOR_NAV_LINKS.map((link) => {
-                  const isActive = location.pathname === link.to;
-                  return (
-                    <Link
-                      key={link.to}
-                      to={link.to}
-                      className={`relative px-3 py-2 text-sm font-medium transition-all duration-300 rounded-xl group ${
-                        isActive
-                          ? isDarkMode
-                            ? 'text-purple-400 bg-purple-500/10 border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.15)]'
-                            : 'text-purple-700 bg-purple-50 border border-purple-200 shadow-sm'
-                          : isDarkMode
-                            ? 'text-[#94a3b8] hover:text-white hover:bg-[#2a3040]'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                      }`}
+                {/* Inline Expanding Search Box */}
+                {isSearchOpen && (
+                  <div className="relative flex items-center animate-fadeIn w-48 sm:w-64 md:w-80">
+                    <div className="w-full [&_input]:rounded-full">
+                      <GlobalSearch />
+                    </div>
+                    <button 
+                      onClick={() => setIsSearchOpen(false)}
+                      className="ml-2 text-slate-400 hover:text-slate-700 dark:hover:text-white font-bold text-sm cursor-pointer px-1"
+                      title="Close Search"
                     >
-                      {link.label}
-                      {isActive && (
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-purple-500 rounded-full" />
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
+                      &times;
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Nav Links with Active Highlighting & Hover Effects */}
+              {!isSearchOpen && (
+                <nav className="hidden md:flex items-center space-x-2">
+                  {INSTRUCTOR_NAV_LINKS.map((link) => {
+                    const isActive = location.pathname === link.to;
+                    return (
+                      <Link
+                        key={link.to}
+                        to={link.to}
+                        className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-full group ${
+                          isActive
+                            ? isDarkMode
+                              ? 'text-purple-400 bg-purple-500/10 border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.15)]'
+                              : 'text-purple-700 bg-purple-50 border border-purple-200 shadow-sm'
+                            : isDarkMode
+                              ? 'text-[#94a3b8] hover:text-white hover:bg-[#2a3040]'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
               {isAdmin && (
                 <button
                   onClick={() => navigate('/admin/dashboard')}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 transition-colors text-xs font-semibold cursor-pointer"
+                  className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 transition-colors text-xs font-semibold cursor-pointer"
                 >
                   <span>&larr; Admin Console</span>
                 </button>
               )}
 
-              {/* Notification Bell */}
+              {/* Notification Bell with Dropdown Toggle */}
               <div className="relative">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsNotificationOpen((prev) => !prev);
                   }}
-                  className={`p-2 rounded-xl transition-colors relative cursor-pointer flex items-center justify-center border ${isDarkMode ? 'bg-[#2a3040] hover:bg-[#32394c] text-[#94a3b8] hover:text-white border-[#3e4658]' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'}`}
+                  className={`p-2.5 rounded-full transition-colors relative cursor-pointer flex items-center justify-center border ${isDarkMode ? 'bg-[#2a3040] hover:bg-[#32394c] text-[#94a3b8] hover:text-white border-[#3e4658]' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'}`}
                   title="Notifications"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,7 +154,8 @@ export default function InstructorLayout() {
 
               <button
                 onClick={toggleTheme}
-                className={`p-1.5 px-3 rounded-full transition-colors cursor-pointer text-xs font-medium border ${isDarkMode ? 'bg-[#2a3040] hover:bg-[#32394c] text-amber-300 border-[#3e4658]' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'}`}
+                className={`p-2 px-3.5 rounded-full transition-colors cursor-pointer text-xs font-medium border ${isDarkMode ? 'bg-[#2a3040] hover:bg-[#32394c] text-amber-300 border-[#3e4658]' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'}`}
+                title="Toggle Theme"
               >
                 {isDarkMode ? '☀️ Light' : '🌙 Dark'}
               </button>
@@ -156,10 +174,14 @@ export default function InstructorLayout() {
 
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className={`md:hidden p-2 rounded-lg border focus:outline-none cursor-pointer ${isDarkMode ? 'bg-[#2a3040] border-[#3e4658] text-[#94a3b8]' : 'bg-slate-100 border-slate-200 text-slate-600'}`}
+                className={`md:hidden p-2.5 rounded-full border focus:outline-none cursor-pointer ${isDarkMode ? 'bg-[#2a3040] border-[#3e4658] text-[#94a3b8]' : 'bg-slate-100 border-slate-200 text-slate-600'}`}
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {isMobileMenuOpen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />}
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {isMobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  )}
                 </svg>
               </button>
             </div>
@@ -167,32 +189,22 @@ export default function InstructorLayout() {
           </div>
         </div>
 
-        {/* Search Modal Overlay */}
-        {isSearchOpen && (
-          <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-20 px-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={() => setIsSearchOpen(false)}>
-            <div 
-              className={`w-full max-w-xl rounded-3xl border shadow-2xl p-4 relative ${isDarkMode ? 'bg-[#1a1e2b] border-[#323846]' : 'bg-white border-slate-200'}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between pb-3 mb-2 border-b border-slate-200 dark:border-[#323846]">
-                <span className="text-xs font-bold uppercase tracking-wider text-purple-500">Quick Search</span>
-                <button onClick={() => setIsSearchOpen(false)} className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer">&times;</button>
-              </div>
-              <div className="w-full [&>div]:max-w-none">
-                <GlobalSearch />
-              </div>
-            </div>
-          </div>
-        )}
-
         {isMobileMenuOpen && (
           <div className={`md:hidden px-4 py-4 space-y-3 shadow-xl border-b ${isDarkMode ? 'bg-[#212631] text-[#f1f3f9] border-[#323846]' : 'bg-white text-slate-900 border-slate-200'}`}>
+            {isAdmin && (
+              <button
+                onClick={() => { handleLinkClick(); navigate('/admin/dashboard'); }}
+                className="w-full text-left px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-600/20 text-purple-300 border border-purple-500/30"
+              >
+                &larr; Back to Admin Console
+              </button>
+            )}
             {INSTRUCTOR_NAV_LINKS.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
                 onClick={handleLinkClick}
-                className={`block px-3 py-2 rounded-lg text-sm font-medium ${
+                className={`block px-4 py-2 rounded-full text-sm font-medium ${
                   location.pathname === link.to ? 'text-purple-400 bg-purple-500/10 font-semibold' : isDarkMode ? 'text-[#94a3b8] hover:bg-[#2a3040] hover:text-white' : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >

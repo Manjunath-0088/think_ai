@@ -457,7 +457,7 @@ module.exports = function (io) {
                                 roomName
                         );
 
-        userSessions.forEach(
+                userSessions.forEach(
                     (session) => {
 
                         sessionManager.updateSession(
@@ -640,10 +640,10 @@ module.exports = function (io) {
         // ------------------------------------------------
         // DISCONNECT
         // ------------------------------------------------
-                
 
 
-        
+
+
         socket.on(
             "disconnect",
             (reason) => {

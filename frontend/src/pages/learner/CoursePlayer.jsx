@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { Award, CheckCircle, Video, Code, HelpCircle, Check } from 'lucide-react';
 
 import { selectUser } from '../../features/auth/authSlice';
 import { fetchMyEnrollments, selectMyEnrollments } from '../../features/enrollments/enrollmentSlice';
 import { fetchModulesByCourseId, selectModules, selectModulesLoading } from '../../features/modules/moduleSlice';
 import { fetchLessonsByModuleId, selectLessonsByModuleId } from '../../features/lessons/lessonSlice';
+import { fetchAssessmentsByModuleId, selectAssessmentsByModuleId } from '../../features/assessments/assessmentSlice';
 import {
   fetchProgressByEnrollment,
   fetchProgressSummary,
@@ -13,6 +15,7 @@ import {
   selectIsLessonComplete,
   selectProgressSummaryFor,
 } from '../../features/lessonProgress/lessonProgressSlice';
+import axios from 'axios';
 
 function ModuleLessons({ moduleId, currentLessonId, onSelectLesson }) {
   const dispatch = useDispatch();
@@ -28,45 +31,54 @@ function ModuleLessons({ moduleId, currentLessonId, onSelectLesson }) {
 
   return (
     <div className="bg-transparent space-y-1 py-1">
-      {lessons.map((lesson) => (
-        <LessonRow
-          key={lesson.id}
-          lesson={lesson}
-          isActive={currentLessonId === lesson.id}
-          onSelect={() => onSelectLesson(lesson)}
-        />
-      ))}
+      {lessons.map((lesson) => {
+        const lessonId = lesson.id || lesson._id;
+        const isActive = currentLessonId === lessonId;
+        return (
+          <LessonRow
+            key={lessonId}
+            lesson={lesson}
+            isActive={isActive}
+            onSelect={() => onSelectLesson(lesson)}
+          />
+        );
+      })}
     </div>
   );
 }
 
 function LessonRow({ lesson, isActive, onSelect }) {
-  const isComplete = useSelector(selectIsLessonComplete(lesson.id));
+  const lessonId = lesson.id || lesson._id;
+  const isComplete = useSelector(selectIsLessonComplete(lessonId));
 
   return (
     <button
       onClick={onSelect}
-      className={`w-full flex items-center justify-between p-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer ${isActive
-        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium shadow-md shadow-purple-500/25'
-        : 'hover:bg-slate-100 dark:hover:bg-[#222736] text-slate-600 dark:text-slate-400'
-        }`}
+      className={`w-full flex items-center justify-between p-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer ${
+        isActive
+          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium shadow-md shadow-purple-500/25'
+          : 'hover:bg-slate-100 dark:hover:bg-[#222736] text-slate-600 dark:text-slate-400'
+      }`}
     >
-      <span className="flex items-center space-x-2 truncate pr-2">
-        {isComplete ? (
-          <i className="fa-solid fa-circle-check text-emerald-500"></i>
-        ) : (
-          <i className="fa-regular fa-circle text-slate-400 text-[10px]"></i>
-        )}
+      <span className="flex items-center space-x-2.5 truncate pr-2">
+        <Video size={13} className={isComplete ? "text-emerald-400 shrink-0" : "text-purple-400 shrink-0"} />
         <span className="truncate">{lesson.title}</span>
       </span>
-      <span className="shrink-0 opacity-70 text-[10px]">{lesson.duration || ''}</span>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {isComplete && <Check size={12} className="text-emerald-400 font-bold" />}
+        <span className="opacity-70 text-[10px]">{lesson.duration || ''}</span>
+      </div>
     </button>
   );
 }
 
 export default function CoursePlayer() {
   const { id: courseId } = useParams();
+  const [searchParams] = useSearchParams();
+  const targetLessonId = searchParams.get('lessonId');
+
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const videoContainerRef = useRef(null);
 
@@ -81,6 +93,9 @@ export default function CoursePlayer() {
   const [activeTab, setActiveTab] = useState('notes');
   const [noteText, setNoteText] = useState('');
 
+  // Fetch assessments for the currently expanded module
+  const assessments = useSelector(selectAssessmentsByModuleId(activeModule));
+
   useEffect(() => {
     if (enrollments.length === 0 && user?.email) {
       dispatch(fetchMyEnrollments(user.email));
@@ -89,14 +104,14 @@ export default function CoursePlayer() {
 
   const enrollment = useMemo(() => {
     return enrollments.find((e) => {
-      const c = e.batch?.course;
+      const c = e.batch?.course || e.course;
       const cId = c?.id || c?._id;
       return String(cId) === String(courseId);
     }) || null;
   }, [enrollments, courseId]);
 
-  const enrollmentId = enrollment?.id ?? null;
-  const course = enrollment?.batch?.course;
+  const enrollmentId = enrollment?.id ?? enrollment?._id ?? null;
+  const course = enrollment?.batch?.course || enrollment?.course;
   const summary = useSelector(selectProgressSummaryFor(enrollmentId));
 
   useEffect(() => {
@@ -111,73 +126,73 @@ export default function CoursePlayer() {
   }, [dispatch, enrollmentId]);
 
   useEffect(() => {
+    if (activeModule) {
+      dispatch(fetchAssessmentsByModuleId(activeModule));
+    }
+  }, [dispatch, activeModule]);
+
+  // Default select first module and its first lesson on load
+  useEffect(() => {
     if (modules.length > 0 && !activeModule) {
-      setActiveModule(modules[0].id);
+      setActiveModule(modules[0].id || modules[0]._id);
     }
   }, [modules, activeModule]);
 
   const showFeedback = (text) => {
     setFeedback(text);
-    setTimeout(() => setFeedback(null), 800);
+    setTimeout(() => setFeedback(null), 1200);
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      const video = videoRef.current;
-      if (!video) return;
+  // Function to report watch time to backend and auto-sync progress & completion
+  const sendVideoProgress = async () => {
+    const video = videoRef.current;
+    const lId = currentLesson?.id || currentLesson?._id;
+    if (!video || !lId || !enrollmentId || !video.duration) return;
 
-      if (e.code === 'Space') {
-        e.preventDefault();
-        video.paused ? video.play() : video.pause();
-      }
-      if (e.code === 'ArrowRight') {
-        e.preventDefault();
-        video.currentTime = Math.min(video.duration, video.currentTime + 5);
-        showFeedback('+5s ⏩');
-      }
-      if (e.code === 'ArrowLeft') {
-        e.preventDefault();
-        video.currentTime = Math.max(0, video.currentTime - 5);
-        showFeedback('⏪ -5s');
-      }
-      if (e.code === 'ArrowUp') {
-        e.preventDefault();
-        const v = Math.min(1, video.volume + 0.05);
-        video.volume = v;
-        showFeedback(`Volume: ${Math.round(v * 100)}% 🔊`);
-      }
-      if (e.code === 'ArrowDown') {
-        e.preventDefault();
-        const v = Math.max(0, video.volume - 0.05);
-        video.volume = v;
-        showFeedback(`Volume: ${Math.round(v * 100)}% 🔉`);
-      }
-      if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
-        e.preventDefault();
-        const container = videoContainerRef.current;
-        if (!document.fullscreenElement) {
-          container?.requestFullscreen?.();
-          showFeedback('Fullscreen ON ⛶');
-        } else {
-          document.exitFullscreen?.();
-          showFeedback('Fullscreen OFF ⛶');
+    try {
+      const watchedSeconds = video.currentTime;
+      const totalDuration = video.duration;
+
+      const response = await axios.post(
+        `http://localhost:5000/api/lesson-progress/lesson/${lId}/track`,
+        {
+          enrollmentId: Number(enrollmentId),
+          watchedSeconds,
+          totalDuration
+        },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
         }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+      );
 
-  const handleVideoEnded = () => {
-    if (currentLesson && enrollmentId) {
-      dispatch(markLessonComplete({ lessonId: currentLesson.id, enrollmentId }));
+      if (response.data.success) {
+        const { watchPercentage, completed } = response.data.data;
+        if (completed) {
+          dispatch(markLessonComplete({ lessonId: lId, enrollmentId }));
+        }
+        dispatch(fetchProgressSummary(enrollmentId));
+      }
+    } catch (err) {
+      console.error("Failed to sync video progress:", err);
     }
   };
 
+  // Auto-save progress when closing, switching lessons, or component unmounts
+  useEffect(() => {
+    return () => {
+      sendVideoProgress();
+    };
+  }, [currentLesson]);
+
+  const handleVideoEnded = () => {
+    sendVideoProgress();
+    showFeedback('Lesson Completed ✓');
+  };
+
   const handleMarkComplete = () => {
-    if (currentLesson && enrollmentId) {
-      dispatch(markLessonComplete({ lessonId: currentLesson.id, enrollmentId }));
+    const lId = currentLesson?.id || currentLesson?._id;
+    if (lId && enrollmentId) {
+      dispatch(markLessonComplete({ lessonId: lId, enrollmentId }));
       showFeedback('Marked Complete ✓');
     }
   };
@@ -192,14 +207,24 @@ export default function CoursePlayer() {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#151821] text-slate-400">Loading course…</div>;
   }
 
+  const currentLessonId = currentLesson?.id || currentLesson?._id;
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-[#151821] text-slate-900 dark:text-[#f1f3f9] font-sans transition-colors duration-300 py-8">
       <main className="max-w-[90rem] w-full mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* Left Sidebar (3 spans): Course Curriculum */}
+        {/* Left Sidebar (3 spans): Course Curriculum & Module Assessments */}
         <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white dark:bg-[#1a1e2b] border border-slate-200 dark:border-[#262b38] rounded-3xl p-6 shadow-xl">
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-4">Course Curriculum</h3>
+          <div className="bg-white dark:bg-[#1a1e2b] border border-slate-200 dark:border-[#262b38] rounded-3xl p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 dark:text-white text-sm">Course Curriculum</h3>
+              <button
+                onClick={() => navigate(`/learner/courses/${courseId}/grades`)}
+                className="text-[11px] font-mono text-emerald-400 hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <Award size={13} /> Grades
+              </button>
+            </div>
 
             <div className="space-y-3 text-sm">
               {modules.length === 0 && (
@@ -207,11 +232,12 @@ export default function CoursePlayer() {
               )}
 
               {modules.map((module) => {
-                const isExpanded = activeModule === module.id;
+                const modId = module.id || module._id;
+                const isExpanded = activeModule === modId;
                 return (
-                  <div key={module.id} className="border border-slate-200 dark:border-[#3e4658] rounded-2xl overflow-hidden bg-slate-50 dark:bg-[#222736]/40">
+                  <div key={modId} className="border border-slate-200 dark:border-[#3e4658] rounded-2xl overflow-hidden bg-slate-50 dark:bg-[#222736]/40">
                     <button
-                      onClick={() => setActiveModule(isExpanded ? null : module.id)}
+                      onClick={() => setActiveModule(isExpanded ? null : modId)}
                       className="w-full p-3.5 flex items-center justify-between cursor-pointer font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#222736] transition"
                     >
                       <span className="text-xs font-semibold truncate pr-2">{module.title}</span>
@@ -219,12 +245,54 @@ export default function CoursePlayer() {
                     </button>
 
                     {isExpanded && (
-                      <div className="px-2 pb-2">
+                      <div className="px-2 pb-2 space-y-3">
                         <ModuleLessons
-                          moduleId={module.id}
-                          currentLessonId={currentLesson?.id}
-                          onSelectLesson={setCurrentLesson}
+                          moduleId={modId}
+                          currentLessonId={currentLessonId}
+                          onSelectLesson={(lesson) => {
+                            sendVideoProgress(); // Save progress of previous lesson before switching
+                            setCurrentLesson(lesson);
+                          }}
                         />
+
+                        {/* Module Assessments Button inside Sidebar */}
+                        {assessments?.length > 0 && (
+                          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 px-2 space-y-2">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold block">Module Tasks &amp; Quizzes</span>
+                            {assessments.map((asm) => {
+                              const isCoding = asm.type === "CODING";
+                              return (
+                                <button
+                                  key={asm.id || asm._id}
+                                  onClick={() => {
+                                    if (isCoding) {
+                                      navigate(`/learner/code-execution/${asm.id || asm._id}`);
+                                    } else {
+                                      navigate(`/learner/assessments/${asm.id || asm._id}/take`);
+                                    }
+                                  }}
+                                  className={`w-full text-left p-2.5 rounded-xl transition text-xs font-semibold flex items-center justify-between cursor-pointer border ${
+                                    isCoding
+                                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
+                                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                                  }`}
+                                >
+                                  <span className="flex items-center space-x-2 truncate pr-1">
+                                    {isCoding ? (
+                                      <Code size={13} className="shrink-0 text-amber-500" />
+                                    ) : (
+                                      <HelpCircle size={13} className="shrink-0 text-emerald-500" />
+                                    )}
+                                    <span className="truncate">{asm.title}</span>
+                                  </span>
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 bg-black/10 dark:bg-white/10">
+                                    {isCoding ? "Coding" : "MCQ"}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -234,10 +302,8 @@ export default function CoursePlayer() {
           </div>
         </div>
 
-        {/* Center Main Area (6 spans): Video Player, Metadata & Interactive Tabs */}
+        {/* Center Main Area (6 spans): Video Player & Tabs */}
         <div className="lg:col-span-6 flex flex-col space-y-6">
-
-          {/* Course Player Box */}
           <div className="bg-white dark:bg-[#1a1e2b] border border-slate-200 dark:border-[#262b38] rounded-3xl overflow-hidden shadow-2xl">
             <div
               ref={videoContainerRef}
@@ -252,6 +318,7 @@ export default function CoursePlayer() {
                   controlsList="nodownload"
                   onContextMenu={(e) => e.preventDefault()}
                   autoPlay
+                  onPause={sendVideoProgress}
                   onEnded={handleVideoEnded}
                 />
               ) : (
@@ -287,9 +354,10 @@ export default function CoursePlayer() {
               </div>
               <button
                 onClick={handleMarkComplete}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-purple-500/25 flex items-center space-x-2 cursor-pointer"
+                disabled={!currentLesson}
+                className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-purple-500/25 flex items-center space-x-2 cursor-pointer"
               >
-                <i className="fa-solid fa-check"></i>
+                <Check size={14} />
                 <span>Mark as Complete</span>
               </button>
             </div>
@@ -308,13 +376,7 @@ export default function CoursePlayer() {
                 onClick={() => setActiveTab('resources')}
                 className={`${activeTab === 'resources' ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400 pb-3 -mb-3' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'} transition cursor-pointer`}
               >
-                Resources (3)
-              </button>
-              <button
-                onClick={() => setActiveTab('discussion')}
-                className={`${activeTab === 'discussion' ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400 pb-3 -mb-3' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'} transition cursor-pointer`}
-              >
-                Discussion (12)
+                Resources
               </button>
             </div>
 
@@ -323,12 +385,12 @@ export default function CoursePlayer() {
                 <textarea
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
-                  placeholder="Take private notes for this lesson... (saved locally)"
+                  placeholder="Take private notes for this lesson..."
                   className="w-full bg-slate-50 dark:bg-[#222736] border border-slate-200 dark:border-[#3e4658] rounded-xl p-3 text-sm text-slate-800 dark:text-white focus:outline-none focus:border-purple-500 resize-none h-24 shadow-inner"
                 />
                 <div className="flex justify-end">
                   <button
-                    onClick={() => alert('Note saved successfully!')}
+                    onClick={() => showFeedback('Note Saved ✓')}
                     className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow cursor-pointer"
                   >
                     Save Note
@@ -340,23 +402,12 @@ export default function CoursePlayer() {
             {activeTab === 'resources' && (
               <div className="mt-4 text-sm text-slate-600 dark:text-slate-300 space-y-2">
                 <div className="p-3 bg-slate-50 dark:bg-[#222736] rounded-xl border border-slate-200 dark:border-[#3e4658] flex justify-between items-center">
-                  <span><i className="fa-solid fa-file-pdf text-rose-500 mr-2"></i> Lecture_Slides_Module3.pdf</span>
-                  <button className="text-purple-600 dark:text-purple-400 font-medium hover:underline text-xs cursor-pointer">Download</button>
+                  <span>Course Material &amp; Documentation</span>
+                  <span className="text-xs text-purple-400 font-mono">Available</span>
                 </div>
-                <div className="p-3 bg-slate-50 dark:bg-[#222736] rounded-xl border border-slate-200 dark:border-[#3e4658] flex justify-between items-center">
-                  <span><i className="fa-solid fa-code text-cyan-500 mr-2"></i> starter-code-repo.zip</span>
-                  <button className="text-purple-600 dark:text-purple-400 font-medium hover:underline text-xs cursor-pointer">Download</button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'discussion' && (
-              <div className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-                <p className="text-xs italic">Discussion stream loaded. Join the community thread below.</p>
               </div>
             )}
           </div>
-
         </div>
 
         {/* Right Sidebar (3 spans): Overall Progress Tracker */}

@@ -11,13 +11,57 @@ const SUPPORTED_LANGUAGES = [
 ];
 
 
-const validateCodeExecution = (req, res, next) => {
+const validatePositiveInteger = (
+    value,
+    fieldName,
+    errors
+) => {
+
+    if (
+        value === undefined ||
+        value === null ||
+        value === ""
+    ) {
+
+        errors.push(
+            `${fieldName} is required`
+        );
+
+        return;
+    }
+
+
+    const numberValue =
+        Number(value);
+
+
+    if (
+        !Number.isInteger(
+            numberValue
+        ) ||
+        numberValue <= 0
+    ) {
+
+        errors.push(
+            `${fieldName} must be a valid positive integer`
+        );
+    }
+};
+
+
+const validateCodeExecution = (
+    req,
+    res,
+    next
+) => {
 
     const {
         language,
         code,
         stdin,
-        submissionId
+        submissionId,
+        questionId,
+        testCaseId
     } = req.body;
 
 
@@ -40,7 +84,9 @@ const validateCodeExecution = (req, res, next) => {
 
     } else if (
         !SUPPORTED_LANGUAGES.includes(
-            language.toLowerCase().trim()
+            language
+                .toLowerCase()
+                .trim()
         )
     ) {
 
@@ -94,34 +140,42 @@ const validateCodeExecution = (req, res, next) => {
     // Validate submissionId
     // ----------------------------------------------------
 
-    if (
-        submissionId === undefined ||
-        submissionId === null ||
-        submissionId === ""
-    ) {
+    validatePositiveInteger(
+        submissionId,
+        "submissionId",
+        errors
+    );
 
-        errors.push(
-            "submissionId is required"
-        );
 
-    } else if (
-        !Number.isInteger(
-            Number(submissionId)
-        ) ||
-        Number(submissionId) <= 0
-    ) {
+    // ----------------------------------------------------
+    // Validate questionId
+    // ----------------------------------------------------
 
-        errors.push(
-            "submissionId must be a valid positive integer"
-        );
-    }
+    validatePositiveInteger(
+        questionId,
+        "questionId",
+        errors
+    );
+
+
+    // ----------------------------------------------------
+    // Validate testCaseId
+    // ----------------------------------------------------
+
+    validatePositiveInteger(
+        testCaseId,
+        "testCaseId",
+        errors
+    );
 
 
     // ----------------------------------------------------
     // Return validation errors
     // ----------------------------------------------------
 
-    if (errors.length > 0) {
+    if (
+        errors.length > 0
+    ) {
 
         return res.status(400).json({
 
