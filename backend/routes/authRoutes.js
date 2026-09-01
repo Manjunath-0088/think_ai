@@ -3,6 +3,7 @@ const router = express.Router();
 const { register, login, getCurrentUser } = require('../controllers/authController');
 const requireRole = require('../middleware/requireRole');
 
+
 /**
  * @swagger
  * /api/auth/register:

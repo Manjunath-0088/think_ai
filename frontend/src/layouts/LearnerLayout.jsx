@@ -18,9 +18,6 @@ const NAV_LINKS = [
   { to: '/forum', label: 'Community' },
 ];
 
-
-];
-
 export default function LearnerLayout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();

@@ -34,6 +34,9 @@ const {
     validateAssessmentSubmit
 } = require("../validations/assessmentValidation");
 
+const prisma = require("../config/database"); // Your Prisma client
+const requireRole = require("../middleware/requireRole");
+
 // ============================================================
 // SWAGGER
 // ============================================================
@@ -145,6 +148,92 @@ router.post(
     validateAssessmentCreate,
     createAssessment
 );
+
+// ============================================================
+// EVALUATE CODING ASSESSMENT (Automatic Output Match & Grade Sync)
+// ============================================================
+
+/**
+ * @swagger
+ * /api/assessments/evaluate-coding:
+ *   post:
+ *     summary: Automatically evaluate student code output against expected output and award marks
+ *     tags: [Assessments]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - enrollmentId
+ *               - assessmentId
+ *               - studentOutput
+ *               - expectedOutput
+ *             properties:
+ *               enrollmentId:
+ *                 type: integer
+ *                 example: 1
+ *               assessmentId:
+ *                 type: integer
+ *                 example: 1
+ *               studentOutput:
+ *                 type: string
+ *                 example: "40"
+ *               expectedOutput:
+ *                 type: string
+ *                 example: "40"
+ *               maxScore:
+ *                 type: number
+ *                 example: 10
+ *     responses:
+ *       200:
+ *         description: Evaluation processed and marks updated successfully
+ *       500:
+ *         description: Internal server error during evaluation
+ */
+router.post("/evaluate-coding", requireRole(["Learner", "Instructor", "Admin"]), async (req, res) => {
+    try {
+        const { enrollmentId, assessmentId, studentOutput, expectedOutput, maxScore } = req.body;
+        const isMatch = studentOutput?.trim() === expectedOutput?.trim();
+        const totalPossibleMarks = maxScore || 10;
+        const awardedMarks = isMatch ? totalPossibleMarks : 0;
+        
+        const rawPercentage = totalPossibleMarks > 0 ? (awardedMarks / totalPossibleMarks) * 100 : 0;
+        const percentage = Math.min(Math.max(rawPercentage, 0), 100);
+
+        // 3. Save or update the submission result in the database via Prisma upsert
+        const submission = await prisma.assessmentSubmission.upsert({
+            where: { enrollmentId_assessmentId: { enrollmentId, assessmentId } },
+            update: {
+                score: awardedMarks,
+                percentage: percentage,
+                status: isMatch ? "PASSED" : "FAILED",
+                codeOutput: studentOutput,
+                updatedAt: new Date()
+            },
+            create: {
+                enrollmentId: Number(enrollmentId),
+                assessmentId: Number(assessmentId),
+                score: awardedMarks,
+                percentage: percentage,
+                status: isMatch ? "PASSED" : "FAILED",
+                codeOutput: studentOutput
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            matched: isMatch,
+            data: submission,
+            message: isMatch ? "Test cases passed! Marks updated." : "Output mismatch. Try again."
+        });
+
+    } catch (error) {
+        console.error("Evaluation error:", error);
+        return res.status(500).json({ success: false, message: "Internal server error during evaluation" });
+    }
+});
 
 // ============================================================
 // ASSESSMENT ANALYTICS

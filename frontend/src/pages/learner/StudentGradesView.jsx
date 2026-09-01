@@ -19,7 +19,7 @@ export default function StudentGradesView() {
         setLoading(true);
         // Get active enrollment ID for this student
         const enrollmentId = localStorage.getItem("activeEnrollmentId") || 1;
-        
+
         // Call your backend endpoint: GET /api/assessments/enrollment/:enrollmentId/status
         const res = await api.get(`/assessments/enrollment/${enrollmentId}/status`);
         const data = res.data?.data || res.data;
@@ -35,14 +35,14 @@ export default function StudentGradesView() {
   }, [courseId]);
 
   return (
-    <div 
+    <div
       className="min-h-screen w-full bg-gradient-to-br from-[#F6F5F1] via-[#EFECE6] to-[#E5E2D9] dark:from-[#0b0f17] dark:via-[#111827] dark:to-[#0f172a] text-slate-900 dark:text-[#f1f3f9] p-6 sm:p-8 font-sans transition-colors duration-500"
       style={{ fontFamily: "Inter, sans-serif" }}
     >
       <style>{FONT_IMPORT}</style>
 
       <div className="max-w-5xl mx-auto space-y-6">
-        
+
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-fraunces">My Assessment Grades</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">Review your scores, percentage results, and course completion status.</p>
@@ -95,16 +95,15 @@ export default function StudentGradesView() {
                       <Award size={15} className="text-purple-500" /> {g.title}
                     </td>
                     <td className="py-4 px-4 font-mono">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold border ${
-                        g.attempted 
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold border ${g.attempted
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                           : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                      }`}>
+                        }`}>
                         {g.attempted ? "Attempted" : "Not Attempted"}
                       </span>
                     </td>
                     <td className="py-4 px-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                      {g.percentage != null ? `${Number(g.percentage).toFixed(1)}%` : "—"}
+                      {g.percentage != null ? `${Math.min(Number(g.percentage), 100).toFixed(1)}%` : "—"}
                     </td>
                     <td className="py-4 px-4">
                       {g.passed ? (

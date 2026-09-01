@@ -689,8 +689,15 @@ function AssessmentAnalyticsView({ assessmentId, courseId, onBack }) {
   const submissionsByEnrollmentId = useMemo(() => {
     const map = new Map();
     submissions.forEach((sub) => {
-      const key = String(sub.enrollmentId ?? "");
-      if (key) map.set(key, sub);
+      // Check multiple potential keys returned by backend population
+      const keys = [
+        String(sub.enrollmentId ?? ""),
+        String(sub.enrollment?.id ?? ""),
+        String(sub.studentId ?? "")
+      ];
+      keys.forEach(k => {
+        if (k) map.set(k, sub);
+      });
     });
     return map;
   }, [submissions]);
@@ -800,8 +807,8 @@ function AssessmentAnalyticsView({ assessmentId, courseId, onBack }) {
                       {hasSubmitted ? (
                         <div className="flex flex-col gap-1 items-start">
                           <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                            <CheckCircle size={10} className="text-emerald-500" /> {sub.status || "SUBMITTED"} & 
-                             {pct >= 40 ? " Passed" : " Needs Improvement"}
+                            <CheckCircle size={10} className="text-emerald-500" /> {sub.status || "SUBMITTED"} &
+                            {pct >= 40 ? " Passed" : " Needs Improvement"}
                           </span>
                         </div>
                       ) : (

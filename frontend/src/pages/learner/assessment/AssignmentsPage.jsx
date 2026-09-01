@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Award, 
@@ -7,7 +7,9 @@ import {
   Loader2, 
   CheckCircle,
   Code,
-  HelpCircle
+  HelpCircle,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 import { getEnrollments } from "../../../api/enrollmentApi";
@@ -23,6 +25,9 @@ export default function AssignmentsPage() {
   const [modules, setModules] = useState([]);
   const [loadingModules, setLoadingModules] = useState(false);
   const [assessmentsByModule, setAssessmentsByModule] = useState({});
+  
+  // State to track which modules are expanded/open
+  const [expandedModules, setExpandedModules] = useState({});
 
   useEffect(() => {
     let isMounted = true;
@@ -75,7 +80,13 @@ export default function AssignmentsPage() {
         const modRes = await api.get(`/modules/course/${selectedCourse.id}`);
         const mods = modRes?.data?.data || modRes?.data || [];
 
-        if (isMounted) setModules(mods);
+        if (isMounted) {
+          setModules(mods);
+          // Automatically open the first module by default, or leave all closed
+          if (mods.length > 0) {
+            setExpandedModules({ [mods[0].id]: true });
+          }
+        }
 
         // Fetch assessments for each module using GET /api/assessments?moduleId=X
         const assessmentMap = {};
@@ -95,6 +106,13 @@ export default function AssignmentsPage() {
     return () => { isMounted = false; };
   }, [selectedCourse]);
 
+  const toggleModule = (modId) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [modId]: !prev[modId]
+    }));
+  };
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center text-slate-400 font-mono text-xs">
@@ -104,8 +122,9 @@ export default function AssignmentsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12" style={{ fontFamily: "Inter, sans-serif" }}>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6" style={{ fontFamily: "Inter, sans-serif" }}>
       
+      {/* Header and Course Selector */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
           <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full">
@@ -165,12 +184,19 @@ export default function AssignmentsPage() {
               <Loader2 className="animate-spin mx-auto mb-2 text-emerald-500" size={18} /> Loading course modules and tasks...
             </div>
           ) : modules.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {modules.map((mod, modIdx) => {
                 const moduleAssessments = assessmentsByModule[mod.id] || [];
+                const isOpen = !!expandedModules[mod.id];
+
                 return (
-                  <div key={mod.id} className="p-6 rounded-3xl bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-slate-800 shadow-xl space-y-4">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                  <div key={mod.id} className="rounded-3xl bg-white/70 dark:bg-slate-900/60 border border-white/40 dark:border-slate-800 shadow-xl overflow-hidden transition-all">
+                    
+                    {/* Module Clickable Accordion Header */}
+                    <div 
+                      onClick={() => toggleModule(mod.id)}
+                      className="p-6 flex items-center justify-between cursor-pointer select-none hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition"
+                    >
                       <div className="flex items-center gap-3">
                         <span className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-xs font-bold flex items-center justify-center border border-emerald-500/20">
                           {modIdx + 1}
@@ -180,73 +206,82 @@ export default function AssignmentsPage() {
                           {mod.description && <p className="text-[11px] text-slate-500">{mod.description}</p>}
                         </div>
                       </div>
-                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                        {moduleAssessments.length} Assignment{moduleAssessments.length === 1 ? '' : 's'}
-                      </span>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                          {moduleAssessments.length} Assignment{moduleAssessments.length === 1 ? '' : 's'}
+                        </span>
+                        {isOpen ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+                      </div>
                     </div>
 
-                    <div className="space-y-3 pt-1">
-                      {moduleAssessments.length > 0 ? (
-                        moduleAssessments.map((asm) => {
-                          const isCoding = asm.type === "CODING";
-                          return (
-                            <div 
-                              key={asm.id} 
-                              className="p-4 rounded-2xl bg-white/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-emerald-500/40"
-                            >
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  {isCoding ? (
-                                    <Code size={15} className="text-amber-500 shrink-0" />
-                                  ) : (
-                                    <HelpCircle size={15} className="text-emerald-500 shrink-0" />
-                                  )}
-                                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{asm.title}</h4>
-                                  <span className={`text-[9px] font-mono px-2 py-0.5 rounded uppercase tracking-wider ${
-                                    isCoding ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                                  }`}>
-                                    {isCoding ? "Coding Task" : "MCQ Quiz"}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{asm.description || "Test your knowledge on this module's curriculum."}</p>
-                                <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 pt-1">
-                                  <span>Total Marks: {asm.totalMarks || 10}</span>
-                                  <span>•</span>
-                                  <span>{asm.questions?.length || 0} Questions</span>
-                                  {asm.duration && (
-                                    <>
-                                      <span>•</span>
-                                      <span className="flex items-center gap-1"><Clock size={11} /> {asm.duration} mins</span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-
-                              <button
-                                onClick={() => {
-                                  if (isCoding) {
-                                    navigate(`/learner/code-execution/${asm.id}`);
-                                  } else {
-                                    navigate(`/learner/assessments/${asm.id}/take`);
-                                  }
-                                }}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white shadow-md transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                                  isCoding 
-                                    ? "bg-gradient-to-r from-amber-600 to-orange-600 shadow-amber-500/20 hover:from-amber-500 hover:to-orange-500" 
-                                    : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-500 hover:to-teal-500"
-                                }`}
+                    {/* Collapsible Assignment List */}
+                    {isOpen && (
+                      <div className="px-6 pb-6 pt-2 border-t border-slate-200 dark:border-slate-800 space-y-3 animate-fadeIn">
+                        {moduleAssessments.length > 0 ? (
+                          moduleAssessments.map((asm) => {
+                            const isCoding = asm.type === "CODING";
+                            return (
+                              <div 
+                                key={asm.id} 
+                                className="p-4 rounded-2xl bg-white/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-emerald-500/40"
                               >
-                                <CheckCircle size={14} /> Participate Task
-                              </button>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/20 border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
-                          No assignments or quizzes published for this module yet.
-                        </div>
-                      )}
-                    </div>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    {isCoding ? (
+                                      <Code size={15} className="text-amber-500 shrink-0" />
+                                    ) : (
+                                      <HelpCircle size={15} className="text-emerald-500 shrink-0" />
+                                    )}
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{asm.title}</h4>
+                                    <span className={`text-[9px] font-mono px-2 py-0.5 rounded uppercase tracking-wider ${
+                                      isCoding ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                    }`}>
+                                      {isCoding ? "Coding Task" : "MCQ Quiz"}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">{asm.description || "Test your knowledge on this module's curriculum."}</p>
+                                  <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400 pt-1">
+                                    <span>Total Marks: {asm.totalMarks || 10}</span>
+                                    <span>•</span>
+                                    <span>{asm.questions?.length || 0} Questions</span>
+                                    {asm.duration && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="flex items-center gap-1"><Clock size={11} /> {asm.duration} mins</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isCoding) {
+                                      navigate(`/learner/code-execution/${asm.id}`);
+                                    } else {
+                                      navigate(`/learner/assessments/${asm.id}/take`);
+                                    }
+                                  }}
+                                  className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white shadow-md transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                                    isCoding 
+                                      ? "bg-gradient-to-r from-amber-600 to-orange-600 shadow-amber-500/20 hover:from-amber-500 hover:to-orange-500" 
+                                      : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/20 hover:from-emerald-500 hover:to-teal-500"
+                                  }`}
+                                >
+                                  <CheckCircle size={14} /> Participate Task
+                                </button>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/20 border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+                            No assignments or quizzes published for this module yet.
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                   </div>
                 );
               })}

@@ -18,13 +18,14 @@ export const loginUser = createAsyncThunk(
       const response = await loginApi(credentials);
       const payload = response.data || response;
       const tokenVal = payload.token;
-      // ✅ Ensure we extract the actual user object
       const userVal = payload.user?.user || payload.user || payload; 
 
       if (tokenVal) localStorage.setItem("token", tokenVal);
       return { token: tokenVal, user: userVal };
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Login failed");
+      // ✅ Check both .message and .error to match backend response structures
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || "Login failed";
+      return rejectWithValue(errorMsg);
     }
   }
 );

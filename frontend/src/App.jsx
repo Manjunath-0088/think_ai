@@ -16,6 +16,8 @@ import InstructorRoutes from "./routes/InstructorRoutes";
 import { fetchCurrentUser } from "./features/auth/authSlice";
 import useSessionTimeout from "./hooks/useSessionTimeout"; 
 
+import ForumModuleRoutes from "./routes/ForumModuleRoutes";
+
 function RolePlaceholder({ label }) {
   return (
     <div className="min-h-screen bg-[#0B0F19] text-white flex items-center justify-center">
@@ -41,116 +43,11 @@ function App() {
 
   return (
     <ThemeProvider>
-    <Routes>
-
-      {/* =========================
-          PUBLIC ROUTES
-      ========================= */}
-
-      <Route
-        path="/"
-        element={<LandingPage />}
-      />
-
-      <Route
-        path="/home"
-        element={<LandingPage />}
-      />
-
-      <Route
-        path="/login"
-        element={<LoginPage />}
-      />
-
-      <Route
-        path="/register"
-        element={<RegisterPage />}
-      />
-
-      {/* =========================
-          FORUM MODULE (self-contained — mock auth, no other-module deps)
-      ========================= */}
-
-      <Route
-        path="/forum/*"
-        element={<ForumModuleRoutes />}
-      />
-
-      <Route
-        path="/org-login"
-        element={
-          <RolePlaceholder label="Organization Login" />
-        }
-      />
-
-      {/* =========================
-          ADMIN
-      ========================= */}
-
-      <Route
-        path="/admin/*"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <AdminRoutes />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* =========================
-          LEARNER
-      ========================= */}
-
-      <Route
-        path="/learner/*"
-        element={
-          <ProtectedRoute allowedRoles={["Learner", "Admin"]}>
-            <LearnerRoutes />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* =========================
-          INSTRUCTOR
-      ========================= */}
-
-      <Route
-        path="/instructor/*"
-        element={
-          <ProtectedRoute allowedRoles={["Instructor"]}>
-            <RolePlaceholder label="Instructor" />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* =========================
-          TA
-      ========================= */}
-
-      <Route
-        path="/ta/*"
-        element={
-          <ProtectedRoute allowedRoles={["TA"]}>
-            <RolePlaceholder label="TA" />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* =========================
-          404
-      ========================= */}
-
-      <Route
-        path="*"
-        element={<Navigate to="/login" replace />}
-      />
-
-    </Routes>
       <Routes>
 
         {/* =========================
             PUBLIC ROUTES
         ========================= */}
-
         <Route
           path="/"
           element={<LandingPage />}
@@ -181,6 +78,14 @@ function App() {
           element={<ResetPasswordPage />}
         />
 
+        {/* =========================
+            FORUM MODULE
+        ========================= */}
+        <Route
+          path="/forum/*"
+          element={<ForumModuleRoutes />}
+        />
+
         <Route
           path="/org-login"
           element={
@@ -191,7 +96,6 @@ function App() {
         {/* =========================
             ADMIN
         ========================= */}
-
         <Route
           path="/admin/*"
           element={
@@ -204,7 +108,6 @@ function App() {
         {/* =========================
             LEARNER
         ========================= */}
-
         <Route
           path="/learner/*"
           element={
@@ -217,7 +120,6 @@ function App() {
         {/* =========================
             INSTRUCTOR
         ========================= */}
-
         <Route
           path="/instructor/*"
           element={
@@ -230,7 +132,6 @@ function App() {
         {/* =========================
             TA
         ========================= */}
-
         <Route
           path="/ta/*"
           element={
@@ -243,7 +144,6 @@ function App() {
         {/* =========================
             404
         ========================= */}
-
         <Route
           path="*"
           element={<Navigate to="/login" replace />}
