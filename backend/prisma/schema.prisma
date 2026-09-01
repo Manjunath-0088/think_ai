@@ -71,18 +71,8 @@ model Batch {
 }
 
 // ====================================================
-// ENROLLMENT
+// USER
 // ====================================================
-
-model Enrollment {
-  id               Int      @id @default(autoincrement())
-  studentName      String
-  studentEmail     String
-  batchId          Int
-  batch            Batch    @relation(fields: [batchId], references: [id])
-  enrollmentStatus String   @default("ENROLLED")
-  enrolledAt       DateTime @default(now())
-}
 
 model User {
   id             Int      @id @default(autoincrement())
@@ -91,6 +81,12 @@ model User {
   role           String   @default("USER")
   createdAt      DateTime @default(now())
 }
+
+// ====================================================
+// ENROLLMENT
+// ====================================================
+
+model Enrollment {
   id           Int    @id @default(autoincrement())
   studentName  String
   studentEmail String
@@ -114,21 +110,17 @@ model User {
 }
 
 // ====================================================
-// AUDIT LOG
+// USER
 // ====================================================
 
-model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?
-  action     String
-  targetType String?
-  targetId   String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
-
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   @default("") // Added default
+  name      String?
+  role      String   @default("Learner")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
 }
 
 // ====================================================
@@ -182,23 +174,21 @@ model Lesson {
 // ====================================================
 
 model LessonProgress {
-  id Int @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
+  enrollmentId     Int
+  lessonId         Int
+  watchedSeconds   Float     @default(0.0)
+  totalDuration    Float     @default(0.0)
+  watchPercentage  Float     @default(0.0)
+  completed        Boolean   @default(false)
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  enrollmentId Int
-  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-
-  lessonId Int
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  completed   Boolean   @default(false)
-  completedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  enrollment       Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson           Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([enrollmentId, lessonId])
-  @@index([enrollmentId])
-  @@index([lessonId])
 }
 
 // ====================================================

@@ -64,8 +64,7 @@ const analyticsRoutes =
 //
 // ============================================================
 
-const adminCodingQuestionRoutes =
-    require("./routes/adminCodingQuestionRoutes");
+const adminCodingQuestionRoutes = require("./routes/adminCodingQuestionRoutes");
 
 
 // ============================================================
@@ -321,10 +320,7 @@ app.use(
 //
 // ============================================================
 
-app.use(
-    "/api/admin",
-    adminCodingQuestionRoutes
-);
+app.use("/api/admin", adminCodingQuestionRoutes);
 
 
 // ============================================================

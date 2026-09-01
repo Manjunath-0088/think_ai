@@ -5,6 +5,8 @@ import { ThemeProvider } from "./components/ThemeContext";
 
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import LandingPage from "./pages/public/Landingpage";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -12,6 +14,7 @@ import LearnerRoutes from "./routes/LearnerRoutes";
 import AdminRoutes from "./routes/AdminRoutes";
 import InstructorRoutes from "./routes/InstructorRoutes"; 
 import { fetchCurrentUser } from "./features/auth/authSlice";
+import useSessionTimeout from "./hooks/useSessionTimeout"; 
 
 function RolePlaceholder({ label }) {
   return (
@@ -26,18 +29,122 @@ function RolePlaceholder({ label }) {
 function App() {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.token);
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
-
-useEffect(() => {
-  if (token) {
-    dispatch(fetchCurrentUser());
-  }
-}, [dispatch, token]);
-
   
+  // Automatically check token expiry state
+  useSessionTimeout();
+
+  useEffect(() => {
+    if (token) {
+      dispatch(fetchCurrentUser());
+    }
+  }, [dispatch, token]);
 
   return (
     <ThemeProvider>
+    <Routes>
+
+      {/* =========================
+          PUBLIC ROUTES
+      ========================= */}
+
+      <Route
+        path="/"
+        element={<LandingPage />}
+      />
+
+      <Route
+        path="/home"
+        element={<LandingPage />}
+      />
+
+      <Route
+        path="/login"
+        element={<LoginPage />}
+      />
+
+      <Route
+        path="/register"
+        element={<RegisterPage />}
+      />
+
+      {/* =========================
+          FORUM MODULE (self-contained — mock auth, no other-module deps)
+      ========================= */}
+
+      <Route
+        path="/forum/*"
+        element={<ForumModuleRoutes />}
+      />
+
+      <Route
+        path="/org-login"
+        element={
+          <RolePlaceholder label="Organization Login" />
+        }
+      />
+
+      {/* =========================
+          ADMIN
+      ========================= */}
+
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedRoute allowedRoles={["Admin"]}>
+            <AdminRoutes />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          LEARNER
+      ========================= */}
+
+      <Route
+        path="/learner/*"
+        element={
+          <ProtectedRoute allowedRoles={["Learner", "Admin"]}>
+            <LearnerRoutes />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          INSTRUCTOR
+      ========================= */}
+
+      <Route
+        path="/instructor/*"
+        element={
+          <ProtectedRoute allowedRoles={["Instructor"]}>
+            <RolePlaceholder label="Instructor" />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          TA
+      ========================= */}
+
+      <Route
+        path="/ta/*"
+        element={
+          <ProtectedRoute allowedRoles={["TA"]}>
+            <RolePlaceholder label="TA" />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          404
+      ========================= */}
+
+      <Route
+        path="*"
+        element={<Navigate to="/login" replace />}
+      />
+
+    </Routes>
       <Routes>
 
         {/* =========================
@@ -62,6 +169,16 @@ useEffect(() => {
         <Route
           path="/register"
           element={<RegisterPage />}
+        />
+
+        <Route
+          path="/forgot-password"
+          element={<ForgotPasswordPage />}
+        />
+
+        <Route
+          path="/reset-password/:token"
+          element={<ResetPasswordPage />}
         />
 
         <Route
@@ -117,7 +234,7 @@ useEffect(() => {
         <Route
           path="/ta/*"
           element={
-            <ProtectedRoute allowedRoles={["TA"]}>
+            <ProtectedRoute allowedRoles={["TA", "Admin"]}>
               <RolePlaceholder label="TA" />
             </ProtectedRoute>
           }
