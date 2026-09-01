@@ -8,6 +8,15 @@ datasource db {
 }
 
 // ====================================================
+// ENUMS
+// ====================================================
+
+enum AssessmentType {
+  MCQ
+  CODING
+}
+
+// ====================================================
 // COURSE
 // ====================================================
 
@@ -101,21 +110,17 @@ model Enrollment {
 }
 
 // ====================================================
-// AUDIT LOG
+// USER
 // ====================================================
 
-model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?
-  action     String
-  targetType String?
-  targetId   String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
-
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   @default("") // Added default
+  name      String?
+  role      String   @default("Learner")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
 }
 
 // ====================================================
@@ -169,23 +174,21 @@ model Lesson {
 // ====================================================
 
 model LessonProgress {
-  id Int @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
+  enrollmentId     Int
+  lessonId         Int
+  watchedSeconds   Float     @default(0.0)
+  totalDuration    Float     @default(0.0)
+  watchPercentage  Float     @default(0.0)
+  completed        Boolean   @default(false)
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  enrollmentId Int
-  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-
-  lessonId Int
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  completed   Boolean   @default(false)
-  completedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  enrollment       Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson           Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([enrollmentId, lessonId])
-  @@index([enrollmentId])
-  @@index([lessonId])
 }
 
 // ====================================================
@@ -218,12 +221,13 @@ model Certificate {
 // ====================================================
 
 model Assessment {
-  id          Int     @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   title       String
   description String?
+  type        AssessmentType @default(MCQ)
   totalMarks  Int
   duration    Int?
-  status      String  @default("ACTIVE")
+  status      String         @default("ACTIVE")
 
   moduleId Int
   module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
@@ -236,6 +240,7 @@ model Assessment {
 
   @@index([moduleId])
   @@index([status])
+  @@index([type])
 }
 
 // ====================================================
@@ -243,23 +248,101 @@ model Assessment {
 // ====================================================
 
 model Question {
-  id           Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
+  // ==================================================
+  // BASIC INFORMATION
+  // ==================================================
+
+  title        String?
   questionText String
+
+  // MCQ / CODING / DESCRIPTIVE
   questionType String @default("MCQ")
-  marks        Int    @default(1)
-  order        Int    @default(0)
+
+  // EASY / MEDIUM / HARD
+  difficulty String?
+
+  marks Int @default(1)
+  order Int @default(0)
+
+  // ==================================================
+  // CODING PROBLEM INFORMATION
+  // ==================================================
+
+  problemStatement String?
+  inputFormat      String?
+  outputFormat     String?
+  constraints      String?
+  explanation      String?
+
+  // Example:
+  //
+  // [
+  //   {
+  //     "input": "5\n10 20 5 40 30",
+  //     "output": "40",
+  //     "explanation": "40 is the maximum."
+  //   }
+  // ]
+
+  examples Json?
+
+  // ==================================================
+  // SUPPORTED LANGUAGES
+  // ==================================================
+
+  // Example:
+  //
+  // [
+  //   "python",
+  //   "javascript",
+  //   "java",
+  //   "cpp"
+  // ]
+
+  supportedLanguages Json?
+
+  // ==================================================
+  // STARTER CODE
+  // ==================================================
+
+  // Example:
+  //
+  // {
+  //   "python": "# Write your solution here",
+  //   "javascript": "// Write your solution here",
+  //   "java": "public class Main {}",
+  //   "cpp": "#include <iostream>"
+  // }
+
+  starterCode Json?
+
+  // ==================================================
+  // ASSESSMENT RELATION
+  // ==================================================
 
   assessmentId Int
   assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
+  // ==================================================
+  // QUESTION RELATIONS
+  // ==================================================
+
   options           Option[]
   submissionAnswers SubmissionAnswer[]
+
+  codingTestCases CodingTestCase[]
+
+  codingTestCaseExecutions CodingTestCaseExecution[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([assessmentId])
   @@index([assessmentId, order])
+  @@index([questionType])
+  @@index([difficulty])
 }
 
 // ====================================================
@@ -280,6 +363,37 @@ model Option {
 }
 
 // ====================================================
+// CODING TEST CASE
+// ====================================================
+
+model CodingTestCase {
+  id Int @id @default(autoincrement())
+
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  // Input given to student's program.
+  input String?
+
+  // Expected program output.
+  expectedOutput String
+
+  // Marks for this test case.
+  marks Float @default(1)
+
+  // false = public
+  // true  = hidden
+  isHidden Boolean @default(false)
+
+  executions CodingTestCaseExecution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([questionId])
+}
+
+// ====================================================
 // ASSESSMENT SUBMISSION
 // ====================================================
 
@@ -292,7 +406,10 @@ model AssessmentSubmission {
   enrollmentId Int
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
-  // Judge0 integration
+  // ==================================================
+  // JUDGE0
+  // ==================================================
+
   judge0Token  String? @unique
   judge0Status String?
 
@@ -303,7 +420,10 @@ model AssessmentSubmission {
   executionTime String?
   memory        Int?
 
-  // Assessment result
+  // ==================================================
+  // ASSESSMENT RESULT
+  // ==================================================
+
   score      Float?
   totalMarks Int
   percentage Float?
@@ -313,6 +433,8 @@ model AssessmentSubmission {
   submittedAt DateTime @default(now())
 
   answers SubmissionAnswer[]
+
+  codingTestCaseExecutions CodingTestCaseExecution[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -338,11 +460,11 @@ model SubmissionAnswer {
   // MCQ
   selectedOptionId Int?
 
-  // Coding / descriptive answers
+  // Coding / descriptive
   answerText String?
   code       String?
 
-  // Evaluation result
+  // Evaluation
   isCorrect     Boolean?
   marksObtained Float?
 

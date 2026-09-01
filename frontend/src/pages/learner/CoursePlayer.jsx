@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Award, CheckCircle, Clock, Video, Code, HelpCircle } from 'lucide-react';
+import { Award, CheckCircle, Video, Code, HelpCircle, Check } from 'lucide-react';
 
 import { selectUser } from '../../features/auth/authSlice';
 import { fetchMyEnrollments, selectMyEnrollments } from '../../features/enrollments/enrollmentSlice';
@@ -15,6 +15,7 @@ import {
   selectIsLessonComplete,
   selectProgressSummaryFor,
 } from '../../features/lessonProgress/lessonProgressSlice';
+import axios from 'axios';
 
 function ModuleLessons({ moduleId, currentLessonId, onSelectLesson }) {
   const dispatch = useDispatch();
@@ -30,34 +31,43 @@ function ModuleLessons({ moduleId, currentLessonId, onSelectLesson }) {
 
   return (
     <div className="bg-transparent space-y-1 py-1">
-      {lessons.map((lesson) => (
-        <LessonRow
-          key={lesson.id}
-          lesson={lesson}
-          isActive={currentLessonId === lesson.id}
-          onSelect={() => onSelectLesson(lesson)}
-        />
-      ))}
+      {lessons.map((lesson) => {
+        const lessonId = lesson.id || lesson._id;
+        const isActive = currentLessonId === lessonId;
+        return (
+          <LessonRow
+            key={lessonId}
+            lesson={lesson}
+            isActive={isActive}
+            onSelect={() => onSelectLesson(lesson)}
+          />
+        );
+      })}
     </div>
   );
 }
 
 function LessonRow({ lesson, isActive, onSelect }) {
-  const isComplete = useSelector(selectIsLessonComplete(lesson.id));
+  const lessonId = lesson.id || lesson._id;
+  const isComplete = useSelector(selectIsLessonComplete(lessonId));
 
   return (
     <button
       onClick={onSelect}
-      className={`w-full flex items-center justify-between p-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer ${isActive
-        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium shadow-md shadow-purple-500/25'
-        : 'hover:bg-slate-100 dark:hover:bg-[#222736] text-slate-600 dark:text-slate-400'
-        }`}
+      className={`w-full flex items-center justify-between p-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer ${
+        isActive
+          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium shadow-md shadow-purple-500/25'
+          : 'hover:bg-slate-100 dark:hover:bg-[#222736] text-slate-600 dark:text-slate-400'
+      }`}
     >
       <span className="flex items-center space-x-2.5 truncate pr-2">
-        <Video size={13} className={isComplete ? "text-emerald-500 shrink-0" : "text-purple-400 shrink-0"} />
+        <Video size={13} className={isComplete ? "text-emerald-400 shrink-0" : "text-purple-400 shrink-0"} />
         <span className="truncate">{lesson.title}</span>
       </span>
-      <span className="shrink-0 opacity-70 text-[10px]">{lesson.duration || ''}</span>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {isComplete && <Check size={12} className="text-emerald-400 font-bold" />}
+        <span className="opacity-70 text-[10px]">{lesson.duration || ''}</span>
+      </div>
     </button>
   );
 }
@@ -94,14 +104,14 @@ export default function CoursePlayer() {
 
   const enrollment = useMemo(() => {
     return enrollments.find((e) => {
-      const c = e.batch?.course;
+      const c = e.batch?.course || e.course;
       const cId = c?.id || c?._id;
       return String(cId) === String(courseId);
     }) || null;
   }, [enrollments, courseId]);
 
-  const enrollmentId = enrollment?.id ?? null;
-  const course = enrollment?.batch?.course;
+  const enrollmentId = enrollment?.id ?? enrollment?._id ?? null;
+  const course = enrollment?.batch?.course || enrollment?.course;
   const summary = useSelector(selectProgressSummaryFor(enrollmentId));
 
   useEffect(() => {
@@ -121,51 +131,68 @@ export default function CoursePlayer() {
     }
   }, [dispatch, activeModule]);
 
+  // Default select first module and its first lesson on load
   useEffect(() => {
     if (modules.length > 0 && !activeModule) {
-      setActiveModule(modules[0].id);
+      setActiveModule(modules[0].id || modules[0]._id);
     }
   }, [modules, activeModule]);
 
   const showFeedback = (text) => {
     setFeedback(text);
-    setTimeout(() => setFeedback(null), 800);
+    setTimeout(() => setFeedback(null), 1200);
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      const video = videoRef.current;
-      if (!video) return;
+  // Function to report watch time to backend and auto-sync progress & completion
+  const sendVideoProgress = async () => {
+    const video = videoRef.current;
+    const lId = currentLesson?.id || currentLesson?._id;
+    if (!video || !lId || !enrollmentId || !video.duration) return;
 
-      if (e.code === 'Space') {
-        e.preventDefault();
-        video.paused ? video.play() : video.pause();
-      }
-      if (e.code === 'ArrowRight') {
-        e.preventDefault();
-        video.currentTime = Math.min(video.duration, video.currentTime + 5);
-        showFeedback('+5s ⏩');
-      }
-      if (e.code === 'ArrowLeft') {
-        e.preventDefault();
-        video.currentTime = Math.max(0, video.currentTime - 5);
-        showFeedback('⏪ -5s');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    try {
+      const watchedSeconds = video.currentTime;
+      const totalDuration = video.duration;
 
-  const handleVideoEnded = () => {
-    if (currentLesson && enrollmentId) {
-      dispatch(markLessonComplete({ lessonId: currentLesson.id, enrollmentId }));
+      const response = await axios.post(
+        `http://localhost:5000/api/lesson-progress/lesson/${lId}/track`,
+        {
+          enrollmentId: Number(enrollmentId),
+          watchedSeconds,
+          totalDuration
+        },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        }
+      );
+
+      if (response.data.success) {
+        const { watchPercentage, completed } = response.data.data;
+        if (completed) {
+          dispatch(markLessonComplete({ lessonId: lId, enrollmentId }));
+        }
+        dispatch(fetchProgressSummary(enrollmentId));
+      }
+    } catch (err) {
+      console.error("Failed to sync video progress:", err);
     }
   };
 
+  // Auto-save progress when closing, switching lessons, or component unmounts
+  useEffect(() => {
+    return () => {
+      sendVideoProgress();
+    };
+  }, [currentLesson]);
+
+  const handleVideoEnded = () => {
+    sendVideoProgress();
+    showFeedback('Lesson Completed ✓');
+  };
+
   const handleMarkComplete = () => {
-    if (currentLesson && enrollmentId) {
-      dispatch(markLessonComplete({ lessonId: currentLesson.id, enrollmentId }));
+    const lId = currentLesson?.id || currentLesson?._id;
+    if (lId && enrollmentId) {
+      dispatch(markLessonComplete({ lessonId: lId, enrollmentId }));
       showFeedback('Marked Complete ✓');
     }
   };
@@ -179,6 +206,8 @@ export default function CoursePlayer() {
   if (!enrollment || modulesLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#151821] text-slate-400">Loading course…</div>;
   }
+
+  const currentLessonId = currentLesson?.id || currentLesson?._id;
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-[#151821] text-slate-900 dark:text-[#f1f3f9] font-sans transition-colors duration-300 py-8">
@@ -203,11 +232,12 @@ export default function CoursePlayer() {
               )}
 
               {modules.map((module) => {
-                const isExpanded = activeModule === module.id;
+                const modId = module.id || module._id;
+                const isExpanded = activeModule === modId;
                 return (
-                  <div key={module.id} className="border border-slate-200 dark:border-[#3e4658] rounded-2xl overflow-hidden bg-slate-50 dark:bg-[#222736]/40">
+                  <div key={modId} className="border border-slate-200 dark:border-[#3e4658] rounded-2xl overflow-hidden bg-slate-50 dark:bg-[#222736]/40">
                     <button
-                      onClick={() => setActiveModule(isExpanded ? null : module.id)}
+                      onClick={() => setActiveModule(isExpanded ? null : modId)}
                       className="w-full p-3.5 flex items-center justify-between cursor-pointer font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#222736] transition"
                     >
                       <span className="text-xs font-semibold truncate pr-2">{module.title}</span>
@@ -217,12 +247,15 @@ export default function CoursePlayer() {
                     {isExpanded && (
                       <div className="px-2 pb-2 space-y-3">
                         <ModuleLessons
-                          moduleId={module.id}
-                          currentLessonId={currentLesson?.id}
-                          onSelectLesson={setCurrentLesson}
+                          moduleId={modId}
+                          currentLessonId={currentLessonId}
+                          onSelectLesson={(lesson) => {
+                            sendVideoProgress(); // Save progress of previous lesson before switching
+                            setCurrentLesson(lesson);
+                          }}
                         />
 
-                        {/* Module Assessments Button inside Sidebar with Differentiated Icons */}
+                        {/* Module Assessments Button inside Sidebar */}
                         {assessments?.length > 0 && (
                           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 px-2 space-y-2">
                             <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold block">Module Tasks &amp; Quizzes</span>
@@ -230,12 +263,12 @@ export default function CoursePlayer() {
                               const isCoding = asm.type === "CODING";
                               return (
                                 <button
-                                  key={asm.id}
+                                  key={asm.id || asm._id}
                                   onClick={() => {
                                     if (isCoding) {
-                                      navigate(`/learner/code-execution/${asm.id}`);
+                                      navigate(`/learner/code-execution/${asm.id || asm._id}`);
                                     } else {
-                                      navigate(`/learner/assessments/${asm.id}/take`);
+                                      navigate(`/learner/assessments/${asm.id || asm._id}/take`);
                                     }
                                   }}
                                   className={`w-full text-left p-2.5 rounded-xl transition text-xs font-semibold flex items-center justify-between cursor-pointer border ${
@@ -269,10 +302,8 @@ export default function CoursePlayer() {
           </div>
         </div>
 
-        {/* Center Main Area (6 spans): Video Player, Metadata & Interactive Tabs */}
+        {/* Center Main Area (6 spans): Video Player & Tabs */}
         <div className="lg:col-span-6 flex flex-col space-y-6">
-
-          {/* Course Player Box */}
           <div className="bg-white dark:bg-[#1a1e2b] border border-slate-200 dark:border-[#262b38] rounded-3xl overflow-hidden shadow-2xl">
             <div
               ref={videoContainerRef}
@@ -287,6 +318,7 @@ export default function CoursePlayer() {
                   controlsList="nodownload"
                   onContextMenu={(e) => e.preventDefault()}
                   autoPlay
+                  onPause={sendVideoProgress}
                   onEnded={handleVideoEnded}
                 />
               ) : (
@@ -322,9 +354,10 @@ export default function CoursePlayer() {
               </div>
               <button
                 onClick={handleMarkComplete}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-purple-500/25 flex items-center space-x-2 cursor-pointer"
+                disabled={!currentLesson}
+                className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-purple-500/25 flex items-center space-x-2 cursor-pointer"
               >
-                <i className="fa-solid fa-check"></i>
+                <Check size={14} />
                 <span>Mark as Complete</span>
               </button>
             </div>
@@ -343,7 +376,7 @@ export default function CoursePlayer() {
                 onClick={() => setActiveTab('resources')}
                 className={`${activeTab === 'resources' ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400 pb-3 -mb-3' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'} transition cursor-pointer`}
               >
-                Resources (3)
+                Resources
               </button>
             </div>
 
@@ -357,7 +390,7 @@ export default function CoursePlayer() {
                 />
                 <div className="flex justify-end">
                   <button
-                    onClick={() => alert('Note saved successfully!')}
+                    onClick={() => showFeedback('Note Saved ✓')}
                     className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow cursor-pointer"
                   >
                     Save Note
@@ -369,13 +402,12 @@ export default function CoursePlayer() {
             {activeTab === 'resources' && (
               <div className="mt-4 text-sm text-slate-600 dark:text-slate-300 space-y-2">
                 <div className="p-3 bg-slate-50 dark:bg-[#222736] rounded-xl border border-slate-200 dark:border-[#3e4658] flex justify-between items-center">
-                  <span>Lecture Slides.pdf</span>
-                  <button className="text-purple-400 font-medium hover:underline text-xs cursor-pointer">Download</button>
+                  <span>Course Material &amp; Documentation</span>
+                  <span className="text-xs text-purple-400 font-mono">Available</span>
                 </div>
               </div>
             )}
           </div>
-
         </div>
 
         {/* Right Sidebar (3 spans): Overall Progress Tracker */}

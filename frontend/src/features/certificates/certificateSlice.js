@@ -5,8 +5,8 @@ import {
 } from '../../api/certificateApi';
 
 const initialState = {
-  eligibilityMap: {},      // enrollmentId -> eligibility data object
-  byEnrollmentId: {},      // enrollmentId -> certificate object
+  eligibilityMap: {},       // enrollmentId -> eligibility data object
+  byEnrollmentId: {},       // enrollmentId -> certificate object
   loading: false,
   eligibilityLoading: false,
   error: null,
@@ -45,8 +45,10 @@ const certificateSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Fetch Eligibility
       .addCase(fetchCertificateEligibility.pending, (state) => {
         state.eligibilityLoading = true;
+        state.error = null;
       })
       .addCase(fetchCertificateEligibility.fulfilled, (state, action) => {
         state.eligibilityLoading = false;
@@ -56,8 +58,11 @@ const certificateSlice = createSlice({
         state.eligibilityLoading = false;
         state.error = action.payload;
       })
+      
+      // Fetch Certificate by Enrollment
       .addCase(fetchCertificateByEnrollment.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchCertificateByEnrollment.fulfilled, (state, action) => {
         state.loading = false;
@@ -79,5 +84,7 @@ export const selectCertificateForEnrollment = (enrollmentId) => (state) =>
   state.certificates.byEnrollmentId[enrollmentId] || null;
 
 export const selectCertificateLoading = (state) => state.certificates.loading;
+export const selectEligibilityLoading = (state) => state.certificates.eligibilityLoading;
+export const selectCertificateError = (state) => state.certificates.error;
 
 export default certificateSlice.reducer;

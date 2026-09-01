@@ -30,8 +30,8 @@ export default function RBACMatrix() {
 
   if (loading) return <div className="p-6 text-gray-500 dark:text-gray-400">Loading RBAC matrix…</div>;
   if (error) return <div className="p-6 text-red-600 dark:text-red-400 font-medium">Error: {error}</div>;
-  if (!roles.length) return <div className="p-6 text-gray-500 dark:text-gray-400">No roles configured.</div>;
-
+  if (!roles || roles.length === 0) return <div className="p-6 text-gray-500 dark:text-gray-400">No roles configured.</div>;
+  
   return (
     <div className="p-4 sm:p-6 text-gray-900 dark:text-gray-100 transition-colors duration-200">
       <div className="mb-6">
@@ -69,9 +69,8 @@ export default function RBACMatrix() {
                           checked={direct}
                           disabled={toggling}
                           onChange={() => handleToggle(role, perm, direct)}
-                          className={`w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-[#3f3f3f] dark:bg-[#212121] ${
-                            toggling ? 'cursor-wait opacity-50' : 'cursor-pointer'
-                          }`}
+                          className={`w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-[#3f3f3f] dark:bg-[#212121] ${toggling ? 'cursor-wait opacity-50' : 'cursor-pointer'
+                            }`}
                         />
                       </td>
                     );

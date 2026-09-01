@@ -7,7 +7,8 @@ import { toast } from 'react-toastify';
 
 import api from '../../../api/axios';
 import { useTheme } from '../../../components/ThemeContext';
-import { runCode, submitSolution, practiceRun, resetExecution } from '../../../features/codeExecution/codeExecutionSlice';
+import { runCode, submitSolution, resetExecution } from '../../../features/codeExecution/codeExecutionSlice';
+import { selectUser } from '../../../features/auth/authSlice';
 
 const LANGUAGES = [
   { id: 'javascript', label: 'JavaScript', monacoId: 'javascript' },
@@ -21,6 +22,8 @@ export default function CodeExecutionPage() {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const dispatch = useDispatch();
+  
+  const currentUser = useSelector(selectUser);
 
   const execution = useSelector((state) => state.codeExecution) ?? {
     status: 'idle', mode: null, run: null, submission: null, errorMessage: null,
@@ -73,7 +76,8 @@ export default function CodeExecutionPage() {
           setTestCases(publicTestCases);
           setSelectedTestCaseId(publicTestCases[0]?.id ?? null);
 
-          const activeSubId = localStorage.getItem("activeSubmissionId") || localStorage.getItem("activeEnrollmentId") || "1";
+          // Map active submission ID securely from storage or fallback to user session
+          const activeSubId = localStorage.getItem("activeSubmissionId") || localStorage.getItem("activeEnrollmentId") || currentUser?.id || "1";
           setSubmissionId(Number(activeSubId));
         }
       } catch (err) {
@@ -88,7 +92,7 @@ export default function CodeExecutionPage() {
       isMounted = false;
       dispatch(resetExecution());
     };
-  }, [assessmentId, dispatch]);
+  }, [assessmentId, dispatch, currentUser]);
 
   const handleRun = useCallback(() => {
     if (!canRun) return;
@@ -131,52 +135,53 @@ export default function CodeExecutionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 dark:text-slate-400 font-mono text-xs bg-slate-50 dark:bg-[#0b0f17]">
+      <div className="min-h-screen flex items-center justify-center text-slate-600 dark:text-slate-300 font-mono text-xs bg-slate-100 dark:bg-[#0b0f17]">
         <Loader2 className="animate-spin mr-2 text-emerald-500" size={16} /> Loading Judge0 workspace...
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] flex-col gap-4 p-4 md:p-6 bg-slate-50 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-300" style={{ fontFamily: "Inter, sans-serif" }}>
+    <div className="flex h-[calc(100vh-5rem)] flex-col gap-4 p-4 md:p-6 bg-slate-100 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-300" style={{ fontFamily: "Inter, sans-serif" }}>
+      
       {/* Top Header & Question Banner */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-300 dark:border-slate-800">
         <button
           onClick={() => navigate(-1)}
-          className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+          className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center gap-1.5 cursor-pointer"
         >
           <ArrowLeft size={14} /> Back to Assignments
         </button>
-        <h1 className="text-sm font-bold font-fraunces text-emerald-600 dark:text-emerald-400">
+        <h1 className="text-sm font-bold font-fraunces text-emerald-700 dark:text-emerald-400">
           {assessment?.title || "Coding Assessment"}
         </h1>
       </div>
 
       {question && (
-        <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-3">
+        <div className="p-4 rounded-2xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+            <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300">
               {question.difficulty || "EASY"} • {question.marks || 10} Marks
             </span>
-            <span className="text-[10px] font-mono text-slate-400">QID: {question.id}</span>
+            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">QID: {question.id}</span>
           </div>
           <h2 className="text-sm font-bold text-slate-900 dark:text-white">{question.questionText}</h2>
           {question.problemStatement && (
-            <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+            <p className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed font-normal">
               {question.problemStatement}
             </p>
           )}
 
           {/* Render Active Test Case Input & Expected Output details */}
           {activeTestCase && (
-            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Test Case Input (Stdin):</span>
-                <code className="text-amber-600 dark:text-amber-300">{activeTestCase.input || 'None'}</code>
+                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Test Case Input (Stdin):</span>
+                <code className="text-amber-700 dark:text-amber-300 font-semibold">{activeTestCase.input || 'None'}</code>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Expected Output:</span>
-                <code className="text-emerald-600 dark:text-emerald-300">{activeTestCase.expectedOutput}</code>
+                <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Expected Output:</span>
+                <code className="text-emerald-700 dark:text-emerald-300 font-semibold">{activeTestCase.expectedOutput}</code>
               </div>
             </div>
           )}
@@ -184,9 +189,9 @@ export default function CodeExecutionPage() {
       )}
 
       {/* Controls Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between bg-white dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-mono">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400 font-mono">
             Coding Sandbox Workspace
           </p>
         </div>
@@ -196,9 +201,17 @@ export default function CodeExecutionPage() {
             value={language}
             onChange={handleLanguageChange}
             disabled={isRunning}
-            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs text-slate-900 dark:text-white outline-none cursor-pointer"
+            className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 outline-none cursor-pointer shadow-sm"
           >
-            {LANGUAGES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+            {LANGUAGES.map((l) => (
+              <option 
+                key={l.id} 
+                value={l.id}
+                className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              >
+                {l.label}
+              </option>
+            ))}
           </select>
 
           {testCases.length > 0 && (
@@ -206,10 +219,16 @@ export default function CodeExecutionPage() {
               value={selectedTestCaseId ?? ''}
               onChange={(e) => setSelectedTestCaseId(Number(e.target.value))}
               disabled={isRunning}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs text-slate-900 dark:text-white outline-none cursor-pointer"
+              className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-medium text-slate-900 dark:text-slate-100 outline-none cursor-pointer shadow-sm"
             >
               {testCases.map((tc, i) => (
-                <option key={tc.id} value={tc.id}>Test case {i + 1} (Public)</option>
+                <option 
+                  key={tc.id} 
+                  value={tc.id}
+                  className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                >
+                  Test case {i + 1} (Public)
+                </option>
               ))}
             </select>
           )}
@@ -217,17 +236,17 @@ export default function CodeExecutionPage() {
           <button
             onClick={handleRun}
             disabled={isRunning || !canRun}
-            className="rounded-xl bg-slate-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-600 disabled:opacity-50 transition cursor-pointer flex items-center gap-1"
+            className="rounded-xl bg-slate-700 dark:bg-slate-700 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-600 disabled:opacity-50 transition cursor-pointer flex items-center gap-1 shadow-sm"
           >
             {isRunning && execution.mode === 'run' ? <Loader2 size={13} className="animate-spin" /> : null} Run Code
           </button>
 
-          {/* Submit button only renders AFTER the student clicks Run Code successfully */}
+          {/* Submit button appears only after successful Run */}
           {hasRun && (
             <button
               onClick={handleSubmit}
               disabled={isRunning || !canSubmit}
-              className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 transition cursor-pointer flex items-center gap-1 animate-fade-in"
+              className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 transition cursor-pointer flex items-center gap-1 animate-fade-in"
             >
               {isRunning && execution.mode === 'submit' ? <Loader2 size={13} className="animate-spin" /> : null} Submit &amp; Evaluate
             </button>
@@ -237,7 +256,7 @@ export default function CodeExecutionPage() {
 
       {/* Main Editor and Output Grid */}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="min-h-[320px] lg:min-h-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="min-h-[320px] lg:min-h-0 overflow-hidden rounded-2xl border border-slate-300 dark:border-slate-800 shadow-md">
           <Editor
             height="100%"
             language={LANGUAGES.find((l) => l.id === language)?.monacoId}
@@ -248,37 +267,37 @@ export default function CodeExecutionPage() {
           />
         </div>
 
-        <div className="min-h-[240px] lg:min-h-0 flex flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
-          <div className="border-b border-slate-200 dark:border-slate-800 px-4 py-2.5">
-            <span className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 font-mono">Execution Output &amp; Verdict</span>
+        <div className="min-h-[240px] lg:min-h-0 flex flex-col overflow-hidden rounded-2xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-md">
+          <div className="border-b border-slate-300 dark:border-slate-800 px-4 py-2.5 bg-slate-50 dark:bg-slate-900">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 font-mono">Execution Output &amp; Verdict</span>
           </div>
 
-          <div className="flex-1 overflow-auto p-4 font-mono text-xs text-slate-700 dark:text-slate-300">
+          <div className="flex-1 overflow-auto p-4 font-mono text-xs text-slate-800 dark:text-slate-200">
             {status === 'idle' && (
-              <span className="text-slate-400">Click "Run Code" to test against the selected test case. Once executed, the submit option will appear.</span>
+              <span className="text-slate-500 dark:text-slate-400">Click "Run Code" to test against the selected test case. Once executed successfully, the submit option will unlock.</span>
             )}
 
             {isRunning && (
-              <div className="flex items-center gap-2 text-emerald-500">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold">
                 <Loader2 size={16} className="animate-spin" /> Processing code through Judge0 sandbox...
               </div>
             )}
 
             {execution.mode === 'run' && execution.run && (
               <div className="space-y-3">
-                <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{execution.run.status?.description}</div>
-                <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <span className="text-slate-400 text-[10px] uppercase font-bold block">Actual Output (Stdout):</span>
-                  <pre className="whitespace-pre-wrap font-mono text-slate-800 dark:text-emerald-300">{execution.run.stdout || '(no output)'}</pre>
+                <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{execution.run.status?.description}</div>
+                <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 space-y-1">
+                  <span className="text-slate-600 dark:text-slate-400 text-[10px] uppercase font-bold block">Actual Output (Stdout):</span>
+                  <pre className="whitespace-pre-wrap font-mono text-slate-900 dark:text-emerald-300">{execution.run.stdout || '(no output)'}</pre>
                 </div>
                 {execution.run.stderr && (
-                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 space-y-1">
-                    <span className="text-red-500 text-[10px] uppercase font-bold block">Error (Stderr):</span>
-                    <pre className="whitespace-pre-wrap font-mono text-red-600 dark:text-red-300">{execution.run.stderr}</pre>
+                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-900/50 space-y-1">
+                    <span className="text-red-600 dark:text-red-400 text-[10px] uppercase font-bold block">Error (Stderr):</span>
+                    <pre className="whitespace-pre-wrap font-mono text-red-700 dark:text-red-300">{execution.run.stderr}</pre>
                   </div>
                 )}
                 {(execution.run.time || execution.run.memory) && (
-                  <div className="mt-3 text-[11px] text-slate-400">
+                  <div className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
                     Time: {execution.run.time}s · Memory: {execution.run.memory} KB
                   </div>
                 )}
@@ -288,20 +307,20 @@ export default function CodeExecutionPage() {
             {execution.mode === 'submit' && submission && (
               <div className="space-y-3">
                 <div className="text-sm font-bold flex items-center gap-1.5 text-slate-900 dark:text-white">
-                  {submission.verdict === 'ACCEPTED' ? <CheckCircle size={16} className="text-emerald-500" /> : <XCircle size={16} className="text-red-500" />}
+                  {submission.verdict === 'ACCEPTED' ? <CheckCircle size={16} className="text-emerald-600 dark:text-emerald-400" /> : <XCircle size={16} className="text-red-600 dark:text-red-400" />}
                   Verdict: {submission.verdict}
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1 font-mono text-xs">
-                  <p>Passed Test Cases: <span className="font-bold text-emerald-500">{submission.testCases?.passed ?? 0}/{submission.testCases?.total ?? 0}</span></p>
-                  <p>Score Awarded: <span className="font-bold text-emerald-500">{submission.score ?? 0} / {submission.totalMarks ?? 10}</span></p>
-                  <p>Final Percentage: <span className="font-bold text-teal-500">{submission.percentage ?? 0}%</span></p>
+                <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 space-y-1 font-mono text-xs">
+                  <p>Passed Test Cases: <span className="font-bold text-emerald-700 dark:text-emerald-400">{submission.testCases?.passed ?? 0}/{submission.testCases?.total ?? 0}</span></p>
+                  <p>Score Awarded: <span className="font-bold text-emerald-700 dark:text-emerald-400">{submission.score ?? 0} / {submission.totalMarks ?? 10}</span></p>
+                  <p>Final Percentage: <span className="font-bold text-teal-700 dark:text-teal-400">{submission.percentage ?? 0}%</span></p>
                 </div>
 
                 {Array.isArray(submission.results) && submission.results.length > 0 && (
                   <div className="space-y-1.5 pt-2">
-                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Test Cases Breakdown:</span>
+                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Test Cases Breakdown:</span>
                     {submission.results.map((r, idx) => (
-                      <div key={idx} className={`p-2 rounded-xl border text-[11px] flex justify-between items-center ${r.passed ? 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-red-50 dark:bg-red-500/5 border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-300'}`}>
+                      <div key={idx} className={`p-2 rounded-xl border text-[11px] flex justify-between items-center ${r.passed ? 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-300 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-medium' : 'bg-red-50 dark:bg-red-500/5 border-red-300 dark:border-red-500/20 text-red-800 dark:text-red-300 font-medium'}`}>
                         <span>{r.isHidden ? 'Hidden Test Case' : `Test Case #${r.testCaseId || idx + 1}`}</span>
                         <span className="font-bold">{r.passed ? 'Passed ✓' : (r.status || 'Failed ✗')}</span>
                       </div>
@@ -312,7 +331,7 @@ export default function CodeExecutionPage() {
             )}
 
             {status === 'error' && !execution.run && !submission && (
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400">
+              <div className="p-3 rounded-xl bg-red-100 dark:bg-red-500/10 border border-red-300 dark:border-red-500/20 text-red-700 dark:text-red-400 font-medium">
                 {execution.errorMessage || "An execution error occurred."}
               </div>
             )}

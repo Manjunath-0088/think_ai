@@ -41,18 +41,21 @@ export default function InstructorVideoPreview() {
 
   // Fetch Course details & Modules
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       try {
         setLoading(true);
         const res = await getCourseById(courseId);
-        setCourse(res?.data?.data || res?.data || null);
+        const courseData = res?.data?.data || res?.data || null;
+        if (isMounted) setCourse(courseData);
         dispatch(fetchModulesByCourseId(courseId));
       } catch (err) {
         console.error("Failed to load course details for preview", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     })();
+    return () => { isMounted = false; };
   }, [courseId, dispatch]);
 
   // Fetch Real Course Enrollments
@@ -66,7 +69,7 @@ export default function InstructorVideoPreview() {
         const allList = Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : [];
 
         const filtered = allList.filter((e) => {
-          const c = e.batch?.course;
+          const c = e.batch?.course || e.course;
           const cId = c?.id || c?._id || e.courseId;
           return String(cId) === String(courseId);
         });
@@ -81,18 +84,20 @@ export default function InstructorVideoPreview() {
     return () => { isMounted = false; };
   }, [courseId]);
 
-  // Find Lesson data & Check Resume Time from localStorage
+  // Find Lesson data across loaded modules or fallback to route identifier
   useEffect(() => {
-    if (modules && modules.length > 0 && lessonId) {
+    if (lessonId) {
       let found = null;
-      for (const mod of modules) {
-        found = mod.lessons?.find((l) => String(l.id || l._id) === String(lessonId));
-        if (found) break;
+      if (modules && modules.length > 0) {
+        for (const mod of modules) {
+          found = mod.lessons?.find((l) => String(l.id || l._id) === String(lessonId));
+          if (found) break;
+        }
       }
       
       const currentLessonData = found || {
         id: lessonId,
-        title: "Preview Lesson Curriculum",
+        title: `Lesson Preview #${lessonId}`,
         description: "Instructor preview mode for lesson execution and student progress telemetry.",
         duration: "15 min",
         videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
@@ -235,14 +240,25 @@ export default function InstructorVideoPreview() {
     >
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* Header Title */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ fontFamily: "Fraunces, serif" }}>
-            {course?.title || "Course Preview"}
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">
-            Lesson: <span className="text-slate-900 dark:text-white font-semibold">{lesson?.title || `ID: ${lessonId}`}</span>
-          </p>
+        {/* Header Title & Back Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-purple-600 dark:text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full">
+              Instructor Lesson Preview Mode
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-2" style={{ fontFamily: "Fraunces, serif" }}>
+              {course?.title || "Course Preview"}
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">
+              Active Lesson: <span className="text-slate-900 dark:text-white font-semibold">{lesson?.title || `ID: ${lessonId}`}</span>
+            </p>
+          </div>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shadow-sm"
+          >
+            <ArrowLeft size={14} /> Back to Course Manager
+          </button>
         </div>
 
         {/* Main Grid */}
@@ -319,7 +335,7 @@ export default function InstructorVideoPreview() {
               <div className="flex items-center gap-4 pt-2 text-xs font-mono text-slate-400 border-t border-slate-200 dark:border-slate-800">
                 <span className="flex items-center gap-1"><Clock size={13} /> {lesson?.duration || "N/A"}</span>
                 <span>•</span>
-                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><CheckCircle2 size={13} /> Active Stream</span>
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><CheckCircle2 size={13} /> Instructor Active Preview</span>
               </div>
             </div>
           </div>
@@ -357,7 +373,7 @@ export default function InstructorVideoPreview() {
                         </div>
                         <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
                           <span>{studentEmail}</span>
-                          <span className="font-bold text-purple-600 dark:text-purple-400">{watchPercentage}% Watched</span>
+                          <span className="font-bold text-purple-600 dark:text-purple-400">{watchPercentage}% Progress</span>
                         </div>
                         <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
                           <div 
