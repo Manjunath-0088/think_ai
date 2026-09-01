@@ -72,10 +72,17 @@ export default function StudentAssessmentTaker() {
       const response = await api.post(`/assessments/${assessmentId}/submit`, payload);
       const submissionData = response.data?.data || response.data;
 
+      const score = submissionData.score ?? 0;
+      const totalMarks = submissionData.totalMarks ?? assessment.totalMarks ?? 10;
+      
+      // Safe percentage calculation capped between 0% and 100%
+      const rawPct = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
+      const safePercentage = Math.min(Math.max(rawPct, 0), 100);
+
       setResult({
-        score: submissionData.score ?? 0,
-        totalMarks: submissionData.totalMarks ?? assessment.totalMarks,
-        percentage: submissionData.percentage ?? 0,
+        score: score,
+        totalMarks: totalMarks,
+        percentage: safePercentage,
         status: submissionData.status || "SUBMITTED"
       });
 
