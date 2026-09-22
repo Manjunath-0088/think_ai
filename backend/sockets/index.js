@@ -6,6 +6,10 @@ const chatManager = require("./chatManager");
 const pollManager = require("./pollManager");
 const breakoutManager = require("./breakoutManager");
 
+// Notification Center: forwards the live-session lifecycle to every
+// connected socket whose user has live-session notifications enabled.
+const liveSessionNotifications = require("../services/liveSessionNotificationService");
+
 const disconnectedUsers = new Map();
 // userId -> { rooms, disconnectedAt, timeoutHandle }
 
@@ -274,6 +278,28 @@ module.exports = function (io) {
                 );
 
 
+                // Notification Center: fan out "Live class starting now"
+                // to every enabled, online user (one socket per tab, so all
+                // open tabs receive it in real time).
+
+                try {
+                    liveSessionNotifications.broadcastSessionStarted(
+                        io,
+                        {
+                            ...session,
+                            title:
+                                session.title ||
+                                `Live session in ${roomName}`
+                        }
+                    );
+                } catch (err) {
+                    console.error(
+                        "[socket] live-session notification " +
+                        `(start) failed: ${err.message}`
+                    );
+                }
+
+
                 ack?.({
                     ok: true,
                     roomName,
@@ -349,6 +375,27 @@ module.exports = function (io) {
                             EVENTS.SESSION_ENDED,
                             ended
                         );
+
+
+                        // Notification Center: fan out "Recording available"
+                        // (with summary link) to every enabled user.
+
+                        try {
+                            liveSessionNotifications.broadcastSessionEnded(
+                                io,
+                                {
+                                    ...ended,
+                                    title:
+                                        session.title ||
+                                        `Live session in ${roomName}`
+                                }
+                            );
+                        } catch (err) {
+                            console.error(
+                                "[socket] live-session notification " +
+                                `(end) failed: ${err.message}`
+                            );
+                        }
                     }
                 );
 

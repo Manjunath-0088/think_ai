@@ -89,6 +89,13 @@ export const PAYMENT_TEST_INSTRUMENTS = [
     hint: "Card has insufficient funds.",
   },
   {
+    id: "expired-card",
+    label: "Expired card",
+    instrument: "4000 0000 0000 0069",
+    outcome: "expired-card",
+    hint: "The card has expired (Stripe test card).",
+  },
+  {
     id: "network-error",
     label: "Network error",
     instrument: "4000 0000 0000 0009",
@@ -157,6 +164,11 @@ export function simulatePaymentOutcome(scenario) {
         success: false,
         reason: "Insufficient funds on the card. Please try another payment method.",
       };
+    case "expired-card":
+      return {
+        success: false,
+        reason: "Your card has expired. Please use a card with a valid expiry date.",
+      };
     case "network-error": {
       const error = new Error("Network error — connection lost while verifying payment.");
       error.code = "NETWORK_ERROR";
@@ -211,12 +223,16 @@ export async function verifyPayment({ orderId, paymentId, signature, instrument 
 
     if (instrumentInfo.outcome === "timeout") {
       await delay(timeoutWindow + 500);
-      throw new Error("Payment verification timed out. Please retry.");
+      const error = new Error("Payment verification timed out. Please retry.");
+      error.code = "TIMEOUT";
+      throw error;
     }
 
     if (instrumentInfo.outcome === "network-error") {
       await delay(500);
-      throw new Error("Network error — connection lost while verifying payment.");
+      const error = new Error("Network error — connection lost while verifying payment.");
+      error.code = "NETWORK_ERROR";
+      throw error;
     }
 
     // Declined / insufficient-funds resolve quickly but report failure.
@@ -233,6 +249,102 @@ export async function verifyPayment({ orderId, paymentId, signature, instrument 
     body: JSON.stringify({ orderId, paymentId, signature }),
   });
   return parseJsonOrThrow(res, "Payment verification failed.");
+}
+
+/**
+ * Retry policy for transient gateway failures (dropped connection / timeout).
+ * Up to 3 attempts with exponential backoff (1s, 2s, 4s between attempts).
+ * Business failures (declined / insufficient funds / expired card) are terminal
+ * and are never retried.
+ */
+export const RETRY_CONFIG = {
+  maxRetries: 3,
+  backoffMs: [1000, 2000, 4000],
+};
+
+/** True when a thrown verification error is safe to retry automatically. */
+export function isTransientPaymentError(error) {
+  return Boolean(error && (error.code === "NETWORK_ERROR" || error.code === "TIMEOUT"));
+}
+
+/**
+ * Verifies a payment with automatic retry + exponential backoff for transient
+ * failures. Always resolves with a result object (never throws) so the UI can
+ * render a receipt on eventual success or a friendly failure message:
+ *   { success, reason?, enrollmentId?, attempts, attemptsUsed, retryable }
+ */
+export async function verifyPaymentWithRetry(
+  { orderId, paymentId, signature, instrument },
+  {
+    maxRetries = RETRY_CONFIG.maxRetries,
+    backoffMs = RETRY_CONFIG.backoffMs,
+    delayFn = delay,
+    verify = verifyPayment,
+  } = {}
+) {
+  const attempts = [];
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
+    try {
+      const result = await verify({ orderId, paymentId, signature, instrument });
+      const succeeded = Boolean(result && result.success);
+      attempts.push({
+        attempt,
+        success: succeeded,
+        reason: succeeded ? null : (result && result.reason) || null,
+      });
+
+      if (succeeded) {
+        return { ...result, success: true, attempts, attemptsUsed: attempt, retryable: false };
+      }
+      // Declined / insufficient-funds / expired-card: terminal, do not retry.
+      return {
+        ...result,
+        success: false,
+        attempts,
+        attemptsUsed: attempt,
+        retryable: false,
+        retriesExhausted: false,
+      };
+    } catch (error) {
+      lastError = error;
+      const transient = isTransientPaymentError(error);
+      attempts.push({
+        attempt,
+        success: false,
+        reason: error.message,
+        code: error.code || null,
+        transient,
+      });
+
+      if (!transient) {
+        return {
+          success: false,
+          reason: error.message,
+          attempts,
+          attemptsUsed: attempt,
+          retryable: false,
+          retriesExhausted: false,
+        };
+      }
+
+      if (attempt < maxRetries) {
+        await delayFn(backoffMs[attempt - 1]);
+      }
+    }
+  }
+
+  return {
+    success: false,
+    reason: lastError
+      ? lastError.message
+      : "Payment could not be verified after retries. Please try again.",
+    attempts,
+    attemptsUsed: maxRetries,
+    retryable: true,
+    retriesExhausted: true,
+  };
 }
 
 // Keep a stable default for any code that previously hard-coded 4242.

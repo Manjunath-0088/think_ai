@@ -6,6 +6,7 @@ import { useTheme } from '../components/ThemeContext';
 import GlobalSearch from '../pages/search/GlobalSearch';
 import NotificationContainer from '../components/preferenceNotification/PreferenceNotificationContainer';
 import NotificationDropdown from '../components/preferenceNotification/PreferenceNotificationsDropDown';
+import LiveSessionNotificationListener from '../components/preferenceNotification/LiveSessionNotificationListener';
 
 const NAV_LINKS = [
   { to: '/learner', label: 'Dashboard' },
@@ -57,6 +58,7 @@ export default function LearnerLayout() {
       }`}
     >
       <NotificationContainer />
+      <LiveSessionNotificationListener />
 
       <header
         className={`shrink-0 z-50 border-b backdrop-blur-md transition-colors duration-300 relative ${
