@@ -10,6 +10,98 @@
 
 const discountService = require("../services/payments/discountService");
 const receiptService = require("../services/payments/receiptService");
+const paymentWebhookService = require("../services/payments/paymentWebhookService");
+const paymentConfirmationService = require("../services/payments/paymentConfirmationService");
+
+// ---------------------------------------------------------------------------
+// Payment webhooks (Stripe / Razorpay) + confirmation retry
+// ---------------------------------------------------------------------------
+
+function rawBodyOf(req, fallback) {
+    if (Buffer.isBuffer(req.rawBody)) return req.rawBody.toString();
+    if (typeof req.rawBody === "string") return req.rawBody;
+    // No raw-body middleware mounted: reconstruct a deterministic signature
+    // over the parsed JSON for the local demo + integration tests.
+    return fallback;
+}
+
+function handleStripeWebhook(req, res) {
+    const signature = req.headers["stripe-signature"] || req.headers["x-stripe-signature"] || "";
+    const raw = rawBodyOf(req, JSON.stringify(req.body || {}));
+
+    if (signature && !paymentWebhookService.verifySignature(raw, signature)) {
+        return res.status(400).json({ success: false, message: "Invalid webhook signature" });
+    }
+
+    const result = paymentWebhookService.processStripeWebhook(req.body);
+    // Webhooks must always be acknowledged (200) once the event is understood;
+    // duplicates are idempotently ignored.
+    return res.status(200).json({ received: true, ...result });
+}
+
+function handleRazorpayWebhook(req, res) {
+    const signature = req.headers["x-razorpay-signature"] || "";
+    const raw = rawBodyOf(req, JSON.stringify(req.body || {}));
+
+    if (signature && !paymentWebhookService.verifySignature(raw, signature)) {
+        return res.status(400).json({ success: false, message: "Invalid webhook signature" });
+    }
+
+    const result = paymentWebhookService.processRazorpayWebhook(req.body);
+    return res.status(200).json({ received: true, ...result });
+}
+
+/**
+ * POST /api/v1/payments/confirm — runs the payment confirmation retry loop
+ * (max 3 attempts, exponential backoff). Returns 402 when the payment
+ * ultimately failed, 200 with the receipt reference when it succeeded.
+ */
+async function confirmPayment(req, res) {
+    const {
+        orderId,
+        userId,
+        courseId,
+        amount,
+        currency,
+        email,
+        costCenter,
+        discountCode,
+        discountValue,
+        enrollmentId,
+        instrument
+    } = req.body || {};
+
+    if (!orderId || !userId || !courseId) {
+        return res.status(400).json({ success: false, message: "orderId, userId and courseId are required" });
+    }
+    if (costCenter !== undefined && costCenter !== null && !discountService.isValidCostCenter(costCenter)) {
+        return res.status(400).json({ success: false, message: discountService.COST_CENTER_FORMAT_MESSAGE });
+    }
+
+    try {
+        const result = await paymentConfirmationService.confirmPaymentWithRetry({
+            orderId,
+            userId,
+            courseId,
+            amount,
+            currency,
+            email,
+            costCenter,
+            discountCode,
+            discountValue,
+            enrollmentId,
+            instrument
+        });
+
+        if (!result.success) {
+            return res.status(402).json({ success: false, message: result.message, data: result });
+        }
+
+        return res.status(200).json({ success: true, message: "Payment confirmed", data: result });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+}
 
 function validateDiscount(req, res) {
     const { code, costCenter, department, amount } = req.body || {};
@@ -101,4 +193,11 @@ exports.handleWebhook = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+module.exports = {
+    validateDiscount,
+    generateReceipt,
+    handleStripeWebhook,
+    handleRazorpayWebhook,
+    confirmPayment,
 };

@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   FALLBACK_CARD,
   PAYMENT_TEST_INSTRUMENTS,
+  RETRY_CONFIG,
+  isTransientPaymentError,
   resolvePaymentInstrument,
   simulatePaymentOutcome,
   verifyPayment,
+  verifyPaymentWithRetry,
   createOrder,
   validateDiscount,
 } from "../../api/checkoutApi";
@@ -13,6 +16,7 @@ import { validateCostCenter } from "../../schemas/checkout.schema";
 const CARD_SUCCESS = "4242 4242 4242 4242";
 const CARD_DECLINED = "4000 0000 0000 0002";
 const CARD_INSUFFICIENT = "4000 0000 0000 9995";
+const CARD_EXPIRED = "4000 0000 0000 0069";
 const CARD_NETWORK = "4000 0000 0000 0009";
 const CARD_TIMEOUT = "4000 0000 0000 0029";
 
@@ -22,11 +26,12 @@ describe("checkoutApi scenario matrix", () => {
   });
 
   it("exposes the full Day 13 test-instrument matrix", () => {
-    expect(PAYMENT_TEST_INSTRUMENTS).toHaveLength(5);
+    expect(PAYMENT_TEST_INSTRUMENTS).toHaveLength(6);
     expect(PAYMENT_TEST_INSTRUMENTS.map((i) => i.outcome)).toEqual([
       "success",
       "declined",
       "insufficient-funds",
+      "expired-card",
       "network-error",
       "timeout",
     ]);
@@ -37,6 +42,7 @@ describe("checkoutApi scenario matrix", () => {
     expect(resolvePaymentInstrument({ cardNumber: CARD_SUCCESS }).outcome).toBe("success");
     expect(resolvePaymentInstrument({ cardNumber: CARD_DECLINED }).outcome).toBe("declined");
     expect(resolvePaymentInstrument({ cardNumber: CARD_INSUFFICIENT }).outcome).toBe("insufficient-funds");
+    expect(resolvePaymentInstrument({ cardNumber: CARD_EXPIRED }).outcome).toBe("expired-card");
     expect(resolvePaymentInstrument({ cardNumber: CARD_NETWORK }).outcome).toBe("network-error");
     expect(resolvePaymentInstrument({ cardNumber: CARD_TIMEOUT }).outcome).toBe("timeout");
   });
@@ -84,6 +90,16 @@ describe("checkoutApi scenario matrix", () => {
     expect(result.reason).toMatch(/insufficient funds/i);
   });
 
+  it("reports an expired card with a specific message", async () => {
+    const result = await verifyPayment({
+      orderId: "o1",
+      paymentId: "p1",
+      instrument: { outcome: "expired-card" },
+    });
+    expect(result.success).toBe(false);
+    expect(result.reason).toMatch(/expired/i);
+  });
+
   it("throws a network error mid-verification", async () => {
     await expect(
       verifyPayment({ orderId: "o1", paymentId: "p1", instrument: { outcome: "network-error" } })
@@ -118,6 +134,67 @@ describe("checkoutApi scenario matrix", () => {
     expect(order.courseId).toBe("c1");
     expect(order.amount).toBe(499);
     expect(order.currency).toBe("INR");
+  });
+});
+
+describe("checkoutApi retry with exponential backoff", () => {
+  it("retries transient failures then succeeds and reports attempts", async () => {
+    const delays = [];
+    const verify = vi
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new Error("Network error"), { code: "NETWORK_ERROR" }))
+      .mockRejectedValueOnce(Object.assign(new Error("timed out"), { code: "TIMEOUT" }))
+      .mockResolvedValueOnce({ success: true, enrollmentId: "enr_mock_1" });
+
+    const result = await verifyPaymentWithRetry(
+      { orderId: "o1", paymentId: "p1", instrument: { outcome: "success" } },
+      { verify, delayFn: async (ms) => delays.push(ms) }
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.attemptsUsed).toBe(3);
+    expect(result.enrollmentId).toBe("enr_mock_1");
+    expect(delays).toEqual([1000, 2000]);
+    expect(verify).toHaveBeenCalledTimes(3);
+  });
+
+  it("stops immediately on a declined card (no retries)", async () => {
+    const delays = [];
+    const verify = vi.fn().mockResolvedValue({ success: false, reason: "Your card was declined." });
+    const result = await verifyPaymentWithRetry({}, { verify, delayFn: async (ms) => delays.push(ms) });
+    expect(result.success).toBe(false);
+    expect(result.reason).toMatch(/declined/i);
+    expect(result.attemptsUsed).toBe(1);
+    expect(verify).toHaveBeenCalledTimes(1);
+    expect(delays).toEqual([]);
+  });
+
+  it("does not retry an expired card", async () => {
+    const verify = vi.fn().mockResolvedValue({ success: false, reason: "Your card has expired." });
+    const result = await verifyPaymentWithRetry({}, { verify, delayFn: async () => {} });
+    expect(result.success).toBe(false);
+    expect(result.retryable).toBe(false);
+    expect(verify).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives up after the max 3 attempts and reports exhaustion", async () => {
+    const delays = [];
+    const verify = vi.fn().mockRejectedValue(Object.assign(new Error("Network error"), { code: "NETWORK_ERROR" }));
+    const result = await verifyPaymentWithRetry({}, { verify, delayFn: async (ms) => delays.push(ms) });
+    expect(result.success).toBe(false);
+    expect(result.retriesExhausted).toBe(true);
+    expect(result.retryable).toBe(true);
+    expect(result.attemptsUsed).toBe(3);
+    expect(result.attempts).toHaveLength(3);
+    expect(delays).toEqual([1000, 2000]);
+    expect(verify).toHaveBeenCalledTimes(3);
+  });
+
+  it("uses the documented retry policy and classifies transient errors", () => {
+    expect(RETRY_CONFIG).toEqual({ maxRetries: 3, backoffMs: [1000, 2000, 4000] });
+    expect(isTransientPaymentError({ code: "NETWORK_ERROR" })).toBe(true);
+    expect(isTransientPaymentError({ code: "TIMEOUT" })).toBe(true);
+    expect(isTransientPaymentError(new Error("declined"))).toBe(false);
   });
 });
 

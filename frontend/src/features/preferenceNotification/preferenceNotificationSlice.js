@@ -94,6 +94,8 @@ const notificationSlice = createSlice({
         title: action.payload.title || 'Notification',
         message: action.payload.message,
         type: action.payload.type || 'success',
+        link: action.payload.link || null,
+        linkLabel: action.payload.linkLabel || null,
       };
       state.activeToasts.push(newToast);
     },

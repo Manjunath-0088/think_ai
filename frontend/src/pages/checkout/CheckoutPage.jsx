@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { getCourseById } from '../../api/courseApi';
-import { createOrder, verifyPayment, resolvePaymentInstrument, PAYMENT_TEST_INSTRUMENTS, FALLBACK_CARD, validateDiscount } from '../../api/checkoutApi';
+import { createOrder, verifyPaymentWithRetry, resolvePaymentInstrument, PAYMENT_TEST_INSTRUMENTS, FALLBACK_CARD, validateDiscount } from '../../api/checkoutApi';
 import { showToast, notificationReceived } from '../../features/preferenceNotification/preferenceNotificationSlice';
 import {
   COST_CENTER_PATTERN,
@@ -213,7 +213,7 @@ export default function CheckoutPage() {
       const mockPaymentId = `pay_mock_${Date.now()}`;
       const mockSignature = 'mock_signature';
 
-      const result = await verifyPayment({
+      const result = await verifyPaymentWithRetry({
         orderId: order.orderId,
         paymentId: mockPaymentId,
         signature: mockSignature,
@@ -233,6 +233,7 @@ export default function CheckoutPage() {
           costCenter: center,
           discountCode: appliedCoupon ? appliedCoupon.code : '',
           discountLabel: appliedCoupon ? appliedCoupon.discountAmount : 0,
+          attemptsUsed: result.attemptsUsed,
         });
         setStep(STEPS.SUCCESS);
 
@@ -376,6 +377,14 @@ export default function CheckoutPage() {
                   {new Date(receipt.paidAt).toLocaleString()}
                 </span>
               </div>
+              {receipt.attemptsUsed > 1 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500 dark:text-slate-400">Payment attempts</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                    Succeeded on attempt {receipt.attemptsUsed} after automatic retries
+                  </span>
+                </div>
+              )}
               <div className="pt-2 border-t border-slate-200 dark:border-[#323846]">
                 <p className="text-[10.5px] leading-relaxed text-slate-500 dark:text-[#94a3b8]">
                   <strong className="text-slate-700 dark:text-slate-300">Refund policy:</strong> {CLIENT_REFUND_POLICY}

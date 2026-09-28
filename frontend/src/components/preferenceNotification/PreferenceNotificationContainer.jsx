@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeToast } from '../../features/preferenceNotification/preferenceNotificationSlice';
+import LiveSessionToast from './LiveSessionToast';
 
 const AUTO_DISMISS_MS = 5000;
 
@@ -59,6 +60,13 @@ export default function NotificationContainer() {
   return (
     <div className="fixed top-20 right-5 z-[9999] flex flex-col gap-3 w-80">
       {activeToasts.map((toast) => (
+        toast.link ? (
+          <LiveSessionToast
+            key={toast.id}
+            toast={toast}
+            onDismiss={() => dispatch(removeToast(toast.id))}
+          />
+        ) : (
         <div
           key={toast.id}
           className="flex items-start gap-3 bg-slate-900 border border-slate-700 text-slate-100 p-4 rounded-xl shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-right-5 border-l-4 border-l-purple-500"
@@ -80,6 +88,7 @@ export default function NotificationContainer() {
             &times;
           </button>
         </div>
+        )
       ))}
     </div>
   );
