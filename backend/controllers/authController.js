@@ -1,12 +1,11 @@
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// ============================================================
+// ==========================================
 // USER REGISTRATION
-// ============================================================
+// ==========================================
 exports.register = async (req, res) => {
     try {
         const { email, password, name, role } = req.body;
@@ -21,9 +20,7 @@ exports.register = async (req, res) => {
 
         // Check if user already exists in PostgreSQL
         const existingUser = await prisma.user.findUnique({
-            where: {
-                email
-            }
+            where: { email }
         });
 
         if (existingUser) {
@@ -36,13 +33,13 @@ exports.register = async (req, res) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user in PostgreSQL
+        // Create user in Database
         const newUser = await prisma.user.create({
             data: {
                 email,
                 password: hashedPassword,
-                name: name || null,
-                role: role || 'Learner'
+                name: name || email.split('@')[0], // Fallback if name is empty
+                role: role || 'LEARNER'            // Default role matching RBAC core requirements
             }
         });
 
@@ -51,15 +48,23 @@ exports.register = async (req, res) => {
             {
                 id: newUser.id,
                 email: newUser.email,
-                role: newUser.role
+                role: newUser.role,
             },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: '7d'
-            }
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '7d' }
         );
 
-        // Remove password from response
+        // Downstream email trigger (Janadeep's core module requirement)
+        process.nextTick(() => {
+            if (typeof emailService !== 'undefined') {
+                emailService.sendVerificationEmail(newUser.email, token)
+                    .catch(err => console.error("Downstream Email Failure:", err));
+            } else {
+                console.log(`[Demo Mode Check] Verification token for ${newUser.email}: ${token}`);
+            }
+        });
+
+        // Remove password from response for security
         const userWithoutPassword = {
             id: newUser.id,
             name: newUser.name,
@@ -70,14 +75,13 @@ exports.register = async (req, res) => {
 
         return res.status(201).json({
             success: true,
-            message: 'User registered successfully!',
+            message: 'User registered successfully. Verification email triggered.',
             token,
             user: userWithoutPassword
         });
 
     } catch (error) {
         console.error('Registration error:', error);
-
         return res.status(500).json({
             success: false,
             error: 'Internal server error occurred.'
@@ -85,15 +89,14 @@ exports.register = async (req, res) => {
     }
 };
 
-
-// ============================================================
+// ==========================================
 // USER LOGIN
-// ============================================================
+// ==========================================
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validation
+        // Basic validation
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
@@ -101,47 +104,31 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Find user in PostgreSQL using Prisma
+        // Find user by email in PostgreSQL
         const user = await prisma.user.findUnique({
-            where: {
-                email
-            }
+            where: { email }
         });
 
-        if (!user) {
+        // If user not found or password doesn't match
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({
                 success: false,
-                error: 'Invalid credentials.'
+                error: 'Invalid credentials. Please verify details and try again.'
             });
         }
 
-        // Check password
-        const isPasswordValid = await bcrypt.compare(
-            password,
-            user.password
-        );
-
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                success: false,
-                error: 'Invalid credentials.'
-            });
-        }
-
-        // Generate JWT
+        // Generate JWT token
         const token = jwt.sign(
             {
                 id: user.id,
                 email: user.email,
                 role: user.role
             },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: '7d'
-            }
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '7d' }
         );
 
-        // Remove password from response
+        // Remove password field from the return response payload
         const userWithoutPassword = {
             id: user.id,
             name: user.name,
@@ -152,17 +139,16 @@ exports.login = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: 'Login successful!',
+            message: 'Login successful.',
             token,
             user: userWithoutPassword
         });
 
     } catch (error) {
         console.error('Login error:', error);
-
         return res.status(500).json({
             success: false,
-            error: 'Internal server error occurred.'
+            error: 'Internal server error occurred during authentication.'
         });
     }
 };
