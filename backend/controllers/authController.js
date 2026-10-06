@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
                 email,
                 password: hashedPassword,
                 name: name || email.split('@')[0], // Fallback if name is empty
-                role: role || 'LEARNER'            // Default role matching RBAC core requirements
+                role: role || 'Learner'            // Default role matching RBAC core requirements
             }
         });
 
@@ -50,7 +50,7 @@ exports.register = async (req, res) => {
                 email: newUser.email,
                 role: newUser.role,
             },
-            process.env.JWT_SECRET || 'fallback_secret',
+            process.env.ACCESS_TOKEN_SECRET,
             { expiresIn: '7d' }
         );
 
@@ -124,7 +124,7 @@ exports.login = async (req, res) => {
                 email: user.email,
                 role: user.role
             },
-            process.env.JWT_SECRET || 'fallback_secret',
+            process.env.ACCESS_TOKEN_SECRET,
             { expiresIn: '7d' }
         );
 

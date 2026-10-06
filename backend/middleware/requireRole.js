@@ -13,7 +13,7 @@ function requireRole(allowedRoles) {
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.split(" ")[1];
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         req.user = decoded; // Attach decoded user info (id, email, role)
         userRole = req.user.role;
       } catch (error) {

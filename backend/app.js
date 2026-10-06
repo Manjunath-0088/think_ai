@@ -237,7 +237,10 @@ app.use(
 // ADDITIONAL PROJECT ROUTES
 // ============================================================
 
-app.use("/api", require("./src/routes"));
+// TEMPORARY DEPLOYMENT ISOLATION:
+// Forum module requires client-provided production data files that are
+// currently unavailable. Re-enable this route after those files are supplied.
+// app.use("/api", require("./src/routes"));
 
 // ============================================================
 // 404 HANDLER

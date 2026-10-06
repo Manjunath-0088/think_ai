@@ -25,12 +25,12 @@ import {
   clearAssessmentError,
 } from "../../features/assessments/assessmentSlice";
 
-import { FONT_IMPORT } from "./constants";
-import ModuleSidebar from "./ModuleSidebar";
-import AssessmentForm from "./AssessmentForm";
-import AssessmentList from "./AssessmentList";
-import AssessmentViewModal from "./AssessmentViewModal";
-import AssessmentAnalyticsView from "./AssessmentAnalyticsView";
+import { FONT_IMPORT } from "./Constants.js";
+import ModuleSidebar from "./Modulesidebar.jsx";
+import AssessmentForm from "./Assessmentform.jsx";
+import AssessmentList from "./Assessmentlist.jsx";
+import AssessmentViewModal from "./Assessmentviewmodal.jsx";
+import AssessmentAnalyticsView from "./Assessmentanalyticsview.jsx";
 
 export default function AssessmentManager({ initialCourseId = null }) {
   const dispatch = useDispatch();
