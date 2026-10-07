@@ -47,6 +47,12 @@ RUN npm ci --ignore-scripts \
        node_modules/readdirp \
        node_modules/tinyexec \
     && find node_modules -type f -name "*.map" -delete \
+    && find node_modules/@prisma/client/runtime -type f \
+       \( -name "*cockroachdb*" -o \
+          -name "*mysql*" -o \
+          -name "*sqlserver*" -o \
+          -name "*sqlite*" \) \
+       -delete \
     && npm cache clean --force
 
 
@@ -60,7 +66,13 @@ WORKDIR /app
 
 RUN apk add --no-cache openssl \
     && addgroup -g 1001 -S appuser \
-    && adduser -u 1001 -S -G appuser appuser
+    && adduser -u 1001 -S -G appuser appuser \
+    && rm -rf /usr/local/lib/node_modules/npm \
+              /usr/local/bin/npm \
+              /usr/local/bin/npx \
+              /opt/yarn-* \
+              /usr/local/bin/yarn \
+              /usr/local/bin/yarnpkg
 
 COPY --from=builder --chown=appuser:appuser \
      /app/node_modules ./node_modules

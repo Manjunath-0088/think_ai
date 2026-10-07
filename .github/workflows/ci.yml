@@ -95,12 +95,12 @@ jobs:
 
           echo "Backend image size: ${SIZE_MB} MB"
 
-          if [ "$SIZE_BYTES" -ge 500000000 ]; then
-            echo "ERROR: Backend image must remain below 500 MB"
+          if [ "$SIZE_BYTES" -ge 400000000 ]; then
+            echo "ERROR: Backend image must remain below 400 MB"
             exit 1
           fi
 
-          echo "PASS: Backend image is below 500 MB"
+          echo "PASS: Backend image is below 400 MB"
 
       - name: Verify non-root runtime user
         run: |
