@@ -12,7 +12,19 @@ export type RootStackParamList = {
   CreatePost: undefined;
   Bookmarks: undefined;
   Moderation: undefined;
-  Checkout: { courseId?: string } | undefined;
+  Checkout: { courseId?: string; formValues?: Record<string, unknown> } | undefined;
+  // Day 3 — Manjunath assigned pages.
+  PaymentSuccess: { paymentId?: string; payment?: unknown } | undefined;
+  PaymentFailed:
+    | {
+        reason?: 'declined' | 'insufficient_funds' | 'expired' | 'network' | 'unknown';
+        errorCode?: string;
+        message?: string;
+        preserve?: boolean;
+        formValues?: Record<string, unknown>;
+      }
+    | undefined;
+  NotificationPreferences: undefined;
 };
 
 export type ScreenProps<RouteName extends keyof RootStackParamList> =

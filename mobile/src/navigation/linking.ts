@@ -31,6 +31,10 @@ export const linking: LinkingOptions<RootStackParamList> = {
       Bookmarks: 'forum/bookmarks',
       Moderation: 'forum/moderate',
       Checkout: 'checkout',
+      // Day 3 — Manjunath assigned pages.
+      PaymentSuccess: 'checkout/success',
+      PaymentFailed: 'checkout/failed',
+      NotificationPreferences: 'settings/notifications',
     },
   },
 };

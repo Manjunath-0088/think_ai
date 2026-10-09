@@ -16,6 +16,9 @@ import { ModerationScreen } from '@/screens/forum/ModerationScreen';
 import { LearnerDashboardScreen } from '@/screens/learner/LearnerDashboardScreen';
 import { MyCoursesScreen } from '@/screens/learner/MyCoursesScreen';
 import { GlobalSearchScreen } from '@/screens/search/GlobalSearchScreen';
+import { NotificationPreferencesScreen } from '@/features/notifications/screens/NotificationPreferencesScreen';
+import { PaymentFailedScreen } from '@/features/payments/screens/PaymentFailedScreen';
+import { PaymentSuccessScreen } from '@/features/payments/screens/PaymentSuccessScreen';
 import { palette } from '@/theme/tokens';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -92,6 +95,21 @@ export function RootNavigator() {
           component={CheckoutScreen}
           name="Checkout"
           options={{ title: 'Checkout' }}
+        />
+        <Stack.Screen
+          component={PaymentSuccessScreen}
+          name="PaymentSuccess"
+          options={{ title: 'Payment Successful' }}
+        />
+        <Stack.Screen
+          component={PaymentFailedScreen}
+          name="PaymentFailed"
+          options={{ title: 'Payment Failed' }}
+        />
+        <Stack.Screen
+          component={NotificationPreferencesScreen}
+          name="NotificationPreferences"
+          options={{ title: 'Notification Preferences' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
