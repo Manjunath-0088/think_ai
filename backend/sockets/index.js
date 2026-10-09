@@ -8,7 +8,9 @@ const breakoutManager = require("./breakoutManager");
 
 // Notification Center: forwards the live-session lifecycle to every
 // connected socket whose user has live-session notifications enabled.
-const liveSessionNotifications = require("../services/liveSessionNotificationService");
+// TEMPORARILY DISABLED:
+// liveSessionNotificationService is referenced by current source but the
+// service file is not present in the repository.
 
 const disconnectedUsers = new Map();
 // userId -> { rooms, disconnectedAt, timeoutHandle }
@@ -282,22 +284,9 @@ module.exports = function (io) {
                 // to every enabled, online user (one socket per tab, so all
                 // open tabs receive it in real time).
 
-                try {
-                    liveSessionNotifications.broadcastSessionStarted(
-                        io,
-                        {
-                            ...session,
-                            title:
-                                session.title ||
-                                `Live session in ${roomName}`
-                        }
-                    );
-                } catch (err) {
-                    console.error(
-                        "[socket] live-session notification " +
-                        `(start) failed: ${err.message}`
-                    );
-                }
+                // TEMPORARILY DISABLED:
+                // Live-session start notification requires the missing
+                // liveSessionNotificationService.
 
 
                 ack?.({
@@ -380,22 +369,9 @@ module.exports = function (io) {
                         // Notification Center: fan out "Recording available"
                         // (with summary link) to every enabled user.
 
-                        try {
-                            liveSessionNotifications.broadcastSessionEnded(
-                                io,
-                                {
-                                    ...ended,
-                                    title:
-                                        session.title ||
-                                        `Live session in ${roomName}`
-                                }
-                            );
-                        } catch (err) {
-                            console.error(
-                                "[socket] live-session notification " +
-                                `(end) failed: ${err.message}`
-                            );
-                        }
+                        // TEMPORARILY DISABLED:
+                        // Live-session end notification requires the missing
+                        // liveSessionNotificationService.
                     }
                 );
 

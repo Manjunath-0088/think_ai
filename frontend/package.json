@@ -10,7 +10,8 @@
     "test": "vitest run",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "lint:ci": "eslint src/api/rolesApi.js src/api/searchApi.js src/features/auth/authSlice.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

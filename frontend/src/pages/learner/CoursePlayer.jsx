@@ -155,7 +155,7 @@ export default function CoursePlayer() {
       const totalDuration = video.duration;
 
       const response = await axios.post(
-        `http://localhost:5000/api/lesson-progress/lesson/${lId}/track`,
+        (`/api/lesson-progress/lesson/${lId}/track`),
         {
           enrollmentId: Number(enrollmentId),
           watchedSeconds,

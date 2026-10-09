@@ -119,7 +119,7 @@ const swaggerOptions = {
 
         servers: [
             {
-                url: "http://localhost:5000"
+                url: "http://localhost:5001"
             }
         ],
 
@@ -182,7 +182,7 @@ app.get("/api/health", (req, res) => {
 // ============================================================
 
 app.use("/api/auth", authRoutes);
-
+app.use("/api/sessions", sessionRoutes);
 app.use("/api/admin", adminUsersRoutes);
 
 app.use("/api/admin", adminCodingQuestionRoutes);
@@ -237,7 +237,10 @@ app.use(
 // ADDITIONAL PROJECT ROUTES
 // ============================================================
 
-app.use("/api", require("./src/routes"));
+// TEMPORARY DEPLOYMENT ISOLATION:
+// Forum module requires client-provided production data files that are
+// currently unavailable. Re-enable this route after those files are supplied.
+// app.use("/api", require("./src/routes"));
 
 // ============================================================
 // 404 HANDLER

@@ -1,0 +1,31 @@
+name: Thinkz AI ECR Publish
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::661609780373:role/ThinkzAI-GitHub-ECR-Push
+          aws-region: ap-south-2
+
+      - name: Log in to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: 661609780373.dkr.ecr.ap-south-2.amazonaws.com/thinkz-prod-api:${{ github.sha }}
