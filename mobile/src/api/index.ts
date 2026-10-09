@@ -2,8 +2,11 @@ import type { LearningApiClient } from './client';
 import { createMockApiClient } from './mockClient';
 
 export type { LearningApiClient } from './client';
+export type { CommunityApiClient, CommunityApiMethod } from './client';
 export { createMockApiClient } from './mockClient';
 export type { MockApiClient, MockApiOptions } from './mockClient';
+export { createCommunityClient } from './communityClient';
+export { API_BASE_URL, ApiError } from './http';
 
 /**
  * The single active data source for the app.

@@ -6,8 +6,13 @@ import { StatusBar } from 'expo-status-bar';
 import { ApiClientProvider } from '@/hooks/useApiClient';
 import { linking } from '@/navigation/linking';
 import type { RootStackParamList } from '@/navigation/types';
+import { CheckoutScreen } from '@/screens/checkout/CheckoutScreen';
 import { CourseDetailScreen } from '@/screens/course/CourseDetailScreen';
+import { BookmarksScreen } from '@/screens/forum/BookmarksScreen';
+import { CreatePostScreen } from '@/screens/forum/CreatePostScreen';
 import { ForumHomeScreen } from '@/screens/forum/ForumHomeScreen';
+import { ForumThreadDetailScreen } from '@/screens/forum/ForumThreadDetailScreen';
+import { ModerationScreen } from '@/screens/forum/ModerationScreen';
 import { LearnerDashboardScreen } from '@/screens/learner/LearnerDashboardScreen';
 import { MyCoursesScreen } from '@/screens/learner/MyCoursesScreen';
 import { GlobalSearchScreen } from '@/screens/search/GlobalSearchScreen';
@@ -62,6 +67,31 @@ export function RootNavigator() {
           component={ForumHomeScreen}
           name="ForumHome"
           options={{ title: 'Forum' }}
+        />
+        <Stack.Screen
+          component={ForumThreadDetailScreen}
+          name="ForumThread"
+          options={{ title: 'Thread' }}
+        />
+        <Stack.Screen
+          component={CreatePostScreen}
+          name="CreatePost"
+          options={{ title: 'New Thread' }}
+        />
+        <Stack.Screen
+          component={BookmarksScreen}
+          name="Bookmarks"
+          options={{ title: 'Bookmarks' }}
+        />
+        <Stack.Screen
+          component={ModerationScreen}
+          name="Moderation"
+          options={{ title: 'Moderation' }}
+        />
+        <Stack.Screen
+          component={CheckoutScreen}
+          name="Checkout"
+          options={{ title: 'Checkout' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

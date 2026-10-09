@@ -178,3 +178,127 @@ npx expo start                 # then press a / i
   rather than subscribing to thread events.
 - **Design tokens** — no official token set; `src/theme/tokens.ts` holds local
   values pending the design system.
+---
+
+# Pages 6–10 — Forum thread, create post, bookmarks, moderation, checkout
+
+Owner: Manjunath
+Branch: `manjunath-new-feature`
+Date: 2026-10-07
+
+## Scope
+
+Five community and commerce screens added to the same Expo app, sharing the
+swappable `LearningApiClient`:
+
+| Screen | Route | Notes |
+| --- | --- | --- |
+| Forum Thread Detail | `/forum/thread/:threadId` | Parsed markdown body, depth-3 replies, optimistic thread/reply votes, solved toggle, debounced @mention autocomplete, reply composer with preview. |
+| Create Post | `/create-post` | Title/tag/category validation, category dropdown, tag multi-select (max 5), markdown toolbar, preview modal, confirm-before-publish. |
+| Bookmarks | `/bookmarks` | Saved threads with sync chip, optimistic remove with rollback, re-sync on session change. |
+| Moderation Dashboard | `/moderation` | Flag queue with derived severity, preview modal, hide/show, dismiss, soft-delete behind a confirm dialog, member search/warn/ban/unban, audit log. |
+| Checkout | `/checkout` | Plan cards, custom validated card form (Luhn/expiry/CVV), discount code validation, cost centre, 18% GST summary, pay through a confirm dialog with inline decline attempts. |
+
+## API integration
+
+Every Pages 6–10 method is declared on `LearningApiClient`
+(`src/api/client.ts`) and implemented once in `src/api/communityClient.ts`
+(`createCommunityClient()`), which is spread into `src/api/mockClient.ts` for
+deterministic tests. Requests go through the shared `src/api/http.ts` envelope
+path (`x-user-id` header, `?userId=` fallback, optional Bearer).
+
+| Screen | Methods |
+| --- | --- |
+| Thread Detail | `fetchThreadDetail`, `fetchThreadReplies`, `submitReply`, `voteThread`, `setThreadSolved`, `searchMentionUsers` |
+| Create Post | `fetchDiscussionCategories`, `fetchAllTags`, `createDiscussion` |
+| Bookmarks | `fetchBookmarks`, `removeBookmark` |
+| Moderation | `fetchFlaggedQueue`, `fetchFlagReports`, `fetchModerationPolicy`, `fetchModerationUsers`, `fetchAuditLog`, `fetchUserPosts`, `setManagedContentVisibility`, `dismissFlag`, `deleteManagedContent`, `warnModerationUser`, `banModerationUser`, `unbanModerationUser` |
+| Checkout | `fetchPlans`, `validateDiscountCode`, `createPaymentIntent`, `confirmPayment` |
+
+Backend gaps are handled client-side, no mock data anywhere:
+
+- **No comment-vote endpoint** — `ThreadReply` carries no score/userVote; reply
+  votes are device-local via `useReplyVotes` (AsyncStorage
+  `thinkz.community.replyVotes`), the only local state in Pages 6–10.
+- **No hard-delete endpoint** — `deleteManagedContent` composes hide + resolve
+  (`deleted: true`) against `setManagedContentVisibility`/`dismissFlag`.
+- **No severity field** — `deriveSeverity` computes it from report counts
+  against the `fetchModerationPolicy` thresholds.
+- **Categories have no slug** — `slugify(name)` in `src/api/communityClient.ts`.
+- **Payment intent endpoint not deployed yet** — 404/405/501 degrade to a
+  deferred `pi_deferred_*` intent so `confirm` can process the order (the
+  intent seam is one method, swappable when Janadeep ships the API).
+- **Discount 400** — body `{valid:false,status}` is normalized to
+  `DiscountValidation`; **confirm 402** — the structured decline in
+  `payload.data` (attempts, attemptsUsed, failureCode) renders inline on the
+  page instead of throwing.
+
+## Skeleton loaders
+
+| Screen | Skeleton |
+| --- | --- |
+| Thread Detail | Header + body + reply-stack placeholders, shown until thread and replies resolve. |
+| Create Post | Form skeleton while categories/tags load. |
+| Bookmarks | List skeleton while `fetchBookmarks` is in flight. |
+| Moderation | `flag-queue-table-skeleton` (queue tab), member and audit skeletons on their tabs. |
+| Checkout | `checkout-skeleton` — plan cards, summary and card-form placeholders. |
+
+All five switch to a retryable `ErrorState` on failure, and every destructive
+or irreversible action (reply publish, delete, warn/ban, payment) runs through
+a shared `ConfirmDialog`.
+
+## Verified
+
+| Check | Command | Result |
+| --- | --- | --- |
+| TypeScript | `npm run typecheck` | passed, 0 errors |
+| Lint | `npm run lint` | passed, 0 errors, 0 warnings |
+| Tests | `npm test` | **327 passed, 0 failed** across 28 suites (223 Pages 1–5 + 104 Pages 6–10) |
+
+### Test breakdown (Pages 6–10)
+
+| Suite | Tests |
+| --- | --- |
+| `tests/community/communityUnits.test.tsx` | 23 |
+| `tests/api/communityClient.test.ts` | 22 |
+| `tests/forum/ForumThreadDetailScreen.test.tsx` | 12 |
+| `tests/forum/CreatePostScreen.test.tsx` | 9 |
+| `tests/forum/BookmarksScreen.test.tsx` | 8 |
+| `tests/forum/ModerationScreen.test.tsx` | 14 |
+| `tests/checkout/CheckoutScreen.test.tsx` | 16 |
+| **Total** | **104** |
+
+Covered per screen: skeleton → data → error/retry transitions, the validation
+paths (Luhn/expiry/CVV, cost centre, title/tags/categories), optimistic
+actions with rollback on API failure, confirm-dialog cancel and success
+paths, API argument contracts (`communityClient.test.ts`), and the pure units
+(markdown parsing, mention insertion, severity derivation, pricing maths).
+
+## Definition of Done (Pages 6–10)
+
+- [x] All five screens implemented with skeleton loaders, error states with
+      retry, empty states and confirm dialogs for destructive actions.
+- [x] `LearningApiClient` extended with every Page 6–10 method; live
+      implementation in `src/api/communityClient.ts` + mock spread in
+      `src/api/mockClient.ts`.
+- [x] No hard-coded mock data beyond the shared Page 1–5 fixtures; the only
+      local state is device-local reply votes (no backend endpoint).
+- [x] Routes registered in `src/navigation/types.ts` + `linking.ts` and
+      `src/App.tsx`.
+- [x] `npm run typecheck`, `npm run lint`, `npm test` all clean
+      (327/327 tests).
+- [ ] Browser/E2E + demo recordings for Pages 6–10 (the Pages 1–5 artifacts
+      above predate these screens).
+- [ ] Runtime verification against the backend — blocked locally, see below.
+
+## Blocked on other teams (Pages 6–10)
+
+- **Payment intent API** — Janadeep's `POST /api/v1/payments/intents` is not
+  deployed; the client degrades to a deferred intent so `confirm` still
+  works. Swap `createPaymentIntent` when the endpoint lands.
+- **Discount validation + confirm** — contracts are source-verified only; the
+  backend cannot start on this machine (Prisma exits without a live
+  Postgres), so `validate-discount` and `confirm` have not been exercised
+  over HTTP.
+- **Notifications API** — no endpoint for community notification fan-out yet,
+  so Pages 6–7 create posts/replies without pushing notifications.

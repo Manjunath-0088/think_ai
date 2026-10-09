@@ -22,6 +22,7 @@ import type {
   SearchResultType,
 } from '@/types';
 import type { LearningApiClient } from './client';
+import { createCommunityClient } from './communityClient';
 
 const SEARCH_TYPES: readonly SearchResultType[] = [
   'course',
@@ -166,6 +167,10 @@ export function createMockApiClient(
   };
 
   return {
+    // Pages 6–10 always talk to the live backend (no mock data); only the
+    // Page 1–5 catalogue below is generated locally.
+    ...createCommunityClient(),
+
     createdThreads,
 
     reset() {

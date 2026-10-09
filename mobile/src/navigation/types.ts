@@ -7,6 +7,12 @@ export type RootStackParamList = {
   CourseDetail: { courseId: string; moduleId?: string };
   GlobalSearch: undefined;
   ForumHome: { categoryId?: string; threadId?: string } | undefined;
+  // Pages 6–10.
+  ForumThread: { threadId: string };
+  CreatePost: undefined;
+  Bookmarks: undefined;
+  Moderation: undefined;
+  Checkout: { courseId?: string } | undefined;
 };
 
 export type ScreenProps<RouteName extends keyof RootStackParamList> =

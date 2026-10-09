@@ -25,6 +25,12 @@ export const linking: LinkingOptions<RootStackParamList> = {
       CourseDetail: 'learner/courses/:courseId',
       GlobalSearch: 'search',
       ForumHome: 'forum',
+      // Pages 6–10 mirror the web routes.
+      ForumThread: 'forum/threads/:threadId',
+      CreatePost: 'forum/new',
+      Bookmarks: 'forum/bookmarks',
+      Moderation: 'forum/moderate',
+      Checkout: 'checkout',
     },
   },
 };
