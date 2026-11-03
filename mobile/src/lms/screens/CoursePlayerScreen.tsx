@@ -153,6 +153,7 @@ export function CoursePlayerScreen({
               style={{ width: "100%", height: 230, backgroundColor: "#000" }}
               nativeControls
               contentFit="contain"
+              testID="lesson-video"
             />
           ) : (
             <Message text="Video unavailable for this lesson." />

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {LmsSyncIndicator} from '@/lms/SyncIndicator';
-import { useCallback } from 'react';
+import { LmsSyncIndicator } from '@/lms/SyncIndicator';
 import {
   RefreshControl,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -185,8 +185,6 @@ export function LearnerDashboardScreen({
           placeholder="Search courses, lessons and forum…"
           testID="dashboard-search"
           value={query}
-          subtitle={`${completedCount} completed · ${enrollments.length - completedCount} in progress`}
-          title="My Learning"
         />
 
         <View style={styles.actionRow}>
@@ -204,17 +202,6 @@ export function LearnerDashboardScreen({
             testID="browse-tab">
             <Text style={styles.browseLabel}>Browse</Text>
           </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => navigation.navigate('StaffTools')}
-            style={styles.browseButton}
-            testID="staff-tools">
-            <Text style={styles.browseLabel}>Teaching</Text>
-          </Pressable>
-          <View style={styles.stat} testID="dashboard-enrollment-count">
-            <Text style={styles.statLabel}>Enrolled</Text>
-            <Text style={styles.statValue}>{enrollments.length}</Text>
-          </View>
         </View>
         <LmsSyncIndicator/>
 
@@ -346,6 +333,10 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     marginTop: spacing.sm,
   },
   headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   actionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

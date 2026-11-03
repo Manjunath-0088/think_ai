@@ -7,10 +7,16 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const request = require("supertest");
+require("dotenv").config();
+const jwt = require("jsonwebtoken");
 
 const app = require("./app");
 
 const USER = { "x-user-id": "u1" };
+const STUDIO_AUTH = `Bearer ${jwt.sign(
+    { id: "u1", name: "Test Learner", role: "Learner" },
+    process.env.JWT_SECRET || "fallback_secret"
+)}`;
 
 const GET_ENDPOINTS = [
     ["/api/discussions?page=1&limit=10", "data"],
@@ -28,7 +34,11 @@ const GET_ENDPOINTS = [
 
 for (const [path, key] of GET_ENDPOINTS) {
     test(`GET ${path} is mounted`, async () => {
-        const headers = path.startsWith("/api/moderation/") ? { "x-user-id": "u8" } : USER;
+        const headers = path.startsWith("/api/moderation/")
+            ? { "x-user-id": "u8" }
+            : path.startsWith("/api/live-studio/")
+                ? { ...USER, Authorization: STUDIO_AUTH }
+                : USER;
         const res = await request(app).get(path).set(headers);
         assert.equal(res.status, 200, `${path} -> ${res.status} ${res.text}`);
         assert.equal(res.body.success, true);
@@ -39,7 +49,7 @@ for (const [path, key] of GET_ENDPOINTS) {
 test("POST /api/live-studio/sessions/s1/join is mounted", async () => {
     const res = await request(app)
         .post("/api/live-studio/sessions/s1/join")
-        .set(USER)
+        .set({ ...USER, Authorization: STUDIO_AUTH })
         .send({});
 
     assert.equal(res.status, 200, res.text);

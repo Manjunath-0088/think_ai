@@ -38,7 +38,7 @@ export function BookmarkList({
   testID = 'bookmark-list'
 }: BookmarkListProps) {
   const styles = useThemedStyles(createStyles);
-  return <FlatList contentContainerStyle={styles.content} data={bookmarks} keyExtractor={item => item.id} ListEmptyComponent={hasError ? <ErrorState message={errorMessage ?? 'Unable to load bookmarks.'} onRetry={onRetry} /> : isLoading ? <BookmarksSkeleton testID={`${testID}-skeleton`} /> : <EmptyState icon="🔖" message="Bookmark a thread and it will show up here for quick access." testID={`${testID}-empty`} title="No bookmarks yet" />} ListHeaderComponent={listHeader ?? null} onRefresh={onRefresh} refreshing={isRefreshing} testID={testID} renderItem={({
+  return <FlatList contentContainerStyle={styles.content} data={bookmarks} keyExtractor={item => item.id} ListEmptyComponent={hasError ? <ErrorState message={errorMessage ?? 'Unable to load bookmarks.'} onRetry={onRetry} /> : isLoading ? <BookmarksSkeleton testID={`${testID}-skeleton`} /> : <EmptyState icon="🔖" message="Bookmark a thread and it will show up here for quick access." testID={`${testID}-empty`} title="No bookmarks yet" />} ListHeaderComponent={listHeader ?? undefined} onRefresh={onRefresh} refreshing={isRefreshing} testID={testID} renderItem={({
     item,
     index
   }) => <BookmarkRow isRemoving={isRemovingId === item.discussionId} onOpen={onOpen} onRemove={onRemove} record={item} testID={`${testID}-row-${index}`} />} />;

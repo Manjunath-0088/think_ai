@@ -2,6 +2,7 @@ import { Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import { AndroidImportance } from 'expo-notifications';
 import { apiData } from '@/api/http';
 
 Notifications.setNotificationHandler({ handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }) });
@@ -12,7 +13,7 @@ export async function registerPushNotifications(): Promise<string | null> {
   const current = await Notifications.getPermissionsAsync();
   const final = current.status === 'granted' ? current : await Notifications.requestPermissionsAsync();
   if (final.status !== 'granted') return null;
-  if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('default', { name: 'Default', importance: Notifications.AndroidImportance.DEFAULT });
+  if (Platform.OS === 'android') await Notifications.setNotificationChannelAsync('default', { name: 'Default', importance: AndroidImportance.DEFAULT });
   const projectId = Constants.easConfig?.projectId ?? Constants.expoConfig?.extra?.eas?.projectId;
   const token = projectId ? (await Notifications.getExpoPushTokenAsync({ projectId })).data : (await Notifications.getExpoPushTokenAsync()).data;
   await apiData('/notifications/device-token', { method: 'PUT', body: { expoPushToken: token, platform: Platform.OS } });

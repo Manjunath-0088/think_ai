@@ -236,8 +236,8 @@ function DeliveryStatus({ data }: { data: ReportStatus }) {
 
 export function AnalyticsScreen() {
   const { session } = useLms();
-  const [from, setFrom] = useState(date(new Date(Date.now() - 29 * 86400000)));
-  const [to, setTo] = useState(date(new Date()));
+  const [from, setFrom] = useState(() => date(new Date(Date.now() - 29 * 86400000)));
+  const [to, setTo] = useState(() => date(new Date()));
   const [range, setRange] = useState({ from, to });
   const [bucket, setBucket] = useState<AnalyticsBucket>("daily");
   const [dateError, setDateError] = useState("");

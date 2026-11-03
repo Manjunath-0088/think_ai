@@ -53,7 +53,7 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     resizeMode: 'cover'
   },
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(11, 16, 32, 0.72)'
   },
   content: {

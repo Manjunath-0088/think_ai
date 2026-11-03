@@ -22,7 +22,7 @@ import { useTheme } from '@/theme/ThemeProvider';
  * Sign-in for the deep-link auth gate and learner journey. Credentials are
  * verified by the LMS and the returned bearer token is used for API requests.
  */
-export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
+export function LoginScreen({ navigation }: ScreenProps<'Login' | 'SignIn'>) {
   const styles = useThemedStyles(createStyles);
   const { palette } = useTheme();
   const [email, setEmail] = useState('');
@@ -44,7 +44,11 @@ export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
       await signIn(String(result.user.id), result.token, result.user);
       // Permission may be declined; that must never block sign-in.
       void registerPushNotifications().catch(() => undefined);
-      navigation.replace('LearnerDashboard');
+      navigation.replace(
+        ['admin', 'superadmin'].includes(result.user.role.toLowerCase())
+          ? 'AdminHome'
+          : 'LearnerDashboard',
+      );
     } catch (loginError) {
       setError(
         loginError instanceof Error && loginError.name === 'AbortError'

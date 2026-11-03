@@ -10,7 +10,11 @@ const {
     updateEnrollment,
     deleteEnrollment
 } = require("../controllers/enrollmentController");
-const { createSession, getSessionById, updateSession, deleteSession } = require("../controllers/sessionController");
+const {
+    validateEnrollmentCreate,
+    validateEnrollmentUpdate,
+    validateEnrollmentId
+} = require("../validations/enrollmentValidation");
 /**
  * @swagger
  * tags:
@@ -28,7 +32,12 @@ const { createSession, getSessionById, updateSession, deleteSession } = require(
  *       200:
  *         description: List of enrollments
  */
-router.get("/", getEnrollments);
+router.get(
+    "/",
+    authenticateToken,
+    authorizeRoles("ADMIN", "INSTRUCTOR"),
+    getEnrollments
+);
 
 /**
  * @swagger
@@ -49,7 +58,13 @@ router.get("/", getEnrollments);
  *       404:
  *         description: Enrollment not found
  */
-router.get("/:id", getEnrollmentById);
+router.get(
+    "/:id",
+    authenticateToken,
+    authorizeRoles("ADMIN", "INSTRUCTOR"),
+    validateEnrollmentId,
+    getEnrollmentById
+);
 
 /**
  * @swagger
@@ -84,7 +99,6 @@ router.get("/:id", getEnrollmentById);
  *       201:
  *         description: Enrollment created successfully
  */
-router.post("/", createEnrollment);
 router.post(
     "/",
     authenticateToken,
@@ -157,13 +171,6 @@ router.patch(
  *       500:
  *         description: Failed to retrieve enrollment
  */
-router.get(
-    "/:id",
-    validateEnrollmentId,
-    getEnrollmentById
-);
-
-
 /**
  * @swagger
  * /api/enrollments/{id}:
@@ -202,7 +209,6 @@ router.get(
  *       404:
  *         description: Enrollment not found
  */
-router.put("/:id", updateEnrollment);
 router.put(
     "/:id",
     authenticateToken,
@@ -232,11 +238,6 @@ router.put(
  *       404:
  *         description: Enrollment not found
  */
-router.delete("/:id", deleteEnrollment);
-router.post("/sessions", createSession);
-router.get("/sessions/:id", getSessionById);
-router.put("/sessions/:id", updateSession);
-router.delete("/sessions/:id", deleteSession);
 router.delete(
     "/:id",
     authenticateToken,

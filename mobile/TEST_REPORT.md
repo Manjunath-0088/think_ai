@@ -1,11 +1,14 @@
 # Current mobile verification update — 2026-11-03
 
-- TypeScript, ESLint, and 54 Jest suites (506 tests) pass.
-- Android Expo export succeeds and emits `dist/_expo/static/js/android/index-*.hbc`.
-- 375px/390px responsive checks and accessibility tests pass.
-- A physical device was not connected, so a device screenshot is not available.
+- TypeScript passes with 0 errors. ESLint passes with 0 errors and 52 warnings.
+- Jest passes: 72 suites and 670 tests, including 375px/390px responsive,
+  accessibility, theme, deep-link, progress/resume, wishlist, and search checks.
+- Android Expo export succeeds: Metro bundled 1,172 modules and emitted a 3 MB
+  Hermes Android bundle.
+- Physical device screenshot verification is pending because ADB could not
+  start its local server and Java is not installed.
 - See the repository-level [TEST_REPORT.md](../TEST_REPORT.md) for backend,
-  PostgreSQL, payment, and migration results.
+  PostgreSQL, payment, migration-history, and dependency-audit results.
 
 # Mobile app (React Native) — module test report
 

@@ -27,7 +27,7 @@ export interface SessionState {
   /** Optional bearer token for the LMS-side endpoints. `null` when signed out. */
   token: string | null;
   isSignedIn: boolean;
-  profile: SessionProfile | null;
+  profile?: SessionProfile | null;
 }
 
 type SessionListener = (session: SessionState) => void;

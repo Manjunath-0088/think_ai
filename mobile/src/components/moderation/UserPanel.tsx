@@ -124,11 +124,11 @@ export function UserPanel({
   testID = 'user-panel'
 }: UserPanelProps) {
   const styles = useThemedStyles(createStyles);
-  return <FlatList contentContainerStyle={styles.content} data={selectedUser ? [] : users} keyExtractor={item => item.id} ListEmptyComponent={selectedUser ? null : isLoading ? <View testID={`${testID}-skeleton`}>
+  return <FlatList contentContainerStyle={styles.content} data={selectedUser ? [] : users} keyExtractor={item => item.id} ListEmptyComponent={selectedUser ? undefined : isLoading ? <View testID={`${testID}-skeleton`}>
             <Skeleton height={56} />
             <Skeleton height={56} />
             <Skeleton height={56} />
-          </View> : users.length === 0 ? <EmptyState icon="👥" message={query ? 'No members match your search.' : 'No members available yet.'} testID={`${testID}-empty`} title="No members" /> : null} ListHeaderComponent={<View style={styles.headerSlot}>
+          </View> : users.length === 0 ? <EmptyState icon="👥" message={query ? 'No members match your search.' : 'No members available yet.'} testID={`${testID}-empty`} title="No members" /> : undefined} ListHeaderComponent={<View style={styles.headerSlot}>
           {selectedUser ? <View style={styles.detailCard} testID={`${testID}-detail`}>
               <Pressable accessibilityRole="button" onPress={() => onSelect(null)} testID={`${testID}-back`}>
                 <Text style={styles.backLabel}>← All members</Text>

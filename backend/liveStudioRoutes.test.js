@@ -7,6 +7,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const request = require("supertest");
+require("dotenv").config();
+const jwt = require("jsonwebtoken");
+const STUDIO_AUTH = `Bearer ${jwt.sign(
+    { id: "u1", name: "Test Learner", role: "Learner" },
+    process.env.JWT_SECRET || "fallback_secret"
+)}`;
 
 // Stub the Postgres-backed service so this test never touches a database.
 // The controller calls the service through its cached module object, so
@@ -24,7 +30,7 @@ const app = require("./app");
 test("POST /api/live-studio/sessions/:id/join is mounted", async () => {
     const res = await request(app)
         .post("/api/live-studio/sessions/s1/join")
-        .set("x-user-id", "u1")
+        .set({ "x-user-id": "u1", Authorization: STUDIO_AUTH })
         .send({});
 
     assert.equal(res.status, 200);
@@ -35,7 +41,7 @@ test("POST /api/live-studio/sessions/:id/join is mounted", async () => {
 test("the live-studio messages endpoint is mounted (full forum slice)", async () => {
     const res = await request(app)
         .get("/api/live-studio/sessions/s1/messages")
-        .set("x-user-id", "u1");
+        .set({ "x-user-id": "u1", Authorization: STUDIO_AUTH });
 
     assert.equal(res.status, 200);
     assert.equal(res.body.success, true);
@@ -44,7 +50,7 @@ test("the live-studio messages endpoint is mounted (full forum slice)", async ()
 test("an unknown live-studio sub-route still 404s", async () => {
     const res = await request(app)
         .post("/api/live-studio/sessions/s1/nope")
-        .set("x-user-id", "u1")
+        .set({ "x-user-id": "u1", Authorization: STUDIO_AUTH })
         .send({});
 
     assert.equal(res.status, 404);

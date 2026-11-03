@@ -10,6 +10,7 @@ export function usePaymentFailure(params?: RootStackParamList['PaymentFailed']) 
   const message = p.message;
   const preserve = !!p.preserve;
   const formValues = p.formValues ?? {};
+  const formValuesKey = JSON.stringify(formValues);
 
   return useMemo(
     () => ({
@@ -20,6 +21,6 @@ export function usePaymentFailure(params?: RootStackParamList['PaymentFailed']) 
       formValues,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [reason, errorCode, message, preserve, JSON.stringify(formValues)]
+    [reason, errorCode, message, preserve, formValuesKey]
   );
 }

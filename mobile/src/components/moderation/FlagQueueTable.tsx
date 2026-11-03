@@ -80,7 +80,7 @@ export function FlagQueueTable({
         <Text style={[styles.headerCell, styles.reportsCell]}>Reports</Text>
       </View>
 
-      <FlatList contentContainerStyle={styles.content} data={rows} keyExtractor={item => `${item.type}-${item.id}`} ListEmptyComponent={hasError ? <ErrorState message={errorMessage ?? 'Unable to load the flag queue.'} onRetry={onRetry} /> : isLoading ? <ModerationSkeleton testID={`${testID}-skeleton`} /> : <EmptyState icon="🛡️" message="Nothing needs review right now. Flagged threads and replies appear here." testID={`${testID}-empty`} title="Queue is clear" />} ListHeaderComponent={listHeader ?? null} onRefresh={onRefresh} refreshing={isRefreshing} testID={`${testID}-list`} renderItem={({
+      <FlatList contentContainerStyle={styles.content} data={rows} keyExtractor={item => `${item.type}-${item.id}`} ListEmptyComponent={hasError ? <ErrorState message={errorMessage ?? 'Unable to load the flag queue.'} onRetry={onRetry} /> : isLoading ? <ModerationSkeleton testID={`${testID}-skeleton`} /> : <EmptyState icon="🛡️" message="Nothing needs review right now. Flagged threads and replies appear here." testID={`${testID}-empty`} title="Queue is clear" />} ListHeaderComponent={listHeader ?? undefined} onRefresh={onRefresh} refreshing={isRefreshing} testID={`${testID}-list`} renderItem={({
       item,
       index
     }) => <View style={[styles.row, item.hidden && styles.rowHidden]} testID={`${testID}-row-${index}`}>

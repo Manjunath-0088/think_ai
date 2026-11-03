@@ -4,9 +4,25 @@ const router = express.Router();
 
 const {
     createAssessment,
+    getAllAssessments,
+    updateAssessment,
+    deleteAssessment,
     getAssessmentById,
+    getAssessmentSubmissionResult,
     submitAssessment,
-    getAssessmentAnalytics
+    startAssessment,
+    getAssessmentAnalytics,
+    getAssessmentSubmissions,
+    getEnrollmentAssessmentStatus,
+    createCodingQuestion,
+    getCodingQuestions,
+    getCodingQuestionById,
+    updateCodingQuestion,
+    deleteCodingQuestion,
+    createCodingTestCase,
+    getCodingTestCases,
+    updateCodingTestCase,
+    deleteCodingTestCase
 } = require("../controllers/assessmentController");
 
 const {

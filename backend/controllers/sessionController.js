@@ -1,5 +1,10 @@
 const NodeCache = require("node-cache");
 const sessionCache = new NodeCache({ stdTTL: 300});
+const {
+    broadcastSessionEvent: broadcastLiveNotification,
+    SESSION_STARTED_EVENT,
+    SESSION_ENDED_EVENT
+} = require("../services/liveSessionNotificationService");
 
 // Local mock data store (No database)
 let sessions = [];
@@ -291,6 +296,24 @@ const getJoinToken = async (req, res) => {
         });
     }
 };
+
+const broadcastSessionEvent = (req, res) => {
+    const { eventName, payload } = req.body || {};
+    const allowedEvents = new Set([SESSION_STARTED_EVENT, SESSION_ENDED_EVENT]);
+
+    if (!allowedEvents.has(eventName) || !payload || typeof payload !== "object" || Array.isArray(payload)) {
+        return res.status(400).json({
+            success: false,
+            message: "A supported session event and object payload are required."
+        });
+    }
+
+    const deliveredTo = broadcastLiveNotification(req.app.get("io"), eventName, payload);
+    return res.status(202).json({
+        success: true,
+        deliveredCount: deliveredTo.length
+    });
+};
 // Export all the middleware handlers globally
 module.exports = {
     createSession,
@@ -300,5 +323,6 @@ module.exports = {
     getSessionById,
     updateSession,
     deleteSession,
-    saveRecordingCallback
+    saveRecordingCallback,
+    broadcastSessionEvent
 };

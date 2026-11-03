@@ -9,8 +9,15 @@ const {
     createBatch,
     updateBatch,
     deleteBatch,
-    getBatchEnrollments
+    getBatchEnrollments,
+    autoAllocateStudent
 } = require("../controllers/batchController");
+const {
+    validateBatchCreate,
+    validateBatchUpdate,
+    validateBatchId,
+    validateBatchEnrollmentId
+} = require("../validations/batchValidation");
 
 /**
  * @swagger
@@ -50,7 +57,7 @@ router.get("/", getBatches);
  *       404:
  *         description: Batch not found
  */
-router.get("/:id", getBatchById);
+router.get("/:id", validateBatchId, getBatchById);
 router.post(
     "/auto-allocate",
     authenticateToken,
@@ -145,7 +152,6 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.post("/", createBatch);
 
 /**
  * @swagger
@@ -196,7 +202,6 @@ router.post("/", createBatch);
  *       404:
  *         description: Batch not found
  */
-router.put("/:id", updateBatch);
 router.put(
     "/:id",
     authenticateToken,
@@ -226,7 +231,6 @@ router.put(
  *       404:
  *         description: Batch not found
  */
-router.delete("/:id", deleteBatch);
 router.delete(
     "/:id",
     authenticateToken,
@@ -253,6 +257,6 @@ router.delete(
  *       200:
  *         description: List of enrollments
  */
-router.get("/:batchId/enrollments", getBatchEnrollments);
+router.get("/:batchId/enrollments", validateBatchEnrollmentId, getBatchEnrollments);
 
 module.exports = router;

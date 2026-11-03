@@ -2,14 +2,48 @@ const sgMail = require('@sendgrid/mail');
 const twilio = require('twilio');
 require('dotenv').config();
 
-// Configure SendGrid API Key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// Configure providers only when credentials exist so offline/test imports do
+// not trigger SDK configuration errors.
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 // Configure Twilio Client
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID, 
-  process.env.TWILIO_AUTH_TOKEN
-);
+const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null;
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+}
+
+function enrollmentConfirmationEmail({ name, courseName }) {
+  const learnerName = String(name || 'Learner');
+  const title = String(courseName || 'your course');
+  return {
+    subject: `Enrollment confirmed: ${title}`,
+    text: `Hello ${learnerName}, your enrollment in ${title} is confirmed.`,
+    html: `<p>Hello ${escapeHtml(learnerName)},</p><p>Your enrollment in <strong>${escapeHtml(title)}</strong> is confirmed.</p>`,
+  };
+}
+
+function certificateEmail({ name, courseName, certificateId, certificateUrl }) {
+  const learnerName = String(name || 'Learner');
+  const title = String(courseName || 'your course');
+  const identifier = String(certificateId || '');
+  const verificationUrl = String(certificateUrl || '');
+  return {
+    subject: `Certificate awarded: ${title}`,
+    text: `Hello ${learnerName}, your certificate for ${title} is ready. Certificate ID: ${identifier}. Verify it at ${verificationUrl}`,
+    html: `<p>Hello ${escapeHtml(learnerName)},</p><p>Your certificate for <strong>${escapeHtml(title)}</strong> is ready.</p><p>Certificate ID: <strong>${escapeHtml(identifier)}</strong></p><p><a href="${escapeHtml(verificationUrl)}">Verify certificate</a></p>`,
+  };
+}
 
 // Function to send a test email via SendGrid
 async function sendTestEmail(toEmail) {
@@ -24,6 +58,7 @@ async function sendTestEmail(toEmail) {
 
 // Function to send a test SMS via Twilio
 async function sendTestSMS(toPhone) {
+  if (!twilioClient) throw new Error('Twilio is not configured.');
   return twilioClient.messages.create({
     body: "Janadeep's Twilio SMS notification.",
     from: process.env.TWILIO_PHONE_NUM,
@@ -32,4 +67,9 @@ async function sendTestSMS(toPhone) {
 }
 
 // Export the functions for use in other files
-module.exports = { sendTestEmail, sendTestSMS };
+module.exports = {
+  sendTestEmail,
+  sendTestSMS,
+  enrollmentConfirmationEmail,
+  certificateEmail,
+};

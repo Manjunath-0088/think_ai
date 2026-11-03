@@ -4,6 +4,8 @@ const router = express.Router();
 
 const {
     executeCode,
+    submitCode,
+    practiceRun,
     gradingCallback
 } = require("../controllers/codeExecutionController");
 
@@ -15,7 +17,6 @@ const {
     validateCodeExecution
 } = require("../validations/codeExecutionValidation");
 
-const { practiceRun } = require("../controllers/codeExecutionController");
 const { authenticateToken, authorizeRoles } = require("../middleware/lmsLegacyAccess");
 const { requireOwnedCodeAttempt, redactLearnerAnswers } = require("../middleware/lmsLegacyOwnership");
 const { internalCallbackAuth } = require("../middleware/internalCallbackAuth");
@@ -80,8 +81,7 @@ router.post("/practice-run", ...learnerOnly, practiceRun);
  *         description: Judge0 is not configured
  */
 router.post(
-    "/execute",
-    "/run",
+    ["/execute", "/run"],
     ...learnerOnly,
     requireOwnedCodeAttempt({ publicTestCase: true }),
     redactLearnerAnswers,

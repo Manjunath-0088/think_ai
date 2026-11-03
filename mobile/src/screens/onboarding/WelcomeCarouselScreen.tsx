@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Text,
   View,
-  ViewToken,
+  type ListViewToken,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -62,9 +62,9 @@ export function WelcomeCarouselScreen({ onComplete, onSkip }: Props) {
   const flatListRef = useRef<FlatList>(null);
 
   const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
       const firstVisible = viewableItems[0];
-      if (firstVisible && firstVisible.index !== null) {
+      if (firstVisible && typeof firstVisible.index === 'number') {
         setCurrentIndex(firstVisible.index);
       }
     },

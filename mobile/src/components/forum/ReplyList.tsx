@@ -64,7 +64,7 @@ export function ReplyList({
 }: ReplyListProps) {
   const styles = useThemedStyles(createStyles);
   const depths = replyDepths(replies);
-  return <FlatList contentContainerStyle={styles.content} data={replies} keyboardShouldPersistTaps="handled" keyExtractor={item => item.id} ListEmptyComponent={hasError ? <ErrorState message={errorMessage ?? 'Unable to load replies.'} onRetry={onRetry} /> : isLoading ? <ThreadDetailSkeleton replyRows={2} testID={`${testID}-skeleton`} /> : <EmptyState icon="💬" message="Be the first to reply to this discussion." testID={`${testID}-empty`} title="No replies yet" />} ListFooterComponent={listFooter ?? null} ListHeaderComponent={listHeader ?? null} onRefresh={onRefresh} refreshing={isRefreshing} testID={testID} renderItem={({
+  return <FlatList contentContainerStyle={styles.content} data={replies} keyboardShouldPersistTaps="handled" keyExtractor={item => item.id} ListEmptyComponent={hasError ? <ErrorState message={errorMessage ?? 'Unable to load replies.'} onRetry={onRetry} /> : isLoading ? <ThreadDetailSkeleton replyRows={2} testID={`${testID}-skeleton`} /> : <EmptyState icon="💬" message="Be the first to reply to this discussion." testID={`${testID}-empty`} title="No replies yet" />} ListFooterComponent={listFooter ?? undefined} ListHeaderComponent={listHeader ?? undefined} onRefresh={onRefresh} refreshing={isRefreshing} testID={testID} renderItem={({
     item,
     index
   }) => <ReplyRow depth={depths.get(item.id) ?? 0} isActiveTarget={activeReplyId === item.id} onReplyTo={onReplyTo} onVote={direction => onVoteReply(item.id, direction)} reply={item} testID={`${testID}-item-${index}`} vote={votes[item.id] ?? 'none'} />} />;

@@ -54,7 +54,7 @@ test("link copy uses stable app link rather than expiring S3 URL", async () => {
 test("React Native Share cancellation resolves normally", async () => {
   jest
     .spyOn(Share, "share")
-    .mockResolvedValue({ action: Share.dismissedAction });
+    .mockResolvedValue({ action: Share.dismissedAction, activityType: undefined });
   await expect(shareCertificateLink(cert)).resolves.toEqual({
     action: Share.dismissedAction,
   });
@@ -76,7 +76,7 @@ test("iOS PDF sharing uses React Native Share and preserves cancellation", async
   Object.defineProperty(Platform, "OS", { value: "ios", configurable: true });
   jest
     .spyOn(Share, "share")
-    .mockResolvedValue({ action: Share.dismissedAction });
+    .mockResolvedValue({ action: Share.dismissedAction, activityType: undefined });
   await expect(shareCertificatePdf(cert)).resolves.toEqual({
     action: Share.dismissedAction,
   });
