@@ -1,5 +1,5 @@
 import { Platform, Share } from "react-native";
-import * as FS from "expo-file-system";
+import * as FS from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as Clipboard from "expo-clipboard";
 import {
@@ -8,7 +8,7 @@ import {
   shareCertificatePdf,
   shareCertificatePng,
 } from "@/lms/certificateShare";
-jest.mock("expo-file-system", () => ({
+jest.mock("expo-file-system/legacy", () => ({
   cacheDirectory: "file:///cache/",
   downloadAsync: jest.fn(),
 }));

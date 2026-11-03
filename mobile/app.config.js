@@ -4,6 +4,11 @@
  */
 module.exports = ({ config }) => ({
   ...config,
+  plugins: Array.from(new Set([
+    ...(config.plugins ?? []),
+    '@react-native-community/datetimepicker',
+    'expo-sharing',
+  ])),
   android: {
     ...config.android,
     usesCleartextTraffic: process.env.NODE_ENV !== 'production',

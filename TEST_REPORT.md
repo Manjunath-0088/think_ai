@@ -4,11 +4,17 @@ Date: 2026-11-03
 
 ## Verified
 
-- Mobile TypeScript: `npm run typecheck` passed with 0 errors.
-- Mobile lint: `npm run lint` passed with 0 errors and 52 warnings.
-- Mobile Jest: 72 suites, 670 tests passed, including responsive 375px/390px
-  layouts, accessibility labels/touch targets, themes, navigation, progress,
-  wishlist, search, and playback/resume coverage.
+- Mobile TypeScript: `npm run typecheck` passed with 0 errors after Expo SDK
+  compatibility updates.
+- Mobile lint: `npm run lint` passed with 0 errors and 55 warnings.
+- Mobile Jest: 72 suites, 670 tests passed after the compatibility updates,
+  including responsive 375px/390px layouts, accessibility labels/touch targets,
+  themes, navigation, progress, wishlist, search, and playback/resume coverage.
+- `npx expo install --fix` now completes. Dynamic app config retains the existing
+  notifications/download plugins and includes the datetime picker and sharing
+  config plugins. Expo used its local compatibility map because network access
+  to the well-known versions endpoint is disabled in this environment.
+- Metro startup reached `Waiting on http://localhost:8082`.
 - Backend unit/integration suite (rerun after the LMS schema fix): 62 passed,
   0 failed, 1 skipped. The skipped
   authentication E2E requires `E2E_BASE_URL` and a separately running backend.
@@ -28,8 +34,9 @@ Date: 2026-11-03
 - PostgreSQL database records both community migrations as applied:
   `20261103090000_community_relations` and `20261103100000_seed_vote_counts`.
 - Android Expo export passed: `npx expo export --platform android
-  --output-dir .expo-export-check` bundled 1,172 modules and emitted a 3 MB
-  Hermes Android bundle.
+  --output-dir .expo-export-check` bundled 1,179 modules and emitted a 3 MB
+  Hermes Android bundle. The export used a repository-local temporary directory
+  because the sandbox blocks Hermes from writing to its external temp folder.
 
 ## Remaining verification / dependencies
 

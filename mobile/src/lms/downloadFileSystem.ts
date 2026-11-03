@@ -8,4 +8,4 @@ export {
   moveAsync,
   getInfoAsync,
   createDownloadResumable,
-} from "expo-file-system";
+} from "expo-file-system/legacy";
