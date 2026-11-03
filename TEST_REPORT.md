@@ -1,3 +1,48 @@
+# Current Android app and backend verification
+
+Date: 2026-11-03
+
+## Verified
+
+- Mobile TypeScript: `npm run typecheck` passed.
+- Mobile lint: `npm run lint` passed.
+- Mobile Jest: 54 suites, 506 tests passed. The run printed non-failing React
+  `act()` warnings in existing dashboard/theme tests.
+- Backend unit/integration suite: 61 passed, 0 failed, 1 skipped. The skipped
+  authentication E2E requires `E2E_BASE_URL` and a separately running backend.
+- Backend forum/live-studio route suite: 15 passed, 0 failed.
+- Backend syntax checks for changed JS files and `npx prisma validate`: passed.
+- PostgreSQL community migrations applied: `20261103090000_community_relations`
+  and `20261103100000_seed_vote_counts`.
+- Client-provided community seed imported: 5 categories, 11 discussions, 5
+  replies, and 7 bookmarks; import is idempotent.
+- Authenticated PostgreSQL API smoke checks passed for categories, discussions,
+  bookmarks, and forum search. A temporary discussion was created, voted,
+  replied to, bookmarked, marked solved, and then deleted. A live-storage
+  payment-intent request returned 503 as configured, so simulated payment
+  success cannot be mistaken for a real charge.
+- Android Expo export passed: `npx expo export --platform android` bundled 912
+  modules and wrote the JS bundle to `mobile/dist`.
+- Existing responsive and accessibility Jest suites passed, including the
+  375px/390px layout checks and learner touch-target/label checks.
+
+## Remaining verification / dependencies
+
+- No Android device is attached (`adb devices -l` returned an empty device
+  list), so physical screenshot verification is pending.
+- Expo export produced the Android JS bundle; an APK/AAB native build and
+  signing were not performed in this environment.
+- Production checkout requires a real Stripe/Razorpay provider, webhook
+  verification, and durable provider-backed payment ledger. Those credentials
+  and services are not configured, so payment creation/confirmation intentionally
+  returns 503 in live storage mode.
+- `npx prisma generate` updated the generated model metadata, but Windows
+  returned `EPERM` while renaming a query-engine DLL to an identical-hash file.
+  The generated client model and PostgreSQL API smoke test work; clean
+  installation/generation should still be verified outside this sandbox.
+
+## Earlier module test report
+
 # Roopesh + Karthik module test report
 
 Date: 2026-09-08

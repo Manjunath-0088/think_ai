@@ -115,6 +115,9 @@ export interface SearchResult {
   subtitle: string;
   /** Route the result navigates to when tapped. */
   href: string;
+  courseId?: string;
+  lessonId?: string;
+  assessmentId?: string;
 }
 
 export interface GlobalSearchResponse {

@@ -1,3 +1,12 @@
+# Current mobile verification update — 2026-11-03
+
+- TypeScript, ESLint, and 54 Jest suites (506 tests) pass.
+- Android Expo export succeeds and emits `dist/_expo/static/js/android/index-*.hbc`.
+- 375px/390px responsive checks and accessibility tests pass.
+- A physical device was not connected, so a device screenshot is not available.
+- See the repository-level [TEST_REPORT.md](../TEST_REPORT.md) for backend,
+  PostgreSQL, payment, and migration results.
+
 # Mobile app (React Native) — module test report
 
 Owner: Manjunath

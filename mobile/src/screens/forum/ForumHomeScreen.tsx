@@ -10,6 +10,7 @@ import { SortDropdown } from '@/components/forum/SortDropdown';
 import { TagFilter } from '@/components/forum/TagFilter';
 import { ThreadList } from '@/components/forum/ThreadList';
 import { useForumThreads } from '@/hooks/useForumThreads';
+import { useForumRealtime } from '@/hooks/useForumRealtime';
 import type { ScreenProps } from '@/navigation/types';
 import {spacing} from '@/theme/tokens';
 import type { CreateThreadInput } from '@/types';
@@ -44,6 +45,8 @@ export function ForumHomeScreen({ navigation }: ScreenProps<'ForumHome'>) {
     refresh,
     createThread,
   } = useForumThreads();
+
+  useForumRealtime({ onDiscussionNew: refresh });
 
   const handleCreateThread = useCallback(
     async (input: CreateThreadInput) => {

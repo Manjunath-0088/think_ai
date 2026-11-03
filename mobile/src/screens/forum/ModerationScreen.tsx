@@ -8,6 +8,7 @@ import { FlagQueueTable } from '@/components/moderation/FlagQueueTable';
 import { PreviewModal } from '@/components/moderation/PreviewModal';
 import { UserPanel } from '@/components/moderation/UserPanel';
 import { useModeration, type ModerationTab } from '@/hooks/useModeration';
+import { useForumRealtime } from '@/hooks/useForumRealtime';
 import type { ScreenProps } from '@/navigation/types';
 import {radii, spacing, typography} from '@/theme/tokens';
 import { formatRelativeTime } from '@/utils/datetime';
@@ -72,6 +73,8 @@ export function ModerationScreen(_props: ScreenProps<'Moderation'>) {
     moderateUser,
     selectUser,
   } = useModeration();
+
+  useForumRealtime({ onModerationUpdate: refresh });
 
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);

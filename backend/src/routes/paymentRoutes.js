@@ -17,6 +17,7 @@ const router = express.Router();
 
 const paymentController = require("../controllers/paymentController");
 
+router.post("/intents", paymentController.createIntent);
 router.post("/validate-discount", paymentController.validateDiscount);
 router.post("/receipt", paymentController.generateReceipt);
 router.get("/:id/status", paymentController.getPaymentStatus);

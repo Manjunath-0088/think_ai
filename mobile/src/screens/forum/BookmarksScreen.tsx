@@ -5,6 +5,7 @@ import { OfflineBanner, ScreenHeader } from '@/components/common';
 import { BookmarkList } from '@/components/forum/BookmarkList';
 import { SyncIndicator } from '@/components/forum/SyncIndicator';
 import { useBookmarks } from '@/hooks/useBookmarks';
+import { useForumRealtime } from '@/hooks/useForumRealtime';
 import type { ScreenProps } from '@/navigation/types';
 import {radii, spacing, typography} from '@/theme/tokens';
 import type { Palette } from '@/theme/tokens';
@@ -33,6 +34,8 @@ export function BookmarksScreen({ navigation }: ScreenProps<'Bookmarks'>) {
     refresh,
     removeBookmark,
   } = useBookmarks();
+
+  useForumRealtime({ onBookmarkChanged: refresh });
 
   // Row-level failures restore the row and land here as a banner.
   const showRemovalError = hasError && bookmarks.length > 0;

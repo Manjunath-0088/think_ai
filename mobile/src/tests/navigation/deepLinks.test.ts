@@ -203,7 +203,7 @@ describe('getInitialDeepLink', () => {
     jest
       .spyOn(Linking, 'getInitialURL')
       .mockResolvedValue('thinkzai://forum/moderate');
-    await signIn('u42');
+    await signIn('u42', 'test-bearer-token');
 
     const result = await getInitialDeepLink();
 

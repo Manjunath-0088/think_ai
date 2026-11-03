@@ -206,6 +206,10 @@ app.use("/api/roles", roleRoutes);
 
 app.use("/api/courses", courseRoutes);
 
+// Authenticated, account-scoped learner endpoints for the Android client.
+app.use("/api/learner", require("./src/routes/learnerRoutes"));
+app.use("/api/search", require("./src/routes/searchRoutes"));
+
 app.use("/api/batches", batchRoutes);
 
 app.use("/api/enrollments", enrollmentRoutes);

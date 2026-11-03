@@ -23,6 +23,7 @@ const moderationController = require("../controllers/moderationController");
 const Discussion = require("../models/Discussion");
 const Comment = require("../models/Comment");
 const User = require("../models/User");
+const requireCommunityModerator = require('../middleware/requireCommunityModerator');
 
 router.get("/threads/:id", discussionController.getOne);
 
@@ -51,9 +52,9 @@ router.patch("/threads/:id/solved", (req, res) => {
     return discussionController.setSolved(req, res);
 });
 
-router.get("/flags", moderationController.flaggedQueue);
+router.get("/flags", requireCommunityModerator, moderationController.flaggedQueue);
 
-router.patch("/posts/:id/action", (req, res) => {
+router.patch("/posts/:id/action", requireCommunityModerator, (req, res) => {
     const { type, action } = req.body || {};
     const id = req.params.id;
     if (!["discussion", "comment"].includes(type)) {

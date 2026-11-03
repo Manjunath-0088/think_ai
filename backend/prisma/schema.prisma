@@ -138,6 +138,233 @@ model User {
   role      String   @default("Learner")
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
+  communityProfile CommunityUser?
+}
+
+// Community accounts are keyed by the existing LMS account id. Seeded legacy
+// community identities can remain independent until they are linked.
+model CommunityUser {
+  id          String   @id
+  lmsUserId   Int?     @unique
+  name        String
+  username    String   @unique
+  email       String?  @unique
+  role        String   @default("Learner")
+  banned      Boolean  @default(false)
+  warned      Boolean  @default(false)
+  muted       Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lmsUser                 User?                    @relation(fields: [lmsUserId], references: [id], onDelete: SetNull)
+  discussions             ForumDiscussion[]        @relation("DiscussionAuthor")
+  comments                ForumComment[]            @relation("CommentAuthor")
+  discussionVotes         ForumDiscussionVote[]
+  commentVotes            ForumCommentVote[]
+  bookmarks               ForumBookmark[]
+  notificationsReceived   ForumNotification[]       @relation("NotificationRecipient")
+  notificationsSent       ForumNotification[]       @relation("NotificationActor")
+  reports                 ForumReport[]             @relation("ReportAuthor")
+  auditEntries            ForumAuditLog[]            @relation("AuditActor")
+  targetedAuditEntries    ForumAuditLog[]            @relation("AuditTargetUser")
+  notificationPreferences ForumNotificationPreference?
+
+  @@index([role])
+  @@index([banned])
+}
+
+model ForumCategory {
+  id          String   @id
+  name        String   @unique
+  slug        String   @unique
+  color       String   @default("#6366f1")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  discussions ForumDiscussion[]
+}
+
+model ForumTag {
+  id        String   @id
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  discussions ForumDiscussionTag[]
+}
+
+model ForumDiscussion {
+  id         String   @id @default(cuid())
+  title      String
+  body       String
+  authorId   String
+  categoryId String?
+  solved     Boolean  @default(false)
+  hidden     Boolean  @default(false)
+  flagged    Boolean  @default(false)
+  pinned     Boolean  @default(false)
+  views      Int      @default(0)
+  seedUpvotes   Int   @default(0)
+  seedDownvotes Int   @default(0)
+  flagReason String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author    CommunityUser       @relation("DiscussionAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  category  ForumCategory?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags      ForumDiscussionTag[]
+  comments  ForumComment[]
+  votes     ForumDiscussionVote[]
+  bookmarks ForumBookmark[]
+  reports   ForumReport[]
+
+  @@index([categoryId, createdAt])
+  @@index([authorId, createdAt])
+  @@index([hidden, pinned, createdAt])
+  @@index([solved])
+}
+
+model ForumDiscussionTag {
+  discussionId String
+  tagId        String
+  discussion   ForumDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  tag          ForumTag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([discussionId, tagId])
+  @@index([tagId, discussionId])
+}
+
+model ForumComment {
+  id           String   @id @default(cuid())
+  discussionId String
+  parentId     String?
+  authorId     String
+  body         String
+  hidden       Boolean  @default(false)
+  flagged      Boolean  @default(false)
+  flagReason   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  discussion ForumDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  parent     ForumComment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    ForumComment[]  @relation("CommentReplies")
+  author     CommunityUser   @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  votes      ForumCommentVote[]
+  reports    ForumReport[]
+
+  @@index([discussionId, createdAt])
+  @@index([parentId])
+  @@index([authorId, createdAt])
+}
+
+model ForumDiscussionVote {
+  id           Int      @id @default(autoincrement())
+  discussionId String
+  userId       String
+  direction    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  discussion ForumDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user       CommunityUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([discussionId, userId])
+  @@index([userId])
+}
+
+model ForumCommentVote {
+  id        Int      @id @default(autoincrement())
+  commentId String
+  userId    String
+  direction String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comment ForumComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    CommunityUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
+}
+
+model ForumBookmark {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  discussionId String
+  createdAt    DateTime @default(now())
+
+  user       CommunityUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussion ForumDiscussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, discussionId])
+  @@index([userId, createdAt])
+}
+
+model ForumNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  actorId   String?
+  type      String   @default("system")
+  message   String
+  link      String   @default("/forum")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user  CommunityUser  @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor CommunityUser? @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, read, createdAt])
+}
+
+model ForumNotificationPreference {
+  userId    String   @id
+  email     Boolean  @default(true)
+  inApp     Boolean  @default(true)
+  sms       Boolean  @default(false)
+  settings  Json?
+  updatedAt DateTime @updatedAt
+
+  user CommunityUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ForumReport {
+  id           String   @id @default(cuid())
+  authorId     String
+  discussionId String?
+  commentId    String?
+  reason       String
+  status       String   @default("open")
+  createdAt    DateTime @default(now())
+
+  author     CommunityUser    @relation("ReportAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  discussion ForumDiscussion? @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  comment    ForumComment?    @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([discussionId, authorId])
+  @@index([commentId, authorId])
+  @@unique([discussionId, authorId])
+  @@unique([commentId, authorId])
+}
+
+model ForumAuditLog {
+  id            String   @id @default(cuid())
+  actorId       String?
+  targetUserId  String?
+  targetContentId String?
+  contentType   String?
+  action        String
+  detail        String?
+  createdAt     DateTime @default(now())
+
+  actor      CommunityUser? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetUser CommunityUser? @relation("AuditTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([targetUserId, createdAt])
 }
 
 // ====================================================

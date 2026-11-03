@@ -192,7 +192,9 @@ describe('GlobalSearchScreen', () => {
       fireEvent.press(screen.getByTestId('result-row-forum-1'));
     });
 
-    expect(navigation.navigate).toHaveBeenCalledWith('ForumHome');
+    expect(navigation.navigate).toHaveBeenCalledWith('ForumThread', {
+      threadId: 'forum-1',
+    });
   });
 
   it('persists a submitted term to recent searches', async () => {

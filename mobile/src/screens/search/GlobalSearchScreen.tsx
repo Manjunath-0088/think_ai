@@ -71,10 +71,21 @@ export function GlobalSearchScreen({ navigation }: ScreenProps<'GlobalSearch'>) 
   const handleSelectResult = (result: SearchResult) => {
     commitSearch(query);
     if (result.type === 'forum') {
-      navigation.navigate('ForumHome');
+      navigation.navigate('ForumThread', { threadId: result.id });
       return;
     }
-    navigation.navigate('CourseDetail', { courseId: result.id });
+    if (result.type === 'lesson') {
+      navigation.navigate('VideoPlayer', {
+        courseId: result.courseId ?? result.id,
+        lessonId: result.lessonId,
+      });
+      return;
+    }
+    if (result.type === 'assessment') {
+      navigation.navigate('Assessment', { assessmentId: result.assessmentId ?? result.id });
+      return;
+    }
+    navigation.navigate('CourseDetail', { courseId: result.courseId ?? result.id });
   };
 
   const hasQuery = debouncedQuery.trim() !== '';

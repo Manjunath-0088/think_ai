@@ -4,6 +4,9 @@ const router = express.Router();
 
 const moderationController = require("../controllers/moderationController");
 const User = require("../models/User");
+const requireCommunityModerator = require('../middleware/requireCommunityModerator');
+
+router.use(requireCommunityModerator);
 
 router.get("/flagged", moderationController.flaggedQueue);
 router.get("/hidden", moderationController.hiddenContent);

@@ -40,7 +40,8 @@
     "react-native-screens": "~4.30.0",
     "react-native-view-shot": "3.8.0",
     "react-native-web": "^0.21.4",
-    "react-native-webview": "13.8.6"
+    "react-native-webview": "13.8.6",
+    "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",

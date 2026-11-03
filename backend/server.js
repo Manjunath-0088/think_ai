@@ -1,92 +1,39 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const express = require("express");
-const app = express();
+// Fail fast when production would otherwise accept tokens signed with a
+// development fallback secret.
+require('./config/jwtSecret').getJwtSecret();
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
-const { startWorker } =
-    require("./services/notificationQueueService");
-
-const initSockets =
-    require("./sockets/index");
-
-const initLiveSocket =
-    require("./src/live/liveSocket");
-
-// ============================================================
-// HTTP SERVER
-// ============================================================
-
-const httpServer = http.createServer(app);
-
-// ============================================================
-// SOCKET.IO
-// ============================================================
-
-const io = new Server(httpServer, {
-    cors: {
-        origin: "*",
-        methods: [
-            "GET",
-            "POST",
-            "PUT",
-            "PATCH",
-            "DELETE"
-        ]
-    }
-});
-
-// Make Socket.IO available to Express
-app.set("io", io);
-require("./lms").startLmsWorker(app, io);
-
-// Initialize Socket handlers
-initSockets(io);
-initLiveSocket(io);
-
-// ============================================================
-// PORT
-// ============================================================
+const http = require('http');
+const { Server } = require('socket.io');
+const app = require('./app');
+const { startWorker } = require('./services/notificationQueueService');
+const initSockets = require('./sockets/index');
+const initLiveSocket = require('./src/live/liveSocket');
+const { initForumSocket } = require('./src/websocket/forumSocket');
 
 const PORT = process.env.PORT || 5000;
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  },
+});
 
-// ============================================================
-// START SERVER
-// ============================================================
+app.set('io', io);
+require('./lms').startLmsWorker(app, io);
+initSockets(io);
+initLiveSocket(io);
+initForumSocket(io);
 
-httpServer.listen(
-    PORT,
-    process.env.HOST || "0.0.0.0",
-    () => {
-        console.log("==============================================");
-        console.log(
-            `Thinkz LMS Backend running on port ${PORT}`
-        );
-        console.log(
-            `Swagger: http://localhost:${PORT}/api-docs`
-        );
-        console.log(
-            `Health: http://localhost:${PORT}/api/health`
-        );
-        console.log(
-            "[socket] Socket.IO attached and listening"
-        );
-        console.log("==============================================");
-    }
-);
-
-// ============================================================
-// NOTIFICATION WORKER
-// ============================================================
+httpServer.listen(PORT, process.env.HOST || '0.0.0.0', () => {
+  console.log(`Thinkz LMS Backend running on port ${PORT}`);
+  console.log(`Swagger: http://localhost:${PORT}/api-docs`);
+  console.log(`Health: http://localhost:${PORT}/api/health`);
+  console.log('[socket] Socket.IO attached and listening');
+});
 
 startWorker();
-
-// ============================================================
-// EXPORT
-// ============================================================
 
 module.exports = httpServer;

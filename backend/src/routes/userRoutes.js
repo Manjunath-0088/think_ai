@@ -33,6 +33,9 @@ router.get("/search", (req, res) => {
 
 router.get("/:id/notification-preferences", (req, res) => {
     const userId = String(req.params.id || "").trim() || resolveUserId(req);
+    if (req.authenticated && userId !== resolveUserId(req) && req.user.role !== "Admin") {
+        return res.status(403).json({ success: false, message: "You can only view your own preferences" });
+    }
     res.status(200).json({
         success: true,
         data: notificationPreferencesService.getPreferences(userId),
@@ -41,6 +44,9 @@ router.get("/:id/notification-preferences", (req, res) => {
 
 router.patch("/:id/notification-preferences", (req, res) => {
     const userId = String(req.params.id || "").trim() || resolveUserId(req);
+    if (req.authenticated && userId !== resolveUserId(req) && req.user.role !== "Admin") {
+        return res.status(403).json({ success: false, message: "You can only update your own preferences" });
+    }
     res.status(200).json({
         success: true,
         data: notificationPreferencesService.savePreferences(userId, req.body),

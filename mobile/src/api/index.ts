@@ -1,23 +1,29 @@
 import type { LearningApiClient } from './client';
 import { createMockApiClient } from './mockClient';
+import { createLiveApiClient } from './liveClient';
 
 export type { LearningApiClient } from './client';
 export type { CommunityApiClient, CommunityApiMethod } from './client';
 export { createMockApiClient } from './mockClient';
 export type { MockApiClient, MockApiOptions } from './mockClient';
 export { createCommunityClient } from './communityClient';
+export { createLiveApiClient } from './liveClient';
 export { API_BASE_URL, ApiError } from './http';
 
 /**
  * The single active data source for the app.
  *
- * The OpenAPI contract is a cross-team dependency (due 11:00 AM). Until it
- * lands, the mock client backs every hook so the five pages are fully runnable
- * and testable. To go live, build the generated client against the published
- * spec and replace the assignment below — screens, components and hooks need
- * no changes because they only ever depend on `LearningApiClient`.
+ * Mobile builds use the backend client. Fixtures are enabled only for Jest or
+ * when a developer explicitly opts in with EXPO_PUBLIC_USE_MOCK_API=true.
+ * This keeps demos deterministic without shipping mock data as production data.
  */
-let activeClient: LearningApiClient = createMockApiClient();
+const useMockClient =
+  process.env.NODE_ENV === 'test' ||
+  process.env.EXPO_PUBLIC_USE_MOCK_API === 'true';
+
+let activeClient: LearningApiClient = useMockClient
+  ? createMockApiClient()
+  : createLiveApiClient();
 
 export function getApiClient(): LearningApiClient {
   return activeClient;

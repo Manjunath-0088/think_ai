@@ -28,7 +28,8 @@ const GET_ENDPOINTS = [
 
 for (const [path, key] of GET_ENDPOINTS) {
     test(`GET ${path} is mounted`, async () => {
-        const res = await request(app).get(path).set(USER);
+        const headers = path.startsWith("/api/moderation/") ? { "x-user-id": "u8" } : USER;
+        const res = await request(app).get(path).set(headers);
         assert.equal(res.status, 200, `${path} -> ${res.status} ${res.text}`);
         assert.equal(res.body.success, true);
         assert.ok(key in res.body, `expected "${key}" in response body`);

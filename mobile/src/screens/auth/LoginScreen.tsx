@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 
-import { API_BASE_URL } from '@/api/http';
+import { authenticate } from '@/api/auth';
 import { signIn } from '@/api/session';
 import { registerPushNotifications } from '@/features/notifications/pushRegistration';
 import type { ScreenProps } from '@/navigation/types';
@@ -19,9 +19,8 @@ import { useThemedStyles } from '@/theme/useThemedStyles';
 import { useTheme } from '@/theme/ThemeProvider';
 
 /**
- * Minimal sign-in for the deep-link auth gate and the E2E journey. The forum
- * and payment APIs identify the learner by `x-user-id`, so a real password is
- * verified server-side in the LMS; this screen only stores the identity.
+ * Sign-in for the deep-link auth gate and learner journey. Credentials are
+ * verified by the LMS and the returned bearer token is used for API requests.
  */
 export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
   const styles = useThemedStyles(createStyles);
@@ -41,23 +40,8 @@ export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
-        signal: controller.signal,
-      });
-      const payload = await response.json().catch(() => null) as {
-        success?: boolean;
-        token?: string;
-        user?: { id?: string | number };
-        error?: string;
-        message?: string;
-      } | null;
-      if (!response.ok || !payload?.success || !payload.token || !payload.user?.id) {
-        throw new Error(payload?.error ?? payload?.message ?? 'Sign-in failed.');
-      }
-      await signIn(String(payload.user.id), payload.token);
+      const result = await authenticate(email, password, controller.signal);
+      await signIn(String(result.user.id), result.token, result.user);
       // Permission may be declined; that must never block sign-in.
       void registerPushNotifications().catch(() => undefined);
       navigation.replace('LearnerDashboard');

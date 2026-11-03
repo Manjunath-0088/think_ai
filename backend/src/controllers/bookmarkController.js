@@ -4,7 +4,7 @@ const { resolveUserId } = require("../middleware/authMiddleware");
 const forumSocket = require("../websocket/forumSocket");
 
 function list(req, res) {
-    const userId = req.query.userId ? String(req.query.userId) : resolveUserId(req);
+    const userId = req.authenticated ? resolveUserId(req) : (req.query.userId ? String(req.query.userId) : resolveUserId(req));
     res.status(200).json({ success: true, data: Bookmark.listByUser(userId), syncedAt: new Date().toISOString() });
 }
 
@@ -24,14 +24,18 @@ function add(req, res) {
 }
 
 function remove(req, res) {
-    const removed = Bookmark.remove(req.params.userId, req.params.discussionId);
+    const userId = resolveUserId(req);
+    if (req.authenticated && String(req.params.userId) !== userId && req.user.role !== "Admin") {
+        return res.status(403).json({ success: false, message: "You can only remove your own bookmarks" });
+    }
+    const removed = Bookmark.remove(userId, req.params.discussionId);
     if (!removed) {
         return res.status(404).json({ success: false, message: "Bookmark not found" });
     }
-    forumSocket.pushBookmarkChanged({ userId: req.params.userId, discussionId: req.params.discussionId, bookmarked: false });
+    forumSocket.pushBookmarkChanged({ userId, discussionId: req.params.discussionId, bookmarked: false });
     res.status(200).json({
         success: true,
-        data: { userId: req.params.userId, discussionId: req.params.discussionId, bookmarked: false }
+        data: { userId, discussionId: req.params.discussionId, bookmarked: false }
     });
 }
 

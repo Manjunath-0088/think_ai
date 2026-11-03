@@ -13,12 +13,21 @@ export const DEFAULT_USER_ID = 'u1';
 
 const USER_ID_KEY = 'thinkz_forum_user_id';
 const AUTH_TOKEN_KEY = 'thinkz_auth_token';
+const PROFILE_KEY = 'thinkz_learner_profile';
+
+export interface SessionProfile {
+  name: string | null;
+  email: string;
+  role: string;
+  createdAt?: string | null;
+}
 
 export interface SessionState {
   userId: string;
   /** Optional bearer token for the LMS-side endpoints. `null` when signed out. */
   token: string | null;
   isSignedIn: boolean;
+  profile: SessionProfile | null;
 }
 
 type SessionListener = (session: SessionState) => void;
@@ -27,6 +36,7 @@ let session: SessionState = {
   userId: DEFAULT_USER_ID,
   token: null,
   isSignedIn: false,
+  profile: null,
 };
 
 const listeners = new Set<SessionListener>();
@@ -56,12 +66,30 @@ export function restoreSession(): Promise<SessionState> {
     restorePromise = Promise.all([
       AsyncStorage.getItem(USER_ID_KEY),
       AsyncStorage.getItem(AUTH_TOKEN_KEY),
+      AsyncStorage.getItem(PROFILE_KEY),
     ])
-      .then(([userId, token]) => {
+      .then(([userId, token, rawProfile]) => {
+        let profile: SessionProfile | null = null;
+        if (rawProfile) {
+          try {
+            const parsed = JSON.parse(rawProfile) as Partial<SessionProfile>;
+            if (typeof parsed.email === 'string' && typeof parsed.role === 'string') {
+              profile = {
+                name: typeof parsed.name === 'string' ? parsed.name : null,
+                email: parsed.email,
+                role: parsed.role,
+                createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : null,
+              };
+            }
+          } catch {
+            profile = null;
+          }
+        }
         const next: SessionState = {
           userId: userId ?? DEFAULT_USER_ID,
           token: token,
-          isSignedIn: userId !== null,
+          isSignedIn: userId !== null && token !== null,
+          profile,
         };
         session = next;
         return next;
@@ -71,7 +99,11 @@ export function restoreSession(): Promise<SessionState> {
   return restorePromise;
 }
 
-export async function signIn(userId: string, token?: string | null): Promise<SessionState> {
+export async function signIn(
+  userId: string,
+  token?: string | null,
+  profile?: SessionProfile | null
+): Promise<SessionState> {
   const trimmed = userId.trim() || DEFAULT_USER_ID;
   try {
     await AsyncStorage.setItem(USER_ID_KEY, trimmed);
@@ -80,10 +112,15 @@ export async function signIn(userId: string, token?: string | null): Promise<Ses
     } else {
       await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
     }
+    if (profile) {
+      await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    } else {
+      await AsyncStorage.removeItem(PROFILE_KEY);
+    }
   } catch {
     // Storage failures must never block sign-in — the in-memory state still publishes.
   }
-  publish({ userId: trimmed, token: token ?? null, isSignedIn: true });
+  publish({ userId: trimmed, token: token ?? null, isSignedIn: true, profile: profile ?? null });
   return session;
 }
 
@@ -91,16 +128,17 @@ export async function signOut(): Promise<SessionState> {
   try {
     await AsyncStorage.removeItem(USER_ID_KEY);
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    await AsyncStorage.removeItem(PROFILE_KEY);
   } catch {
     // Same rationale as signIn — keep going with the in-memory reset.
   }
-  publish({ userId: DEFAULT_USER_ID, token: null, isSignedIn: false });
+  publish({ userId: DEFAULT_USER_ID, token: null, isSignedIn: false, profile: null });
   return session;
 }
 
 /** Test seam: resets module state between suites. */
 export function __resetSessionForTests(): void {
-  session = { userId: DEFAULT_USER_ID, token: null, isSignedIn: false };
+  session = { userId: DEFAULT_USER_ID, token: null, isSignedIn: false, profile: null };
   restorePromise = null;
   listeners.clear();
 }

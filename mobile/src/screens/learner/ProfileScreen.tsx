@@ -26,7 +26,10 @@ export function ProfileScreen({ navigation }: ScreenProps<'Profile'>) {
   const styles = useThemedStyles(createStyles);
   const { mode, setMode } = useTheme();
   const session = useSession();
-  const profile = useMemo(() => getLearnerProfile(session.userId), [session.userId]);
+  const profile = useMemo(
+    () => getLearnerProfile(session.userId, session.profile),
+    [session.profile, session.userId]
+  );
   const { enrollments, isLoading } = useEnrollments();
   const { count: wishlistCount } = useWishlist();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -86,7 +89,7 @@ export function ProfileScreen({ navigation }: ScreenProps<'Profile'>) {
               {profile.email}
             </Text>
             <Text style={styles.meta}>
-              {profile.role} • {profile.batch}
+              {profile.role} • {enrollments[0]?.batchName ?? profile.batch}
             </Text>
           </View>
         </View>

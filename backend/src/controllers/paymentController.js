@@ -14,6 +14,10 @@ const paymentWebhookService = require("../services/payments/paymentWebhookServic
 const paymentConfirmationService = require("../services/payments/paymentConfirmationService");
 const paymentStatusStore = require("../services/payments/paymentStatusStore");
 
+function isLivePaymentMode() {
+    return process.env.NODE_ENV === "production" || process.env.COMMUNITY_STORAGE === "postgres";
+}
+
 // ---------------------------------------------------------------------------
 // Payment webhooks (Stripe / Razorpay) + confirmation retry
 // ---------------------------------------------------------------------------
@@ -27,6 +31,9 @@ function rawBodyOf(req, fallback) {
 }
 
 function handleStripeWebhook(req, res) {
+    if (isLivePaymentMode()) {
+        return res.status(503).json({ success: false, message: "Stripe webhook persistence is not configured." });
+    }
     const signature = req.headers["stripe-signature"] || req.headers["x-stripe-signature"] || "";
     const raw = rawBodyOf(req, JSON.stringify(req.body || {}));
 
@@ -41,6 +48,9 @@ function handleStripeWebhook(req, res) {
 }
 
 function handleRazorpayWebhook(req, res) {
+    if (isLivePaymentMode()) {
+        return res.status(503).json({ success: false, message: "Razorpay webhook persistence is not configured." });
+    }
     const signature = req.headers["x-razorpay-signature"] || "";
     const raw = rawBodyOf(req, JSON.stringify(req.body || {}));
 
@@ -58,6 +68,12 @@ function handleRazorpayWebhook(req, res) {
  * ultimately failed, 200 with the receipt reference when it succeeded.
  */
 async function confirmPayment(req, res) {
+    if (isLivePaymentMode()) {
+        return res.status(503).json({
+            success: false,
+            message: "Checkout is unavailable until a verified payment provider and persistent payment ledger are configured.",
+        });
+    }
     const {
         orderId,
         userId,
@@ -172,49 +188,18 @@ function generateReceipt(req, res) {
     });
 }
 
-module.exports = { validateDiscount, generateReceipt };
-const crypto = require('crypto');
-
-exports.createIntent = async (req, res, next) => {
-  try {
-    const { amount, currency } = req.body;
-    
-    if (!amount) {
-      return res.status(400).json({ success: false, error: "Amount is required" });
-    }
-
-    // Mock client secret token string generation for Stripe/Razorpay
-    const clientSecret = `pi_mock_${crypto.randomBytes(16).toString('hex')}`;
-    
-    res.status(200).json({ 
-      success: true, 
-      clientSecret, 
-      amount, 
-      currency: currency || 'USD' 
+function createIntent(_req, res) {
+    const status = isLivePaymentMode() ? 503 : 501;
+    return res.status(status).json({
+        success: false,
+        message: "A payment provider is not configured for this environment.",
     });
-  } catch (error) {
-    next(error);
-  }
-};
+}
 
-exports.handleWebhook = async (req, res, next) => {
-  try {
-    const event = req.body;
-
-    // Clean decoupled cross-module check logic execution
-    if (event.type === 'payment.succeeded') {
-      const paymentData = event.data.object;
-      console.log(`💳 Decoupled Event Triggered: Payment verified cleanly for User ${paymentData.userId}`);
-    }
-
-    res.status(200).json({ received: true });
-  } catch (error) {
-    next(error);
-  }
-};
 module.exports = {
     validateDiscount,
     generateReceipt,
+    createIntent,
     getPaymentStatus,
     handleStripeWebhook,
     handleRazorpayWebhook,

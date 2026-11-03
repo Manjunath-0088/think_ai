@@ -11,7 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { ErrorBoundary } from '@/components/common';
-import { getSession } from '@/api/session';
+import { getSession, restoreSession } from '@/api/session';
 import { isOnboardingCompleted } from '@/features/onboarding/utils/onboardingStorage';
 import { ApiClientProvider } from '@/hooks/useApiClient';
 import type { RootStackParamList } from '@/navigation/types';
@@ -509,8 +509,8 @@ export function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    isOnboardingCompleted()
-      .then((completed) => {
+    Promise.all([isOnboardingCompleted(), restoreSession()])
+      .then(([completed]) => {
         setShowOnboarding(!completed);
       })
       .catch(() => {
@@ -545,7 +545,7 @@ export function App() {
       <SafeAreaProvider>
         <ApiClientProvider>
           <ErrorBoundary context="root">
-            <StatusBar style="light" />
+            <ThemedStatusBar />
             <RootNavigator />
           </ErrorBoundary>
         </ApiClientProvider>

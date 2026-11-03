@@ -34,6 +34,13 @@ function markRead(id) {
     return notification;
 }
 
+function markReadByUser(id, userId) {
+    const notification = db.notifications.find((n) => n.id === id && n.userId === userId);
+    if (!notification) return null;
+    notification.read = true;
+    return notification;
+}
+
 function markAllRead(userId) {
     const notifications = db.notifications.filter((n) => n.userId === userId);
     notifications.forEach((n) => {
@@ -94,4 +101,4 @@ function saveEventPrefs(userId, event, prefs) {
     return { ...db.notificationEventPrefs[userId][event] };
 }
 
-module.exports = { serialize, listByUser, create, markRead, markAllRead, getPrefs, savePrefs, getEventPrefs, saveEventPrefs };
+module.exports = { serialize, listByUser, create, markRead, markReadByUser, markAllRead, getPrefs, savePrefs, getEventPrefs, saveEventPrefs };

@@ -1,4 +1,5 @@
 import { DEFAULT_USER_ID } from '@/api/session';
+import type { SessionProfile } from '@/api/session';
 
 /**
  * Learner identity shown on the Profile tab.
@@ -32,8 +33,26 @@ function initialsFor(name: string): string {
   return `${first}${second ?? ''}`.toUpperCase();
 }
 
-export function getLearnerProfile(userId: string): LearnerProfile {
+export function getLearnerProfile(userId: string, account?: SessionProfile | null): LearnerProfile {
   const id = userId.trim() || DEFAULT_USER_ID;
+
+  if (account) {
+    const name = account.name?.trim() || account.email.split('@')[0] || 'Thinkz Learner';
+    const joined = account.createdAt ? new Date(account.createdAt) : null;
+    const joinedAt = joined && !Number.isNaN(joined.getTime())
+      ? joined.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+      : '—';
+    return {
+      id,
+      name,
+      email: account.email,
+      role: account.role,
+      batch: '—',
+      joinedAt,
+      location: '—',
+      initials: initialsFor(name),
+    };
+  }
 
   if (id === DEFAULT_USER_ID || !id.includes('@')) {
     const name = 'Manjunath Rao';

@@ -23,7 +23,8 @@
     "baseline:day7": "node lms/scripts/baseline-local.js",
     "e2e:day7": "node lms/scripts/day7-e2e.js",
     "sample:certificate": "node lms/scripts/sample-certificate.js",
-    "test:routes": "node --test --test-concurrency=1 liveStudioRoutes.test.js forumRoutes.test.js"
+    "test:routes": "node --test --test-concurrency=1 liveStudioRoutes.test.js forumRoutes.test.js",
+    "seed:community": "node scripts/importCommunitySeed.js"
   },
   "keywords": [],
   "author": "",

@@ -1,17 +1,22 @@
 import { getSession, restoreSession } from './session';
+import { Platform } from 'react-native';
 
 /**
  * Minimal `fetch` transport for Pages 6–10.
  *
  * Contract (confirmed against `think_ai/backend`):
- *   - Base URL: `EXPO_PUBLIC_API_URL` (default `http://localhost:5000/api`).
- *   - Auth: `x-user-id` header identifies the caller; an `Authorization`
- *     bearer token is attached whenever a session carries one.
+ *   - Base URL: `EXPO_PUBLIC_API_URL` (Android emulator defaults to
+ *     `http://10.0.2.2:5000/api`; other targets use localhost).
+ *   - Auth: a bearer token proves identity; `x-user-id` is retained only for
+ *     local fixture compatibility and is ignored by authenticated routes.
  *   - Envelope: success `{ success: true, data, ...extras }`,
  *     failure `{ success: false, message, ...extras }` with 4xx/5xx.
  */
 export const API_BASE_URL: string =
-  process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:5000/api';
+  process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ??
+  (Platform.OS === 'android'
+    ? 'http://10.0.2.2:5000/api'
+    : 'http://localhost:5000/api');
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -32,6 +37,7 @@ export interface RequestOptions {
   method?: HttpMethod;
   body?: unknown;
   query?: Record<string, QueryValue>;
+  signal?: AbortSignal;
 }
 
 /** HTTP + payload error carrying the raw body so callers can branch on `status`. */
@@ -89,8 +95,12 @@ export async function apiRequest<T>(
       method,
       headers: await buildHeaders(hasBody),
       body: hasBody ? JSON.stringify(body) : undefined,
+      signal: options.signal,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw error;
+    }
     throw new ApiError('Network error — is the backend running?', 0, null);
   }
 
@@ -103,7 +113,8 @@ export async function apiRequest<T>(
 
   if (!response.ok || payload?.success === false) {
     const message =
-      payload?.message ?? `Request failed (${response.status})`;
+      payload?.message ??
+      (typeof payload?.error === 'string' ? payload.error : `Request failed (${response.status})`);
     throw new ApiError(message, response.status, payload);
   }
 

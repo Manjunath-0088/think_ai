@@ -3,7 +3,9 @@ require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient({
-    log: ["query", "info", "warn", "error"],
+    log: process.env.PRISMA_LOG_QUERIES === "true"
+        ? ["query", "info", "warn", "error"]
+        : ["warn", "error"],
 });
 
 async function connectDB() {

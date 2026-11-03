@@ -10,6 +10,13 @@
  * without touching any other module's routes.
  */
 
+const usePostgresCommunity =
+    process.env.NODE_ENV === "production" ||
+    process.env.COMMUNITY_STORAGE === "postgres";
+
+if (usePostgresCommunity) {
+    module.exports = require("./postgresCommunityRoutes");
+} else {
 const express = require("express");
 
 const router = express.Router();
@@ -41,3 +48,4 @@ router.use((req, res) => {
 router.use(forumErrorHandler);
 
 module.exports = router;
+}
