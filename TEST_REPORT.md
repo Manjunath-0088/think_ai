@@ -9,11 +9,22 @@ Date: 2026-11-03
 - Mobile Jest: 72 suites, 670 tests passed, including responsive 375px/390px
   layouts, accessibility labels/touch targets, themes, navigation, progress,
   wishlist, search, and playback/resume coverage.
-- Backend unit/integration suite: 62 passed, 0 failed, 1 skipped. The skipped
+- Backend unit/integration suite (rerun after the LMS schema fix): 62 passed,
+  0 failed, 1 skipped. The skipped
   authentication E2E requires `E2E_BASE_URL` and a separately running backend.
-- LMS suite: `npm run test:patan` passed all 166 tests.
-- Backend forum/live-studio route suite: 15 passed, 0 failed.
-- Backend build/syntax checks and `npx prisma validate` passed.
+- LMS suite (rerun after the schema fix): all 166 tests passed.
+- Backend forum/live-studio route suite (rerun after the schema fix): 15 passed,
+  0 failed.
+- Backend lint and `npx prisma validate` passed after the schema fix.
+- The LMS assessment worker reported `Unknown argument gradingLeaseAt` because
+  the generated Prisma Client and configured PostgreSQL database were behind the
+  checked-in schema. Regenerated Prisma Client and applied the additive LMS SQL
+  migration with `prisma db execute`; applying it a second time also succeeded.
+- A fresh backend smoke run on port 5001 connected to PostgreSQL and kept the
+  LMS queue worker running without Prisma errors.
+- Prisma schema diff after migration reports only the legacy `User.status`
+  column as extra in the database. It was preserved to avoid deleting existing
+  data.
 - PostgreSQL database records both community migrations as applied:
   `20261103090000_community_relations` and `20261103100000_seed_vote_counts`.
 - Android Expo export passed: `npx expo export --platform android
@@ -27,10 +38,14 @@ Date: 2026-11-03
   were not performed.
 - `npx prisma migrate status` is blocked by `P3019`: the checked-in
   `migration_lock.toml` says `sqlite` while `schema.prisma` says `postgresql`.
-  The community migration records are present in the configured database, but
-  the mixed historical migrations need a safe baseline/provider reconciliation
-  before `migrate deploy` can be used for a new database. No migration history
-  was rewritten or database migration applied during this run.
+  The community migration records are present in the configured database; the
+  LMS additive SQL was applied manually and is not registered in
+  `_prisma_migrations`. The mixed historical migrations need a safe
+  baseline/provider reconciliation before `migrate deploy` can be used for a
+  new database. No migration history was rewritten.
+- If an older backend process is already running, restart it once after client
+  generation so it loads the updated Prisma Client. The existing process on
+  port 5000 was left untouched; verification used a fresh process on port 5001.
 - Production checkout requires a real Stripe/Razorpay provider, webhook
   verification, and durable provider-backed payment ledger. Those credentials
   and services are not configured, so payment creation/confirmation intentionally
