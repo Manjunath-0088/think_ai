@@ -7,9 +7,15 @@ Date: 2026-11-03
 - Mobile TypeScript: `npm run typecheck` passed with 0 errors after Expo SDK
   compatibility updates.
 - Mobile lint: `npm run lint` passed with 0 errors and 55 warnings.
-- Mobile Jest: 72 suites, 670 tests passed after the compatibility updates,
-  including responsive 375px/390px layouts, accessibility labels/touch targets,
-  themes, navigation, progress, wishlist, search, and playback/resume coverage.
+- Mobile Jest: 73 suites, 675 tests passed, including API host selection,
+  responsive 375px/390px layouts, accessibility labels/touch targets, themes,
+  navigation, progress, wishlist, search, and playback/resume coverage. The
+  Jest timeout is 15 seconds to accommodate slower async-storage UI tests.
+- Mobile API host selection uses Expo Go's LAN host on physical Android/iOS,
+  preserves the emulator fallback, and honors `EXPO_PUBLIC_API_URL` first.
+- Backend health returned HTTP 200 through both localhost and the development
+  machine LAN address (`10.184.219.53:5000`). Physical-phone reachability still
+  depends on the phone sharing Wi-Fi and the host firewall allowing port 5000.
 - `npx expo install --fix` now completes. Dynamic app config retains the existing
   notifications/download plugins and includes the datetime picker and sharing
   config plugins. Expo used its local compatibility map because network access

@@ -19,10 +19,11 @@ progress, resume links, app-wide light/dark themes, and the community forum.
    against a new database. See [TEST_REPORT.md](TEST_REPORT.md).
 4. Community REST routes use PostgreSQL automatically in production. Set
    `COMMUNITY_STORAGE=postgres` to exercise that live path during development.
-5. Start the app from `mobile/` with `npm start`. The Android emulator uses
-   `http://10.0.2.2:5000/api`; for a physical device, set
-   `EXPO_PUBLIC_API_URL` to the development machine's reachable API URL.
-   Production Android releases must use HTTPS.
+5. Start the app from `mobile/` with `npm start`. Android emulators use
+   `http://10.0.2.2:5000/api`; Expo Go on a physical device uses the LAN host
+   serving Metro. Keep the phone and development machine on the same Wi-Fi and
+   allow inbound backend traffic on port 5000. Set `EXPO_PUBLIC_API_URL` for a
+   custom API host; production Android releases must use HTTPS.
 
 `npm run seed:community` imports only the client-provided category, thread,
 reply, tag, bookmark, and notification preference seed data. It is idempotent
