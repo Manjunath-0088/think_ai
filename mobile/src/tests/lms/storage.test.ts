@@ -25,8 +25,8 @@ const draft: Draft = {
   savedAt: "2026-10-22T00:00:00Z",
 };
 test("draft survives reopening and is isolated between accounts", async () => {
-  await saveDraft("patan", 1, draft);
-  expect(await loadDraft("patan", 1)).toEqual(draft);
+  await saveDraft("learner", 1, draft);
+  expect(await loadDraft("learner", 1)).toEqual(draft);
   expect(await loadDraft("other", 1)).toBeNull();
 });
 test.each([
@@ -34,13 +34,13 @@ test.each([
   JSON.stringify({ attemptId: "x", answers: [] }),
   JSON.stringify({ ...draft, answers: { 1: { questionId: "invalid" } } }),
 ])("invalid draft is removed without crashing: %s", async (raw) => {
-  await AsyncStorage.setItem(draftKey("patan", 1), raw);
-  expect(await loadDraft("patan", 1)).toBeNull();
-  expect(await AsyncStorage.getItem(draftKey("patan", 1))).toBeNull();
+  await AsyncStorage.setItem(draftKey("learner", 1), raw);
+  expect(await loadDraft("learner", 1)).toBeNull();
+  expect(await AsyncStorage.getItem(draftKey("learner", 1))).toBeNull();
 });
 test("submission clearing runs after an in-flight draft save", async () => {
-  await Promise.all([saveDraft("patan", 1, draft), clearDraft("patan", 1)]);
-  expect(await loadDraft("patan", 1)).toBeNull();
+  await Promise.all([saveDraft("learner", 1, draft), clearDraft("learner", 1)]);
+  expect(await loadDraft("learner", 1)).toBeNull();
 });
 test("history keeps newest 50 entries, restores code and clears", async () => {
   for (let i = 0; i < 55; i++) {
@@ -51,21 +51,21 @@ test("history keeps newest 50 entries, restores code and clears", async () => {
       output: String(i),
       timestamp: new Date().toISOString(),
     };
-    await appendHistory("patan", entry);
+    await appendHistory("learner", entry);
   }
-  const rows = await loadHistory("patan");
+  const rows = await loadHistory("learner");
   expect(rows).toHaveLength(50);
   expect(rows[0]?.code).toBe("print(54)");
   expect(rows[49]?.id).toBe("5");
-  await clearHistory("patan");
-  expect(await loadHistory("patan")).toEqual([]);
+  await clearHistory("learner");
+  expect(await loadHistory("learner")).toEqual([]);
 });
 
 test("history preserves stdin/expected output and still reads older entries without those fields", async () => {
   const old: HistoryEntry = { id: "old", language: "python", code: "print(1)", output: "1", timestamp: new Date().toISOString() };
-  await appendHistory("patan", old);
-  await appendHistory("patan", { ...old, id: "new", input: "5\n", expectedOutput: "10\n" });
-  const rows = await loadHistory("patan");
+  await appendHistory("learner", old);
+  await appendHistory("learner", { ...old, id: "new", input: "5\n", expectedOutput: "10\n" });
+  const rows = await loadHistory("learner");
   expect(rows[0]).toMatchObject({ input: "5\n", expectedOutput: "10\n" });
   expect(rows[1]).toEqual(old);
   expect(await loadHistory("other")).toEqual([]);
@@ -73,7 +73,7 @@ test("history preserves stdin/expected output and still reads older entries with
 
 test("clearing history waits for an in-flight append and cannot resurrect cleared entries", async () => {
   const entry: HistoryEntry = { id: "old", language: "python", code: "print(1)", output: "1", timestamp: new Date().toISOString() };
-  await appendHistory("patan", entry);
+  await appendHistory("learner", entry);
   const write = (AsyncStorage.setItem as jest.Mock).getMockImplementation()!;
   let entered!: () => void;
   let release!: () => void;
@@ -84,12 +84,12 @@ test("clearing history waits for an in-flight append and cannot resurrect cleare
     await gate;
     return write(...args);
   });
-  const appending = appendHistory("patan", { ...entry, id: "new" });
+  const appending = appendHistory("learner", { ...entry, id: "new" });
   await started;
-  const clearing = clearHistory("patan");
+  const clearing = clearHistory("learner");
   release();
   await Promise.all([appending, clearing]);
-  expect(await loadHistory("patan")).toEqual([]);
+  expect(await loadHistory("learner")).toEqual([]);
 });
 test("progress coalesces offline updates and does not erase a newer update during sync", async () => {
   const first = {
@@ -99,22 +99,22 @@ test("progress coalesces offline updates and does not erase a newer update durin
     updatedAt: "2026-10-22T00:00:00Z",
     baseVersion: null,
   };
-  await enqueueProgress("patan", first);
+  await enqueueProgress("learner", first);
   const second = {
     ...first,
     watchedSeconds: 50,
     updatedAt: "2026-10-22T00:01:00Z",
   };
-  await enqueueProgress("patan", second);
-  await acknowledgeProgress("patan", [first]);
-  expect(await loadQueue("patan")).toEqual([second]);
-  await acknowledgeProgress("patan", [second]);
-  expect(await loadQueue("patan")).toEqual([]);
+  await enqueueProgress("learner", second);
+  await acknowledgeProgress("learner", [first]);
+  expect(await loadQueue("learner")).toEqual([second]);
+  await acknowledgeProgress("learner", [second]);
+  expect(await loadQueue("learner")).toEqual([]);
 });
 test("concurrent updates to different lessons are not lost", async () => {
   await Promise.all(
     [1, 2, 3].map((lessonId) =>
-      enqueueProgress("patan", {
+      enqueueProgress("learner", {
         lessonId,
         enrollmentId: 1,
         watchedSeconds: 10,
@@ -123,11 +123,11 @@ test("concurrent updates to different lessons are not lost", async () => {
       }),
     ),
   );
-  expect(await loadQueue("patan")).toHaveLength(3);
+  expect(await loadQueue("learner")).toHaveLength(3);
 });
 test("queue corruption is removed and source code cannot escape the editor document", async () => {
-  await AsyncStorage.setItem(storageKey("patan", "progress"), "bad json");
-  expect(await loadQueue("patan")).toEqual([]);
+  await AsyncStorage.setItem(storageKey("learner", "progress"), "bad json");
+  expect(await loadQueue("learner")).toEqual([]);
   const html = editorHtml("</script><script>alert(1)</script>", "javascript");
   expect(html).not.toContain("</script><script>alert(1)");
 });
@@ -135,16 +135,16 @@ test("queue corruption is removed and source code cannot escape the editor docum
 test("progress with the same millisecond timestamp is not mistaken for the sent snapshot", async () => {
   const first = { lessonId: 1, enrollmentId: 2, watchedSeconds: 15,
     updatedAt: "2026-10-22T00:00:00Z", baseVersion: null };
-  await enqueueProgress("patan", first);
-  await enqueueProgress("patan", { ...first, watchedSeconds: 30 });
-  await acknowledgeProgress("patan", [first]);
-  expect((await loadQueue("patan"))[0]?.watchedSeconds).toBe(30);
+  await enqueueProgress("learner", first);
+  await enqueueProgress("learner", { ...first, watchedSeconds: 30 });
+  await acknowledgeProgress("learner", [first]);
+  expect((await loadQueue("learner"))[0]?.watchedSeconds).toBe(30);
 });
 
 test("coalescing preserves a null original base version", async () => {
   const first = { lessonId: 1, enrollmentId: 2, watchedSeconds: 15,
     updatedAt: "2026-10-22T00:00:00Z", baseVersion: null };
-  await enqueueProgress("patan", first);
-  await enqueueProgress("patan", { ...first, watchedSeconds: 30, baseVersion: "2026-10-22T00:01:00Z" });
-  expect((await loadQueue("patan"))[0]?.baseVersion).toBeNull();
+  await enqueueProgress("learner", first);
+  await enqueueProgress("learner", { ...first, watchedSeconds: 30, baseVersion: "2026-10-22T00:01:00Z" });
+  expect((await loadQueue("learner"))[0]?.baseVersion).toBeNull();
 });

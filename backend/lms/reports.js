@@ -149,6 +149,10 @@ function analyticsPdf(
       const pages = doc.bufferedPageRange();
       for (let n = 0; n < pages.count; n++) {
         doc.switchToPage(n);
+        // A footer is intentionally below the body margin. Without temporarily
+        // clearing it, PDFKit creates another page while writing the page number.
+        const bottomMargin = doc.page.margins.bottom;
+        doc.page.margins.bottom = 0;
         doc
           .fontSize(8)
           .fillColor("#777777")
@@ -157,6 +161,7 @@ function analyticsPdf(
             align: "right",
             lineBreak: false,
           });
+        doc.page.margins.bottom = bottomMargin;
       }
       doc.end();
     } catch (error) {

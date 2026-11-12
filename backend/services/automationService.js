@@ -47,7 +47,7 @@ const processLessonCompletion = async (enrollmentId) => {
     /*
      * 2. Course completion requirement
      */
-    if (completionPercentage < 80) {
+    if (!Number.isFinite(completionPercentage) || totalLessons <= 0 || completionPercentage < 80) {
 
         return {
             triggered: false,
@@ -74,7 +74,10 @@ const processLessonCompletion = async (enrollmentId) => {
     /*
      * 4. Assessment requirement not satisfied
      */
-    if (!assessmentStatus.allPassed) {
+    if (assessmentStatus.allPassed !== true ||
+        !Number.isInteger(assessmentStatus.totalAssessments) ||
+        assessmentStatus.totalAssessments <= 0 ||
+        assessmentStatus.passedAssessments !== assessmentStatus.totalAssessments) {
 
         return {
             triggered: false,

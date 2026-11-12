@@ -2,6 +2,7 @@ import { useLearnerProfile } from "@/hooks/useLearnerProfile";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { AppButton } from "@/components/common/AppButton";
+import { signOut } from "@/api/session";
 import type { ScreenProps } from "@/navigation/types";
 import { lmsApi } from "../api";
 import { Card, Field, LoadState, Message, Screen, useLmsStyles } from "../ui";
@@ -52,7 +53,7 @@ export function LearnerProfileScreen({
               {profile.stats.certificatesEarned} certificates earned
             </Text>
             <Text style={styles.text}>
-              {profile.stats.totalHours} total hours
+              {profile.stats.totalHours == null ? 'Study hours unavailable' : `${profile.stats.totalHours} total hours`}
             </Text>
           </Card>
           <Text style={styles.heading}>Certificates</Text>
@@ -72,6 +73,7 @@ export function LearnerProfileScreen({
             <Message text="Your earned certificates will appear here." />
           )}
           <Text style={styles.heading}>Recent activity</Text>
+          {profile.activityAvailable === false ? <Message text="Recent activity is unavailable." /> : null}
           {profile.activity.map((item, i) => (
             <Card key={`${item.at}-${i}`}>
               <Text style={styles.text}>{item.text}</Text>
@@ -82,6 +84,7 @@ export function LearnerProfileScreen({
           ))}
         </>
       ) : null}
+      <AppButton title="Sign out" variant="secondary" onPress={() => void signOut()} />
     </Screen>
   );
 }

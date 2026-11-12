@@ -119,7 +119,7 @@ export function ThreadList({
           {hasError ? null : isLoading || isRefreshing ? <InlineSpinner testID={`${testID}-loading`} /> : null}
           {!isLoading && !isRefreshing && !hasMore && threads.length > 0 ? <Text style={styles.endOfList} testID={`${testID}-end`}>
               You have reached the end
-            </Text> : null}
+            </Text> : undefined}
         </View>} maxToRenderPerBatch={8} onEndReached={onEndReached} onEndReachedThreshold={onEndReachedThreshold} onRefresh={onRefresh} onViewableItemsChanged={onViewableItemsChanged} refreshing={isRefreshing} removeClippedSubviews renderItem={({
     item
   }) => <MemoisedThreadListRow category={categoryById.get(item.categoryId)} onSelect={onSelectThread} testID={testID} thread={item} />} testID={testID} windowSize={7} />;

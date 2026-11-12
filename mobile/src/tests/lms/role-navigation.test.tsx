@@ -30,7 +30,7 @@ beforeEach(() => {
     ready: true,
     account: {
       id: 4,
-      name: "Patan",
+      name: "Learner",
       email: "learner@example.test",
       role: "Learner",
     },

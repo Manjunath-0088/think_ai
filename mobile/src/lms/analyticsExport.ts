@@ -3,12 +3,14 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { API_BASE_URL } from "@/api/http";
 import { getSession, restoreSession } from "@/api/session";
+import { HANDOVER_READ_API } from './deployment';
 
 export async function exportAnalytics(
   format: "csv" | "pdf",
   range: { from: string; to: string },
   bucket: string,
 ) {
+  if (HANDOVER_READ_API) throw new Error('The deployed API does not publish branded CSV/PDF exports. Ask the reporting administrator to enable the approved export endpoint.');
   await restoreSession();
   const token = getSession().token;
   if (!token) throw new Error("Sign in to export analytics.");

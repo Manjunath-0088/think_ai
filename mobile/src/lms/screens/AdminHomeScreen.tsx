@@ -96,6 +96,7 @@ export function AccountScreen() {
         />
         {message ? <Message text={message} /> : null}
       </Card>
+      <AppButton title="Sign out" variant="secondary" onPress={() => void signOut()} />
     </Screen>
   );
 }

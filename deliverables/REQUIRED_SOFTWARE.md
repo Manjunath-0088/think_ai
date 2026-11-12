@@ -20,7 +20,7 @@ Local iOS builds require a compatible macOS/Xcode/CocoaPods environment. Native 
 
 The prepared local QEMU/Ubuntu VM contains Docker and Judge0. Its private disk/configuration stay outside the repository and OneDrive; the ignored backend/.local/judge0-runtime.json points to it. On another machine, prepare an approved Judge0 service/runtime and configure its URL/auth/language IDs. Installing editor extensions does not provide this service.
 
-Real certificate upload/email additionally requires approved S3/IAM/CORS, SendGrid sender/key, staging learner/DB and client branding. See PATAN_ITEMS_1_2_STATUS.md.
+Real certificate upload/email additionally requires approved S3/IAM/CORS, SendGrid sender/key, staging learner/DB and client branding. See ITEMS_1_2_STATUS.md.
 
 ## Optional VS Code extensions
 

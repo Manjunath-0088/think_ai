@@ -8,6 +8,7 @@ import { useThemedStyles } from "@/theme/useThemedStyles";
 import { exportAnalytics } from "../analyticsExport";
 import { DateField } from "../DateField";
 import { lmsApi } from "../api";
+import { HANDOVER_READ_API } from '../deployment';
 import { useLms } from "../LmsProvider";
 import type { Analytics, AnalyticsBucket, ReportStatus } from "../types";
 import { useLmsResource } from "../useLmsResource";
@@ -306,18 +307,18 @@ export function AnalyticsScreen() {
         {
           label: "Completion rate",
           value: `${data.kpis.completionRate.toFixed(1)}%`,
-          detail: "Eligible completions in this cohort",
+          detail: HANDOVER_READ_API ? 'Server course-completion counts' : "Eligible completions in this cohort",
           color: palette.success,
         },
         {
           label: "Average score",
-          value: `${data.kpis.averageScore.toFixed(1)}%`,
-          detail: "Graded attempts, including retakes",
+          value: data.kpis.averageScore == null ? 'Unavailable' : `${data.kpis.averageScore.toFixed(1)}%`,
+          detail: HANDOVER_READ_API ? 'Server assessment average percentage' : "Graded attempts, including retakes",
           color: palette.accent,
         },
         {
           label: "Active users",
-          value: String(data.kpis.activeUsers),
+          value: data.kpis.activeUsers == null ? 'Unavailable' : String(data.kpis.activeUsers),
           detail: "Learners with progress in this period",
           color: palette.warning,
         },
@@ -483,7 +484,7 @@ export function AnalyticsScreen() {
           <Message text="Checking report delivery status…" />
         ) : delivery.error ? (
           <>
-            <Message error text="Report delivery status could not be loaded." />
+            <Message error text={HANDOVER_READ_API ? delivery.error : 'Report delivery status could not be loaded.'} />
             <AppButton
               title="Retry delivery status"
               variant="secondary"

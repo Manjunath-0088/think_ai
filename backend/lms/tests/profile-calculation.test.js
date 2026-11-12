@@ -6,8 +6,8 @@ test("profile reconciles completed courses, certificates, hours and the ten newe
     enrollmentId: 1, completed: true, watchedSeconds: 300,
     updatedAt: new Date(Date.UTC(2026, 9, index + 1)) }));
   const certs = [{ id: 1, courseName: "Course", issuedAt: new Date("2026-10-20T00:00:00Z") }];
-  const attempts = [{ assessmentId: 7, status: "GRADED", submittedAt: new Date("2026-10-19T00:00:00Z") }];
-  const course = { completionThreshold: 80, modules: [{ lessons: progress.map(row => ({ id: row.lessonId })), assessments: [] }] };
+  const attempts = [{ assessmentId: 7, status: "GRADED", percentage:100, submittedAt: new Date("2026-10-19T00:00:00Z") }];
+  const course = { completionThreshold: 80, modules: [{ lessons: progress.map(row => ({ id: row.lessonId })), assessments: [{id:7,status:"ACTIVE",passPercentage:60}] }] };
   const db = {
     enrollment: { findMany: async () => [{ id: 1, batch: { course } }] },
     lessonProgress: { findMany: async () => progress },

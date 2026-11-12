@@ -1,0 +1,6 @@
+const test=require('node:test');const assert=require('node:assert/strict');
+const config=require('../app.config.js');
+function check(profile,url){const before={...process.env};try{delete process.env.LMS_AWS_REVIEW;process.env.EAS_BUILD_PROFILE=profile;if(url===undefined)delete process.env.EXPO_PUBLIC_API_URL;else process.env.EXPO_PUBLIC_API_URL=url;return config();}finally{for(const k of Object.keys(process.env))if(!(k in before))delete process.env[k];Object.assign(process.env,before);}}
+for(const url of [undefined,'http://example.invalid/api','https://localhost/api','https://10.0.2.2/api','https://example.invalid','https://user:password@example.invalid/api','https://example.invalid/api?key=secret'])test('production rejects '+String(url),()=>assert.throws(()=>check('production',url)));
+test('release keeps app identity and plugins and disables cleartext',()=>{const c=check('production','https://40.192.27.248/api');assert.equal(c.android.package,'com.thinkzai.mobile');assert.equal(c.android.usesCleartextTraffic,false);assert.ok(c.plugins.includes('expo-secure-store'));});
+test('explicit usb development remains supported',()=>assert.ok(check('usb-preview','http://localhost:5000/api').android));

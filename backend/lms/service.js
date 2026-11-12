@@ -163,19 +163,13 @@ function createService({
               const previous = await tx.lessonProgress.findUnique({
                 where: { enrollmentId_lessonId: key },
               });
-              // A version mismatch always returns the canonical server state, regardless of device clock.
+              // Merge monotonically under the serializable transaction. Device clocks
+              // cannot regress progress or exceed the staff-configured duration.
               const matches = previous
                 ? update.baseVersion === previous.updatedAt.toISOString()
                 : update.baseVersion === null;
-              if (!matches)
-                return {
-                  lessonId: update.lessonId,
-                  enrollmentId: update.enrollmentId,
-                  conflict: true,
-                  progress: previous,
-                };
               const watchedSeconds = Math.min(
-                update.watchedSeconds,
+                Math.max(update.watchedSeconds, previous?.watchedSeconds || 0),
                 lesson.durationSeconds,
               );
               const watchPercentage =
@@ -199,6 +193,7 @@ function createService({
                 lessonId: update.lessonId,
                 enrollmentId: update.enrollmentId,
                 conflict: false,
+                merged: !matches,
                 progress,
               };
             },

@@ -1,7 +1,8 @@
 import { View } from "react-native";
 import { WebView } from "react-native-webview";
 import { pdfPreviewHtml } from "./pdfPreviewHtml";
-export function PdfPreview({ url }: { url: string }) {
+import { isCertificatePng } from './certificatePng';
+export function PdfPreview({ url, onPng }: { url: string; onPng?: (uri: string) => void }) {
   return (
     <View style={{ height: 260 }}>
       <WebView<{}>

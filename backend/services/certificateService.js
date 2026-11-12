@@ -83,7 +83,7 @@ const generateCertificate = async (enrollmentId) => {
     /*
      * 3. Check course completion requirement
      */
-    if (completionPercentage < 80) {
+    if (!Number.isFinite(completionPercentage) || totalLessons <= 0 || completionPercentage < 80) {
 
         throw new Error(
             `Certificate not available. Course completion is ${completionPercentage}%. Minimum required is 80%.`
@@ -99,7 +99,10 @@ const generateCertificate = async (enrollmentId) => {
             id
         );
 
-    if (!assessmentStatus.allPassed) {
+    if (assessmentStatus.allPassed !== true ||
+        !Number.isInteger(assessmentStatus.totalAssessments) ||
+        assessmentStatus.totalAssessments <= 0 ||
+        assessmentStatus.passedAssessments !== assessmentStatus.totalAssessments) {
 
         throw new Error(
             `Certificate not available. ${assessmentStatus.passedAssessments} of ${assessmentStatus.totalAssessments} required assessments have been passed.`

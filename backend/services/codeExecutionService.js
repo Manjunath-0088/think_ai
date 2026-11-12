@@ -1112,6 +1112,10 @@ const submitCode = async ({
     }
 
 
+    await assessmentService.prepareCodingSubmission({
+        submissionId: parsedSubmissionId, questionId: parsedQuestionId, code, language,
+    });
+
     const executions = [];
 
 
@@ -1436,6 +1440,7 @@ const submitCode = async ({
                 parsedQuestionId,
 
             verdict,
+            status: updatedSubmission.status,
 
             score:
                 Number(

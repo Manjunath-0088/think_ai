@@ -18,7 +18,7 @@ Resource source: docker stats via SSH in local Judge0 VM. CPU peak: 177.17%. Mem
 
 Validated 20 concurrent requests in this run only. Run increasing levels on the approved sandbox and compare p95 and resource saturation before setting a production threshold.
 
-For the approved live service, set LMS_STRESS_TOKEN and LMS_STRESS_URL locally and run npm run stress:patan -- --edge-cases. Run Docker metrics collection on the Judge0 host using LMS_JUDGE0_CONTAINER. For the stopped-service check, an operator must first stop the approved non-production Judge0 instance, then run with --expect-unavailable. This runner never stops a shared container automatically.
+For the approved live service, set LMS_STRESS_TOKEN and LMS_STRESS_URL locally and run npm run stress:lms -- --edge-cases. Run Docker metrics collection on the Judge0 host using LMS_JUDGE0_CONTAINER. For the stopped-service check, an operator must first stop the approved non-production Judge0 instance, then run with --expect-unavailable. This runner never stops a shared container automatically.
 
 For capacity comparison, increase LMS_STRESS_CONCURRENCY across separate runs and preserve each JSON result. Respect the API's 60-request/minute limit or use the team's reviewed benchmark configuration. A single 20-request run does not establish maximum safe capacity.
 

@@ -1,8 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Draft, HistoryEntry, Progress, ProgressUpdate } from "./types";
+import { DEPLOYMENT_API, HANDOVER_READ_API } from './deployment';
 // All learner data is scoped to the actual authenticated account, including on shared devices.
 export const storageKey = (userId: string, kind: string) =>
-  `thinkz:lms:v1:${encodeURIComponent(userId)}:${kind}`;
+  `${HANDOVER_READ_API ? `thinkz:lms:handover:${encodeURIComponent(DEPLOYMENT_API)}` : 'thinkz:lms:v1'}:${encodeURIComponent(userId)}:${kind}`;
 const locks = new Map<string, Promise<unknown>>();
 export async function read<T>(
   key: string,
@@ -141,8 +142,13 @@ export const acknowledgeProgress = (
         (r) => r.enrollmentId === row.enrollmentId && r.lessonId === row.lessonId,
       );
       if (results && !result) return [row];
-      // A genuine server conflict keeps the canonical server progress.
-      if (result?.conflict) return [];
+      // Older servers may return a conflict instead of merging. Retain newer
+      // valid device progress and retry against the returned server version.
+      if (result?.conflict) {
+        return row.watchedSeconds > (result.progress?.watchedSeconds ?? 0)
+          ? [{ ...row, baseVersion: result.progress?.updatedAt ?? null }]
+          : [];
+      }
       const unchanged = previous.updatedAt === row.updatedAt &&
         previous.watchedSeconds === row.watchedSeconds &&
         previous.baseVersion === row.baseVersion;

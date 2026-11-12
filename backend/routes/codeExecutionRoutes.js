@@ -20,7 +20,10 @@ const {
 const { authenticateToken, authorizeRoles } = require("../middleware/lmsLegacyAccess");
 const { requireOwnedCodeAttempt, redactLearnerAnswers } = require("../middleware/lmsLegacyOwnership");
 const { internalCallbackAuth } = require("../middleware/internalCallbackAuth");
+const { requireOwnedCodingAssessment } = require("../middleware/lmsLegacyOwnership");
+const { getCodingAssessment } = require("../controllers/codeExecutionController");
 const learnerOnly = [authenticateToken, authorizeRoles("Learner")];
+router.get("/assessments/:assessmentId", ...learnerOnly, requireOwnedCodingAssessment, getCodingAssessment);
 router.post("/practice-run", ...learnerOnly, practiceRun);
 
 

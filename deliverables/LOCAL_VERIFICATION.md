@@ -1,4 +1,4 @@
-> Latest update: Day 7 implementation and local checks are recorded in [PATAN_DAY7_STATUS.md](PATAN_DAY7_STATUS.md). Real staging/client acceptance remains pending.
+> Latest update: Day 7 implementation and local checks are recorded in [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md). Real staging/client acceptance remains pending.
 
 # Patan: local project running — 23 October 2026
 
@@ -26,13 +26,13 @@ Use the Admin account for Analytics. The learner account is intentionally denied
 In the VS Code PowerShell terminal, from the `think_ai` root:
 
 ```powershell
-.\Start-Patan.ps1
+.\Start.ps1
 ```
 
 To stop this project's local app, backend and database:
 
 ```powershell
-.\Stop-Patan.ps1
+.\Stop.ps1
 ```
 
 The launcher preserves the local accounts and progress between runs. It creates only its separate `patan_local` database. PostgreSQL data and logs are under the per-checkout `ThinkzPatan` directory in LocalAppData, outside the OneDrive project. Existing team databases are not used. Backend and database listeners use loopback; the Expo offline server is for local development.

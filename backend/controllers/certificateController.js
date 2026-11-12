@@ -68,7 +68,7 @@ const getCertificateEligibility = async (
          * Course requirement
          */
         const courseCompleted =
-            completionPercentage >= 80;
+            Number.isFinite(completionPercentage) && totalLessons > 0 && completionPercentage >= 80;
 
 
         /*
@@ -82,7 +82,10 @@ const getCertificateEligibility = async (
 
 
         const assessmentsCompleted =
-            assessmentStatus.allPassed;
+            assessmentStatus.allPassed === true &&
+            Number.isInteger(assessmentStatus.totalAssessments) &&
+            assessmentStatus.totalAssessments > 0 &&
+            assessmentStatus.passedAssessments === assessmentStatus.totalAssessments;
 
 
         /*

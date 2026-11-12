@@ -450,6 +450,5 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     marginTop: spacing.xl,
     paddingHorizontal: spacing.lg,
   },
-});
-
+ });
 export default LearnerDashboardScreen;

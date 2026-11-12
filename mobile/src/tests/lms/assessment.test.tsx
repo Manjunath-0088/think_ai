@@ -5,7 +5,7 @@ import { loadDraft, saveDraft } from "@/lms/storage";
 import { remainingSeconds, useAssessment } from "@/lms/useAssessment";
 jest.mock("@/lms/LmsProvider", () => ({
   useLms: () => ({
-    session: { userId: "patan", token: "test-token" },
+    session: { userId: "learner", token: "test-token" },
     online: true,
   }),
 }));
@@ -63,13 +63,13 @@ test("answers and flags auto-save every 30 seconds", async () => {
     await Promise.resolve();
   });
   await waitFor(async () =>
-    expect((await loadDraft("patan", 1))?.flags).toEqual([1]),
+    expect((await loadDraft("learner", 1))?.flags).toEqual([1]),
   );
-  expect((await loadDraft("patan", 1))?.answers["1"]?.selectedOptionId).toBe(1);
+  expect((await loadDraft("learner", 1))?.answers["1"]?.selectedOptionId).toBe(1);
   hook.unmount();
 });
 test("resume prompt restores saved answers and flags", async () => {
-  await saveDraft("patan", 1, {
+  await saveDraft("learner", 1, {
     attemptId: 4,
     expiresAt: makeAttempt().expiresAt,
     answers: { 1: { questionId: 1, selectedOptionId: 1 } },
@@ -96,7 +96,7 @@ test("successful submit clears draft; cleanup does not resurrect it", async () =
   });
   hook.unmount();
   expect(submitted).toHaveBeenCalledWith(4);
-  expect(await loadDraft("patan", 1)).toBeNull();
+  expect(await loadDraft("learner", 1)).toBeNull();
 });
 test("failed submit preserves recoverable draft", async () => {
   (lmsApi.submit as jest.Mock).mockRejectedValue(new Error("Offline"));
@@ -107,7 +107,7 @@ test("failed submit preserves recoverable draft", async () => {
     await hook.result.current.submit();
   });
   expect(hook.result.current.error).toBe("Offline");
-  expect((await loadDraft("patan", 1))?.answers["1"]?.selectedOptionId).toBe(1);
+  expect((await loadDraft("learner", 1))?.answers["1"]?.selectedOptionId).toBe(1);
   hook.unmount();
 });
 
@@ -130,7 +130,7 @@ test("Retry retains answers and flags and resubmits the same attempt", async () 
   expect(hook.result.current.flags).toEqual([1]);
   expect(hook.result.current.attempt!.expiresAt).toBe(expiry);
   expect(submitted).toHaveBeenCalledWith(4);
-  expect(await loadDraft("patan", 1)).toBeNull();
+  expect(await loadDraft("learner", 1)).toBeNull();
   hook.unmount();
 });
 
@@ -154,6 +154,6 @@ test("Retry after an autosave error preserves the active draft without submittin
   await act(async () => { await hook.result.current.retry(); });
   expect(hook.result.current.error).toBeNull();
   expect(lmsApi.submit).not.toHaveBeenCalled();
-  expect((await loadDraft("patan", 1))?.answers["1"]!.selectedOptionId).toBe(1);
+  expect((await loadDraft("learner", 1))?.answers["1"]!.selectedOptionId).toBe(1);
   hook.unmount();
 });

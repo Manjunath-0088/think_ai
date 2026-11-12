@@ -27,7 +27,7 @@
     "seconds": 47.978
   },
   "commands": [
-    "npm run test:patan",
+    "npm run test:lms",
     "npm run test:ci",
     "npm run typecheck",
     "npm test -- --runInBand --cacheDirectory <writable-local-cache>"

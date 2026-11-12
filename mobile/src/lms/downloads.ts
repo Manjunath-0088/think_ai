@@ -1,6 +1,7 @@
 import * as FileSystem from "./downloadFileSystem";
 import { mutate, read, storageKey } from "./storage";
 import type { Download, Lesson } from "./types";
+import { youtubeEmbed } from './handoverContracts';
 const isDownloads = (v: unknown): v is Download[] =>
   Array.isArray(v) &&
   v.every(
@@ -55,6 +56,7 @@ export async function downloadLesson(
   onProgress: (value: number) => void,
 ) {
   if (!lesson.videoUrl) throw new Error("This lesson has no video.");
+  if (youtubeEmbed(lesson.videoUrl)) throw new Error('Offline download is unavailable for provider-hosted videos. Ask staff for an approved downloadable media file.');
   const taskKey = `${userId}:${lesson.id}`;
   if (active.has(taskKey)) throw new Error("Download already in progress.");
   const uri = `${root(userId)}lesson-${lesson.id}.mp4`;

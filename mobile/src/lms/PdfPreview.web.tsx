@@ -1,10 +1,20 @@
 import { pdfPreviewHtml } from "./pdfPreviewHtml";
-export function PdfPreview({ url }: { url: string }) {
+import { useEffect, useRef } from 'react';
+import { isCertificatePng } from './certificatePng';
+export function PdfPreview({ url, onPng }: { url: string; onPng?: (uri: string) => void }) {
+  const frame = useRef<HTMLIFrameElement>(null);
+  useEffect(() => {
+    const receive = (event: MessageEvent) => {
+      if (event.source === frame.current?.contentWindow && event.data?.type === 'certificatePng' && isCertificatePng(event.data.dataUrl)) onPng?.(event.data.dataUrl);
+    };
+    window.addEventListener('message', receive); return () => window.removeEventListener('message', receive);
+  }, [onPng]);
   return (
     <iframe
-      srcDoc={pdfPreviewHtml(url)}
+      ref={frame}
+      srcDoc={pdfPreviewHtml(url, !!onPng)}
       title="Certificate PDF preview"
-      sandbox="allow-scripts allow-same-origin"
+      sandbox="allow-scripts"
       style={{ height: 320, width: "100%", border: 0 }}
     />
   );

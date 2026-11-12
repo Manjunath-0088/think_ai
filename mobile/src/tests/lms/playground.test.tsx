@@ -7,7 +7,7 @@ import { lmsApi } from "@/lms/api";
 import { appendHistory, loadHistory } from "@/lms/storage";
 import type { Execution, HistoryEntry, Language } from "@/lms/types";
 
-let mockSession = { userId: "patan", token: "learner-token" };
+let mockSession = { userId: "learner", token: "learner-token" };
 let mockOnline = true;
 let mockFocused = true;
 jest.mock("@react-navigation/native", () => ({ useIsFocused: () => mockFocused }));
@@ -37,7 +37,7 @@ const view = (entry?: HistoryEntry) => <CodePlaygroundScreen route={route(entry)
 beforeEach(async () => {
   await AsyncStorage.clear();
   jest.clearAllMocks();
-  mockSession = { userId: "patan", token: "learner-token" };
+  mockSession = { userId: "learner", token: "learner-token" };
   mockOnline = true;
   mockFocused = true;
   (lmsApi.execute as jest.Mock).mockResolvedValue(result());
@@ -56,7 +56,7 @@ test.each<Language>(["python", "javascript", "java", "cpp"])(
     await waitFor(() => expect(screen.getByText("Run code")).toBeTruthy());
     expect(lmsApi.execute).toHaveBeenCalledWith(language, "source for test", "21\n", "42", "learner-token");
     expect(screen.getByText("Accepted\n42\n")).toBeTruthy();
-    expect(await loadHistory("patan")).toEqual([
+    expect(await loadHistory("learner")).toEqual([
       expect.objectContaining({ language, code: "source for test", input: "21\n", expectedOutput: "42", output: "Accepted\n42\n" }),
     ]);
   },
@@ -108,7 +108,7 @@ test.each(["", "5\n"])("Python EOF preserves the traceback and helps with missin
   await waitFor(() => expect(screen.getByText(output)).toBeTruthy());
   expect(lmsApi.execute).toHaveBeenCalledWith("python", source, stdin, "10", "learner-token");
   expect(screen.queryByText(/Expected output did not match/)).toBeNull();
-  expect(await loadHistory("patan")).toEqual([expect.objectContaining({ code: source, input: stdin, output })]);
+  expect(await loadHistory("learner")).toEqual([expect.objectContaining({ code: source, input: stdin, output })]);
 });
 
 test.each([
@@ -300,7 +300,7 @@ test.each(["account switch", "unmount", "history restore"])("late responses afte
   } else if (event === "unmount") screen.unmount();
   else screen.rerender(view(saved));
   await act(async () => { pending.resolve(result()); });
-  expect(await loadHistory("patan")).toEqual([]);
+  expect(await loadHistory("learner")).toEqual([]);
   expect(await loadHistory("other")).toEqual([]);
   expect(lmsApi.execute).toHaveBeenCalledWith("python", starter.python, "", undefined, "learner-token");
   if (event !== "unmount") {
@@ -311,7 +311,7 @@ test.each(["account switch", "unmount", "history restore"])("late responses afte
 });
 
 test("history refreshes on focus, restores context, and clears only after confirmation", async () => {
-  await appendHistory("patan", saved);
+  await appendHistory("learner", saved);
   const history = () => <PlaygroundHistoryScreen route={{ key: "history", name: "PlaygroundHistory" }} navigation={navigation as any} />;
   const screen = render(history());
   await waitFor(() => expect(screen.getByText(saved.code)).toBeTruthy());
@@ -319,13 +319,13 @@ test("history refreshes on focus, restores context, and clears only after confir
   expect(navigation.navigate).toHaveBeenCalledWith("CodePlayground", { entry: saved });
   mockFocused = false;
   screen.rerender(history());
-  await appendHistory("patan", { ...saved, id: "new", code: "new code" });
+  await appendHistory("learner", { ...saved, id: "new", code: "new code" });
   mockFocused = true;
   screen.rerender(history());
   await waitFor(() => expect(screen.getByText("new code")).toBeTruthy());
   fireEvent.press(screen.getByText("Clear history"));
-  expect(await loadHistory("patan")).toHaveLength(2);
+  expect(await loadHistory("learner")).toHaveLength(2);
   fireEvent.press(screen.getByText("Clear"));
-  await waitFor(async () => expect(await loadHistory("patan")).toEqual([]));
+  await waitFor(async () => expect(await loadHistory("learner")).toEqual([]));
   expect(screen.getByText("No executions saved yet.")).toBeTruthy();
 });

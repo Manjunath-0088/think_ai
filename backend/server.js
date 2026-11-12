@@ -37,3 +37,33 @@ httpServer.listen(PORT, process.env.HOST || '0.0.0.0', () => {
 startWorker();
 
 module.exports = httpServer;
+
+// Temporary script to inject a test user automatically
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
+async function seedTestUser() {
+  try {
+    const existingUser = await prisma.user.findFirst({
+      where: { email: "test@test.com" }
+    });
+    
+    if (!existingUser) {
+      await prisma.user.create({
+        data: {
+          email: "test@test.com",
+          password: "password123", 
+          name: "Test Learner",
+          role: "Learner"
+        }
+      });
+      console.log("✅ Test user 'test@test.com' injected successfully!");
+    } else {
+      console.log("ℹ️ Test user already exists in the database.");
+    }
+  } catch (err) {
+    console.error("❌ Failed to inject user:", err.message);
+  }
+}
+// Run the script 3 seconds after the server boots up
+setTimeout(seedTestUser, 3000);

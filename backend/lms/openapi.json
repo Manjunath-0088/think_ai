@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Patan Core LMS",
+    "title": "ThinkZai Core LMS",
     "version": "1.0.0",
     "description": "JWT identity uses the existing login endpoint. Learner data is checked against enrollment email. Staff CRUD requires Admin/Instructor. Analytics requires Admin. Unconfigured external services return explicit errors."
   },
@@ -509,7 +509,7 @@
       "get": {
         "summary": "Learner profile and last 10 activities",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -664,7 +664,7 @@
       "patch": {
         "summary": "Update own display name",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -842,7 +842,7 @@
       "get": {
         "summary": "Own enrollments and completion summaries",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -1002,7 +1002,7 @@
       "get": {
         "summary": "Active course catalog",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -1172,7 +1172,7 @@
       "get": {
         "summary": "Owned course hierarchy, lesson content and progress",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -1340,7 +1340,7 @@
       "get": {
         "summary": "Owned lesson content",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -1517,7 +1517,7 @@
       "get": {
         "summary": "Get private lesson notes",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -1692,7 +1692,7 @@
       "put": {
         "summary": "Save private lesson notes",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -1891,7 +1891,7 @@
       "post": {
         "summary": "Sync progress; server version wins conflicts",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -2102,7 +2102,7 @@
       "post": {
         "summary": "Start or resume timed attempt without answer keys",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -2292,7 +2292,7 @@
       "post": {
         "summary": "Idempotent submission and durable auto-grading",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -2492,7 +2492,7 @@
       "get": {
         "summary": "Owned results; poll until GRADED or FAILED",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -2660,7 +2660,7 @@
       "post": {
         "summary": "Generate eligible certificate, upload PDF and queue email",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -2839,7 +2839,7 @@
       "get": {
         "summary": "Owned certificate with signed download URL",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -3007,7 +3007,7 @@
       "post": {
         "summary": "Run sandbox code in Python, JavaScript, Java or C++",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -3185,7 +3185,7 @@
       "get": {
         "summary": "Admin KPI, enrollment trend and course performance",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -3373,7 +3373,7 @@
       "get": {
         "summary": "Staff list courses",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -3531,7 +3531,7 @@
       "post": {
         "summary": "Staff create courses",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -3706,7 +3706,7 @@
       "patch": {
         "summary": "Staff update courses",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -3925,7 +3925,7 @@
       "delete": {
         "summary": "Staff delete courses",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -4093,7 +4093,7 @@
       "get": {
         "summary": "Staff list modules",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -4251,7 +4251,7 @@
       "post": {
         "summary": "Staff create modules",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -4423,7 +4423,7 @@
       "patch": {
         "summary": "Staff update modules",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -4618,7 +4618,7 @@
       "delete": {
         "summary": "Staff delete modules",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -4786,7 +4786,7 @@
       "get": {
         "summary": "Staff list lessons",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -4944,7 +4944,7 @@
       "post": {
         "summary": "Staff create lessons",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -5119,7 +5119,7 @@
       "patch": {
         "summary": "Staff update lessons",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -5339,7 +5339,7 @@
       "delete": {
         "summary": "Staff delete lessons",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -5507,7 +5507,7 @@
       "get": {
         "summary": "Staff inspect ordered course hierarchy",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -5675,7 +5675,7 @@
       "put": {
         "summary": "Reorder all modules",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -5871,7 +5871,7 @@
       "put": {
         "summary": "Reorder all lessons",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -6067,7 +6067,7 @@
       "get": {
         "summary": "Staff list enrollments",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -6225,7 +6225,7 @@
       "post": {
         "summary": "Staff create locked enrollment",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -6415,7 +6415,7 @@
       "patch": {
         "summary": "Staff change enrollment status",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -6610,7 +6610,7 @@
       "delete": {
         "summary": "Staff remove enrollment",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -6777,7 +6777,7 @@
     "/api/lms/analytics/export": {
       "get": {
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "summary": "Download a CSV or PDF analytics report",
         "security": [
@@ -6860,7 +6860,7 @@
     "/api/lms/analytics/report-status": {
       "get": {
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "summary": "Inspect scheduled report configuration and recent delivery status",
         "security": [
@@ -6885,7 +6885,7 @@
       "patch": {
         "summary": "Staff update assessment completion rules",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {
@@ -7086,7 +7086,7 @@
       "post": {
         "summary": "Run sandbox code in Python, JavaScript, Java or C++",
         "tags": [
-          "Patan LMS"
+          "ThinkZai LMS"
         ],
         "security": [
           {

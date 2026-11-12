@@ -11,6 +11,7 @@ import type { Palette } from '@/theme/tokens';
 import { radii, spacing, typography } from '@/theme/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useThemedStyles } from '@/theme/useThemedStyles';
+import { AppIcon, actionIcon, type AppIconName } from './AppIcon';
 
 export type AppButtonVariant = 'primary' | 'secondary' | 'danger';
 
@@ -24,6 +25,7 @@ export interface AppButtonProps {
   loadingLabel?: string;
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  icon?: AppIconName;
 }
 
 /** Shared action button so every screen's primary/secondary actions match. */
@@ -36,11 +38,13 @@ export function AppButton({
   loadingLabel,
   style,
   testID,
+  icon,
 }: AppButtonProps) {
   const { palette } = useTheme();
   const styles = useThemedStyles(createStyles);
   const isBlocked = loading || disabled;
   const label = loading && loadingLabel ? loadingLabel : title;
+  const iconName = icon ?? actionIcon(title);
 
   return (
     <Pressable
@@ -64,6 +68,8 @@ export function AppButton({
           size="small"
           style={styles.spinner}
         />
+      ) : iconName ? (
+        <AppIcon name={iconName} size={16} color={variant === 'danger' ? palette.textInverse : palette.textPrimary} />
       ) : null}
       <Text
         style={[

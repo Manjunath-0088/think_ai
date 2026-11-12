@@ -1,4 +1,79 @@
-> **Current 26 October 2026 setup:** Real local Judge0 is verified and running. Backend health and Expo web both returned HTTP 200. This checkout currently uses the existing local PostgreSQL database at localhost:5432/patan_local. The older Start-Patan.ps1 instructions below manage their separate localhost:55444 database and do not match the current .env. Use these commands for the current setup.
+# Manual startup commands - 11 November 2026
+
+Open three separate VS Code PowerShell terminals. Each terminal starts at:
+`C:\Users\enovo\OneDrive\Desktop\project`
+
+## 1. Start PostgreSQL
+
+Open a separate PowerShell window using **Run as administrator**. The normal VS Code terminal cannot start the Windows database service.
+
+```powershell
+Start-Service -Name postgresql-x64-18
+Get-Service -Name postgresql-x64-18
+```
+
+Continue when the status is `Running`. The current backend `.env` connects to the existing PostgreSQL database at `localhost:5432/patan_local`. Keep its credentials unchanged; no database reset is needed.
+
+## 2. Terminal 1 - Backend
+
+```powershell
+cd think_ai
+cd backend
+npm start
+```
+
+Backend: http://localhost:5000
+Swagger: http://localhost:5000/api-docs/
+
+If port 5000 is already in use, do not start another backend or terminate an unknown process. Check the existing server first.
+
+## 3. Terminal 2 - Website frontend
+
+Start a NEW terminal at `Desktop\project`:
+
+```powershell
+cd think_ai
+cd frontend
+$env:VITE_API_BASE_URL="http://localhost:5000/api"
+npm run dev
+```
+
+Open http://localhost:5173 (or the exact URL printed by Vite if that port is occupied).
+
+## 4. Terminal 3 - Mobile browser preview
+
+Start a NEW terminal at `Desktop\project`:
+
+```powershell
+cd think_ai
+cd mobile
+npx expo start --web --port 8081
+```
+
+Open http://localhost:8081. This is the mobile web preview, not an APK install.
+
+The installed ThinkZai USB Test APK currently connects to AWS. Starting the laptop backend does not switch that installed APK to localhost.
+
+## Optional local code-execution sandbox
+
+In a separate terminal at `Desktop\project`:
+
+```powershell
+cd think_ai
+cd backend
+node lms/scripts/judge0-local.cjs start
+```
+
+This starts the prepared LOCAL Judge0 environment if its existing runtime is available; it does not start the company's AWS Judge0 service.
+
+Stop the backend/frontend/mobile web processes using Ctrl+C in their own terminal windows.
+
+---
+
+## Historical setup and verification notes
+
+The notes below describe earlier runs. Their old running-state/test-count claims and separate launcher/database instructions are historical; use the manual startup section above for the current checkout.
+> **Current 26 October 2026 setup:** Real local Judge0 is verified and running. Backend health and Expo web both returned HTTP 200. This checkout currently uses the existing local PostgreSQL database at localhost:5432/patan_local. The older Start.ps1 instructions below manage their separate localhost:55444 database and do not match the current .env. Use these commands for the current setup.
 
 From think_ai/backend, start the prepared sandbox and then the backend:
 
@@ -24,14 +99,14 @@ node lms/scripts/judge0-local.cjs stop
 
 Stop backend/Expo with Ctrl+C in the terminals where you started them. The sandbox stop preserves its private disk, images and keys. Its ignored runtime pointer and .env credentials are local only.
 
-Real execution checks: `node lms/scripts/verify-local-execution.cjs`. The original stress command remains `npm run stress:patan -- --edge-cases`; configure a signed learner LMS_STRESS_TOKEN locally. Optional VM resource collection uses LMS_JUDGE0_RUNTIME_CONFIG pointing to backend/.local/judge0-runtime.json and LMS_JUDGE0_CONTAINER=think-ai-judge0-workers-1. Never paste tokens into chat or commit them.
+Real execution checks: `node lms/scripts/verify-local-execution.cjs`. The original stress command remains `npm run stress:lms -- --edge-cases`; configure a signed learner LMS_STRESS_TOKEN locally. Optional VM resource collection uses LMS_JUDGE0_RUNTIME_CONFIG pointing to backend/.local/judge0-runtime.json and LMS_JUDGE0_CONTAINER=think-ai-judge0-workers-1. Never paste tokens into chat or commit them.
 
-See [PATAN_ITEMS_1_2_STATUS.md](PATAN_ITEMS_1_2_STATUS.md) for actual benchmark evidence and the still-pending S3/email inputs, and [REQUIRED_SOFTWARE.md](REQUIRED_SOFTWARE.md) for software/extensions.
+See [ITEMS_1_2_STATUS.md](ITEMS_1_2_STATUS.md) for actual benchmark evidence and the still-pending S3/email inputs, and [REQUIRED_SOFTWARE.md](REQUIRED_SOFTWARE.md) for software/extensions.
 
 
-> **26 October 2026 update:** Security and pending-code fixes are saved in this checkout. Backend: **135 LMS + 25 CI tests passed**; mobile: **401 tests / 38 suites and TypeScript passed**; isolated PostgreSQL journey: **14 passed**; web export passed. Real sandbox/cloud/inbox, payment integration, client content/branding, staging analytics and native-device acceptance remain **PENDING**. Read [PATAN_SECURITY_ACCEPTANCE.md](PATAN_SECURITY_ACCEPTANCE.md) and its exact input table. Older counts below are historical.
+> **26 October 2026 update:** Security and pending-code fixes are saved in this checkout. Backend: **135 LMS + 25 CI tests passed**; mobile: **401 tests / 38 suites and TypeScript passed**; isolated PostgreSQL journey: **14 passed**; web export passed. Real sandbox/cloud/inbox, payment integration, client content/branding, staging analytics and native-device acceptance remain **PENDING**. Read [SECURITY_ACCEPTANCE.md](SECURITY_ACCEPTANCE.md) and its exact input table. Older counts below are historical.
 
-> Latest update: Day 7 implementation and local checks are recorded in [PATAN_DAY7_STATUS.md](PATAN_DAY7_STATUS.md). Real staging/client acceptance remains pending.
+> Latest update: Day 7 implementation and local checks are recorded in [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md). Real staging/client acceptance remains pending.
 
 # Patan: local project running — 23 October 2026
 
@@ -59,13 +134,13 @@ Use the Admin account for Analytics. The learner account is intentionally denied
 In the VS Code PowerShell terminal, from the `think_ai` root:
 
 ```powershell
-.\Start-Patan.ps1
+.\Start.ps1
 ```
 
 To stop this project's local app, backend and database:
 
 ```powershell
-.\Stop-Patan.ps1
+.\Stop.ps1
 ```
 
 The launcher preserves the local accounts and progress between runs. It creates only its separate `patan_local` database. PostgreSQL data and logs are under the per-checkout `ThinkzPatan` directory in LocalAppData, outside the OneDrive project. Existing team databases are not used. Backend and database listeners use loopback; the Expo offline server is for local development.

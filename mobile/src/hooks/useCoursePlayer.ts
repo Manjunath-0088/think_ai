@@ -118,6 +118,10 @@ export function useCoursePlayer(courseId: number, requestedLessonId?: number) {
         storageKey(session.userId, `position:${lesson.id}`),
         JSON.stringify(seconds),
       );
+      if (resource.data.progressPolicy === 'server-only') {
+        setMessage('Playback position saved on this device. Server watch-progress sync is unavailable.');
+        return;
+      }
       await enqueueProgress(session.userId, {
         lessonId: lesson.id,
         enrollmentId: resource.data.enrollmentId,

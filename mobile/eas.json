@@ -1,0 +1,48 @@
+{
+  "cli": {
+    "version": ">= 27.2.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true
+    },
+    "usb-preview": {
+      "extends": "preview",
+      "android": {
+        "buildType": "apk",
+        "image": "sdk-51"
+      },
+      "env": {
+        "LOCAL_USB_TEST": "1",
+        "EXPO_PUBLIC_API_URL": "http://localhost:5000/api",
+        "EXPO_PUBLIC_APP_URL": "http://localhost:8081"
+      }
+    },
+    "aws-review": {
+      "extends": "preview",
+      "android": {
+        "buildType": "apk",
+        "image": "sdk-51"
+      },
+      "env": {
+        "LMS_AWS_REVIEW": "1",
+        "EXPO_PUBLIC_API_URL": "https://40.192.27.248/api",
+        "EXPO_PUBLIC_APP_URL": "http://localhost:8094",
+        "EXPO_PUBLIC_PLAYGROUND_API": "handover",
+        "EXPO_PUBLIC_READ_API": "handover",
+        "LOCAL_USB_TEST": "0"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

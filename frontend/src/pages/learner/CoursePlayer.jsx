@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { selectUser } from '../../features/auth/authSlice';
@@ -13,6 +13,8 @@ import {
   selectIsLessonComplete,
   selectProgressSummaryFor,
 } from '../../features/lessonProgress/lessonProgressSlice';
+
+import api from '../../api/axios';
 
 function ModuleLessons({ moduleId, currentLessonId, onSelectLesson }) {
   const dispatch = useDispatch();
@@ -67,6 +69,9 @@ function LessonRow({ lesson, isActive, onSelect }) {
 export default function CoursePlayer() {
   const { id: courseId } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [assessments, setAssessments] = useState([]);
+  const [assessmentError, setAssessmentError] = useState('');
   const videoRef = useRef(null);
   const videoContainerRef = useRef(null);
 
@@ -115,6 +120,18 @@ export default function CoursePlayer() {
       setActiveModule(modules[0].id);
     }
   }, [modules, activeModule]);
+
+  useEffect(() => {
+    let active = true;
+    setAssessments([]);
+    setAssessmentError('');
+    if (activeModule && enrollmentId) {
+      api.get('/assessments', { params: { moduleId: activeModule } })
+        .then(({ data }) => { if (active) setAssessments(data.data || data || []); })
+        .catch(() => { if (active) setAssessmentError('Module assessments could not load.'); });
+    }
+    return () => { active = false; };
+  }, [activeModule, enrollmentId]);
 
   const showFeedback = (text) => {
     setFeedback(text);
@@ -397,6 +414,16 @@ export default function CoursePlayer() {
                           currentLessonId={currentLesson?.id}
                           onSelectLesson={setCurrentLesson}
                         />
+                        {assessmentError && <p role="alert" className="p-3 text-xs text-rose-500">{assessmentError}</p>}
+                        {assessments.map(assessment => (
+                          <button key={assessment.id} type="button"
+                            className="w-full text-left p-3 text-xs text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-500/10"
+                            onClick={() => navigate(assessment.type === 'CODING'
+                              ? `/learner/code-execution/${assessment.id}`
+                              : `/learner/assessments/${assessment.id}/take`, { state: { enrollmentId } })}>
+                            {assessment.title} · {assessment.type === 'CODING' ? 'Coding' : 'Quiz'}
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>

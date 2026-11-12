@@ -298,13 +298,60 @@ test(
         await authed("patch", `/admin/courses/${courseId}`, { completionThreshold: 100 }, adminToken).expect(200);
         await authed("patch", rulePath, { passPercentage: 100, maxAttempts: 3 }, adminToken).expect(200);
       });
+      await t.test("durable mobile offline queue reconnects through authenticated HTTP into PostgreSQL", async () => {
+        const fs = require('node:fs/promises');
+        const os = require('node:os');
+        const path = require('node:path');
+        const loadMobileQueue = require('./mobile-progress-queue.cjs');
+        const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'lms-progress-contract-'));
+        try {
+          await db.lessonProgress.deleteMany({ where: { enrollmentId, lessonId } });
+          const userId = String(learner.id);
+          const offline = { enrollmentId, lessonId, watchedSeconds: 45,
+            baseVersion: null, updatedAt: new Date().toISOString() };
+          let queue = await loadMobileQueue(directory);
+          await queue.enqueueProgress(userId, offline);
+          assert.equal(await db.lessonProgress.count({ where: { enrollmentId, lessonId } }), 0);
+          // Fresh module instance simulates reopening the app with persisted disk data.
+          queue = await loadMobileQueue(directory);
+          assert.deepEqual(await queue.loadQueue(userId), [offline]);
+          assert.deepEqual(await queue.loadQueue(String(other.id)), []);
+          const sent = await queue.loadQueue(userId);
+          await request(app).post('/api/lms/progress/sync').send({ updates: sent }).expect(401);
+          assert.deepEqual(await queue.loadQueue(userId), sent);
+          const synced = await authed('post', '/progress/sync', { updates: sent }).expect(200);
+          await queue.acknowledgeProgress(userId, sent, synced.body.data);
+          assert.deepEqual(await queue.loadQueue(userId), []);
+          const persisted = await db.lessonProgress.findUnique({
+            where: { enrollmentId_lessonId: { enrollmentId, lessonId } },
+          });
+          assert.equal(persisted.watchedSeconds, 45);
+          assert.equal(persisted.completed, false);
+          // Reconnect after a stale second device: server must not regress.
+          await authed('post', '/progress/sync', { updates: [{ ...offline, watchedSeconds: 80 }] }).expect(200);
+          await queue.enqueueProgress(userId, { ...offline, watchedSeconds: 65 });
+          const retry = await queue.loadQueue(userId);
+          const merged = await authed('post', '/progress/sync', { updates: retry }).expect(200);
+          await queue.acknowledgeProgress(userId, retry, merged.body.data);
+          assert.equal(merged.body.data[0].progress.watchedSeconds, 80);
+          assert.deepEqual(await queue.loadQueue(userId), []);
+          assert.equal(await db.lessonProgress.count({ where: { enrollmentId, lessonId } }), 1);
+          queue = await loadMobileQueue(directory);
+          assert.deepEqual(await queue.loadQueue(userId), []);
+        } finally {
+          await db.lessonProgress.deleteMany({ where: { enrollmentId, lessonId } });
+          // Remove only this test's explicitly-created flat files and directory.
+          for (const name of await fs.readdir(directory)) await fs.unlink(path.join(directory, name));
+          await fs.rmdir(directory);
+        }
+      });
       await t.test(
-        "progress uses server duration and server version wins conflicts",
+        "progress merges greatest valid values across devices without regression",
         async () => {
           const update = {
             enrollmentId,
             lessonId,
-            watchedSeconds: 100,
+            watchedSeconds: 20,
             baseVersion: null,
             updatedAt: new Date().toISOString(),
           };
@@ -312,14 +359,31 @@ test(
             updates: [update],
           });
           assert.equal(first.status, 200);
-          assert.equal(first.body.data[0].progress.completed, true);
+          assert.equal(first.body.data[0].progress.completed, false);
+          const advanced = await authed("post", "/progress/sync", {updates:[{...update,watchedSeconds:80}]});
+          assert.equal(advanced.body.data[0].progress.watchedSeconds,80);
+          assert.equal(advanced.body.data[0].merged,true);
+          const clamped=await authed("post","/progress/sync",{updates:[{...update,watchedSeconds:9999}]});
+          assert.equal(clamped.body.data[0].progress.watchedSeconds,100);
+          assert.equal(clamped.body.data[0].progress.completed,true);
           const stale = await authed("post", "/progress/sync", {
             updates: [{ ...update, watchedSeconds: 0 }],
           });
-          assert.equal(stale.body.data[0].conflict, true);
+          assert.equal(stale.body.data[0].conflict, false);
+          assert.equal(stale.body.data[0].merged, true);
           assert.equal(stale.body.data[0].progress.watchedSeconds, 100);
         },
       );
+      await t.test("concurrent devices preserve the greatest progress and one database row", async () => {
+        await db.lessonProgress.deleteMany({where:{enrollmentId,lessonId}});
+        const update={enrollmentId,lessonId,baseVersion:null,updatedAt:new Date().toISOString()};
+        const replies=await Promise.all([20,80].map(watchedSeconds=>authed("post","/progress/sync",{updates:[{...update,watchedSeconds}]})));
+        for(const response of replies)assert.equal(response.status,200);
+        const persisted=await db.lessonProgress.findUnique({where:{enrollmentId_lessonId:{enrollmentId,lessonId}}});
+        assert.equal(persisted.watchedSeconds,80);
+        assert.equal(await db.lessonProgress.count({where:{enrollmentId,lessonId}}),1);
+        await authed("post","/progress/sync",{updates:[{...update,watchedSeconds:100}]}).expect(200);
+      });
       let attempt;
       await t.test(
         "start hides answers, resume retains server expiry, invalid submissions are rejected",
@@ -433,6 +497,13 @@ test(
           assert.match(cert.body.data.pdfUrl, /X-Amz-Signature/);
         },
       );
+      await t.test("legacy analytics reads final grades and configured rules from real PostgreSQL", async () => {
+        const { getAssessmentAnalytics } = require('../../repositories/analyticsRepository');
+        const summary = await getAssessmentAnalytics();
+        assert.equal(summary.totalSubmissions, 1);
+        assert.equal(summary.averagePercentage, 100);
+        assert.equal(summary.passed, 1);
+      });
       await t.test(
         "another learner cannot modify progress/attempts or retrieve/generate certificates",
         async () => {
@@ -578,6 +649,7 @@ test(
           });
           const original = executor.execute;
           try {
+            let completedAttempts = 0;
             for (const code of [
               null,
               "EXECUTOR_UNAVAILABLE",
@@ -613,6 +685,8 @@ test(
               });
               await service.gradePending();
               const result = await service.result(other, current.attemptId);
+              completedAttempts++;
+              assert.equal(result.canRetake, completedAttempts < 3);
               assert.equal(result.status, code ? "FAILED" : "GRADED");
               if (code) assert.equal(result.error, code);
               else assert.equal(result.percentage, 0);
@@ -623,6 +697,10 @@ test(
                 0,
               );
             }
+            await assert.rejects(
+              service.start(other, assessmentId, failedEnrollment.id),
+              error => error.code === "ATTEMPTS_EXHAUSTED",
+            );
           } finally {
             executor.execute = original;
           }

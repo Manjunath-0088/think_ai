@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Loader2, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import api from '../../../api/axios';
 import { useTheme } from '../../../components/useTheme';
 import { runCode, submitSolution, resetExecution } from '../../../features/codeExecution/codeExecutionSlice';
-import { selectUser } from '../../../features/auth/authSlice';
+import { startCodingAttempt } from '../../../api/codingAttempt';
 
 const LANGUAGES = [
   { id: 'javascript', label: 'JavaScript', monacoId: 'javascript' },
@@ -23,7 +23,10 @@ export default function CodeExecutionPage() {
   const { isDarkMode } = useTheme();
   const dispatch = useDispatch();
   
-  const currentUser = useSelector(selectUser);
+  const { state: routeState } = useLocation();
+  const enrollmentId = routeState?.enrollmentId;
+  const [loadError, setLoadError] = useState(null);
+  const [closed, setClosed] = useState(false);
 
   const execution = useSelector((state) => state.codeExecution) ?? {
     status: 'idle', mode: null, run: null, submission: null, errorMessage: null,
@@ -45,17 +48,24 @@ export default function CodeExecutionPage() {
   const status = execution.status; // idle | running | success | error
   const isRunning = status === 'running';
 
-  const canRun = Boolean(submissionId && question?.id && selectedTestCaseId);
-  const canSubmit = Boolean(submissionId && question?.id && code.trim() && hasRun);
+  const canRun = Boolean(!closed && submissionId && question?.id && selectedTestCaseId && code.trim());
+  const canSubmit = Boolean(!closed && submissionId && question?.id && code.trim() && hasRun);
 
   useEffect(() => {
     let isMounted = true;
     (async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/assessments/${assessmentId}`);
+        setLoadError(null);
+        setSubmissionId(null);
+        setHasRun(false);
+        setClosed(false);
+        dispatch(resetExecution());
+        const res = await api.get(`/code/assessments/${assessmentId}`, { params: enrollmentId ? { enrollmentId } : {} });
         const asm = res?.data?.data || res?.data;
         
+        if (!isMounted) return;
+        const attemptId = await startCodingAttempt(asm, enrollmentId);
         if (isMounted) {
           setAssessment(asm);
           const q = asm?.questions?.[0] || null;
@@ -76,13 +86,11 @@ export default function CodeExecutionPage() {
           setTestCases(publicTestCases);
           setSelectedTestCaseId(publicTestCases[0]?.id ?? null);
 
-          // Map active submission ID securely from storage or fallback to user session
-          const activeSubId = localStorage.getItem("activeSubmissionId") || localStorage.getItem("activeEnrollmentId") || currentUser?.id || "1";
-          setSubmissionId(Number(activeSubId));
+          setSubmissionId(attemptId);
         }
       } catch (err) {
         console.error("Failed to load assessment data", err);
-        toast.error("Failed to load coding environment", { theme: "dark" });
+        if (isMounted) setLoadError(err.response?.data?.message || err.message || "Failed to load coding environment");
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -92,25 +100,27 @@ export default function CodeExecutionPage() {
       isMounted = false;
       dispatch(resetExecution());
     };
-  }, [assessmentId, dispatch, currentUser]);
+  }, [assessmentId, dispatch, enrollmentId]);
 
   const handleRun = useCallback(() => {
     if (!canRun) return;
-    dispatch(runCode({ language, code, submissionId, questionId: question?.id, testCaseId: selectedTestCaseId }))
+    dispatch(runCode({ language, code, submissionId, questionId: question?.id, testCaseId: selectedTestCaseId, stdin: testCases.find(tc => tc.id === selectedTestCaseId)?.input ?? '' }))
       .unwrap()
-      .then(() => {
-        setHasRun(true); // Enable submit button after successful run
+      .then((result) => {
+        setHasRun(result?.status?.id === 3);
       })
       .catch(() => {
         setHasRun(false);
       });
-  }, [dispatch, language, code, submissionId, question?.id, selectedTestCaseId, canRun]);
+  }, [dispatch, language, code, submissionId, question?.id, selectedTestCaseId, canRun, testCases]);
 
   const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
     dispatch(submitSolution({ submissionId, questionId: question?.id, language, code }))
       .unwrap()
       .then((res) => {
+        setHasRun(false);
+        setClosed(res?.status === "COMPLETED");
         const message = res?.autoGraded
           ? `Auto graded! Score: ${res?.score ?? 0}/${res?.totalMarks ?? 10} (${res?.percentage ?? 0}%)`
           : `Submitted! Score: ${res?.score ?? 0}/${res?.totalMarks ?? 10} (${res?.percentage ?? 0}%)`;
@@ -143,6 +153,8 @@ export default function CodeExecutionPage() {
       </div>
     );
   }
+
+  if (loadError) return <div role="alert" className="p-6 text-red-500">{loadError}</div>;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4 md:p-6 bg-slate-100 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 transition-colors duration-300" style={{ fontFamily: "Inter, sans-serif" }}>
@@ -244,6 +256,7 @@ export default function CodeExecutionPage() {
             {isRunning && execution.mode === 'run' ? <Loader2 size={13} className="animate-spin" /> : null} Run Code
           </button>
 
+          {closed && <p role="status">Assessment submitted. Open Results to review your grade.</p>}
           {/* Submit button appears only after successful Run */}
           {hasRun && (
             <button
@@ -264,9 +277,10 @@ export default function CodeExecutionPage() {
             height="100%"
             language={LANGUAGES.find((l) => l.id === language)?.monacoId}
             value={code}
-            onChange={(value) => setCode(value ?? '')}
+            onChange={(value) => { setCode(value ?? ''); setHasRun(false); }}
+            loading={<span>Loading code editor...</span>}
             theme={isDarkMode ? 'vs-dark' : 'light'}
-            options={{ fontSize: 13, minimap: { enabled: false }, scrollBeyondLastLine: false, automaticLayout: true }}
+            options={{ readOnly: isRunning || closed, fontSize: 13, minimap: { enabled: false }, scrollBeyondLastLine: false, automaticLayout: true }}
           />
         </div>
 
@@ -349,3 +363,4 @@ export default function CodeExecutionPage() {
     </div>
   );
 }
+

@@ -6,7 +6,7 @@ import { storageKey } from "@/lms/storage";
 let mockOnline = true;
 jest.mock("@/lms/LmsProvider", () => ({
   useLms: () => ({
-    session: { userId: "patan", token: "test" },
+    session: { userId: "learner", token: "test" },
     online: mockOnline,
   }),
 }));
@@ -54,7 +54,7 @@ test("offline notes save to account-scoped storage and remain dirty for reconnec
   await waitFor(async () =>
     expect(
       JSON.parse(
-        (await AsyncStorage.getItem(storageKey("patan", "note:2:1"))) || "{}",
+        (await AsyncStorage.getItem(storageKey("learner", "note:2:1"))) || "{}",
       ),
     ).toEqual({ text: "Offline note", dirty: true }),
   );

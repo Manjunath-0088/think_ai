@@ -14,6 +14,7 @@ function completion(course, progress, submissions) {
       (s) =>
         s.assessmentId === a.id &&
         s.status === "GRADED" &&
+        Number.isFinite(s.percentage) && s.percentage >= 0 && s.percentage <= 100 &&
         s.percentage >= a.passPercentage,
     ),
   ).length;
@@ -24,7 +25,7 @@ function completion(course, progress, submissions) {
     totalAssessments: assessments.length,
     passedAssessments,
     eligible:
-      lessons.length > 0 &&
+      lessons.length > 0 && assessments.length > 0 &&
       percentage >= course.completionThreshold &&
       passedAssessments === assessments.length,
   };

@@ -52,6 +52,7 @@ export interface Enrollment {
   summary: Completion;
 }
 export interface PlayerData {
+  progressPolicy?: 'server-only';
   course: Course;
   enrollmentId: number;
   progress: Progress[];
@@ -113,6 +114,8 @@ export interface AssessmentResult {
   }[];
 }
 export interface Certificate {
+  enrollmentId?: number;
+  verificationUrl?: string;
   id: number;
   certificateNo: string;
   studentName: string;
@@ -130,8 +133,8 @@ export interface Execution {
     stderr: string;
     compileOutput: string;
     passed: boolean | null;
-    time: string;
-    memory: number;
+    time: string | null;
+    memory: number | null;
   }[];
 }
 export interface HistoryEntry {
@@ -148,10 +151,11 @@ export interface Profile {
   stats: {
     coursesCompleted: number;
     certificatesEarned: number;
-    totalHours: number;
+    totalHours: number | null;
   };
   activity: { type: string; text: string; at: string }[];
   certificates: Certificate[];
+  activityAvailable?: boolean;
 }
 export type AnalyticsBucket = "daily" | "weekly" | "monthly" | "quarterly";
 export interface ReportStatus {
@@ -180,8 +184,8 @@ export interface Analytics {
   kpis: {
     enrollmentCount: number;
     completionRate: number;
-    averageScore: number;
-    activeUsers: number;
+    averageScore: number | null;
+    activeUsers: number | null;
     attendancePercentage?: number | null;
   };
   trend: { date: string; count: number }[];

@@ -1,9 +1,9 @@
 {
   "base": "project.zip supplied 27 October 2026",
   "sourceArchives": [
-    "task3_patan_.zip",
+    "lms-integration-reference.zip",
     "think_ai-main-patan-updated.zip",
-    "task1_2_3_4_patan_completed.zip"
+    "lms-feature-reference.zip"
   ],
   "verification": {
     "mobileTests": 475,
@@ -109,7 +109,7 @@
       "sha256": "48caab1c299576b460eaf3bd7301e34da616b4513136eed348f841a5d31e9384"
     },
     {
-      "path": "deliverables/Patan-LMS.postman_collection.json",
+      "path": "deliverables/LMS.postman_collection.json",
       "change": "modified",
       "sha256": "36ce163e16e5bd9454c9f628ad9f67cf621dda6c731dbdd55b2233ac8dee5d57"
     },
@@ -119,277 +119,277 @@
       "sha256": "edbdb6a5ceb187f7e0caea425f3183825272cb6b25a0bc10a3d403740e3f3260"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/API-LMS.md",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/API-LMS.md",
       "change": "added",
       "sha256": "4bde1e9467bec5580eadb1a5b0329047a8cc047928569ec7a28cea834ed7de41"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/LOCAL-SETUP.md",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/LOCAL-SETUP.md",
       "change": "added",
       "sha256": "3ebab042e48b8622fe257855103680057695de33f323734a9706cef0e7414fa5"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/openapi-learning.json",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/openapi-learning.json",
       "change": "added",
       "sha256": "3e5ced7b192d440de25cad3ce382cec90a9186002b36620e7b282b1fe3607c2d"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/PATAN-DAY4.md",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/OFFLINE-AND-PERSISTENCE.md",
       "change": "added",
       "sha256": "867cc71ad789a0797db293a4c95c5c6e5005cff2dbef4ba99a0610699e948ae7"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/PATAN-TASKS-1-4.md",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/LMS-FEATURES.md",
       "change": "added",
       "sha256": "e84ea241ec868be3e4fdf7569091eb1c889f835e6f3088dbe8051e97dadec834"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/all-tasks-demos/01-results.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/feature-walkthroughs/01-results.webm",
       "change": "added",
       "sha256": "697284b7d0645332ce96166fb96caf6d9e25b601529ba57946c5fa69b65b07d1"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/all-tasks-demos/02-certificates.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/feature-walkthroughs/02-certificates.webm",
       "change": "added",
       "sha256": "1ef6bfc560e97ab668ba34704f17eaa4bcfd16b620ded26dd9999faff751387f"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/all-tasks-demos/03-profile.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/feature-walkthroughs/03-profile.webm",
       "change": "added",
       "sha256": "341cf2685f9eb4dce667b127561decd346974b584629e23ad5ee1842cfbcdb32"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/all-tasks-demos/04-analytics.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/feature-walkthroughs/04-analytics.webm",
       "change": "added",
       "sha256": "581f473448a0b5f3fab5af74f7a9a963f8b69d3cb457f18614d5ed13bf2cf9bb"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/all-tasks-demos/05-playground.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/feature-walkthroughs/05-playground.webm",
       "change": "added",
       "sha256": "2530d242b5d490d55f14ff99c0003686392de0fa296e9468d4e0932917443c66"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/day4-demos/01-offline-video.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/offline-workflows/01-offline-video.webm",
       "change": "added",
       "sha256": "5b329c12f8daae6204bdec162fec29ebbf6d552d97e1ea4213311f4b7c1bd199"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/day4-demos/02-assessment-draft.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/offline-workflows/02-assessment-draft.webm",
       "change": "added",
       "sha256": "3641fccba6ac4de531e508b95dbc94b5633953a7eae32bdc5dee4051986d41a8"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/day4-demos/03-certificate-sharing.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/offline-workflows/03-certificate-sharing.webm",
       "change": "added",
       "sha256": "d621cd45f671c0d764e2036d065f73cc65f819e572da536c249332c8a239e573"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/day4-demos/04-progress-reconnect.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/offline-workflows/04-progress-reconnect.webm",
       "change": "added",
       "sha256": "cb60e7027817abf49503aa91fd1a422aac9db8e5063baaf19e51a02bf57a0e3e"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/day4-demos/05-playground-history.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/offline-workflows/05-playground-history.webm",
       "change": "added",
       "sha256": "3363d3a181c419e1fb1917a98231b8707537dd019bf804aae9eee8eed93a7692"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/demo-media/lesson.mp4",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/demo-media/lesson.mp4",
       "change": "added",
       "sha256": "bb37fb465414f996fee4b77e8d1e4487d0f4e5b4398a418b2b11674d53b38479"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/demo-media/lesson.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/demo-media/lesson.webm",
       "change": "added",
       "sha256": "5fc80fdc74805a2479ddcf8e294003690d2203404a9f92ef0b0df1adee4c131b"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/demos/assessment-mobile-web.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/demos/assessment-mobile-web.webm",
       "change": "added",
       "sha256": "b817f18fce3256702dca9b6cdd5d841245ff476e72ee40c63947b03dd1dd7331"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/demos/assessment-web.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/demos/assessment-web.webm",
       "change": "added",
       "sha256": "fb9e3da6c90ab85d94204978f14b2efe4a36a893f918fc838909122609a10724"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/demos/browser-checks.json",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/demos/browser-checks.json",
       "change": "added",
       "sha256": "d6a70a1ca8e10876af41595919a3eeb2004b2aaa9cde56b1b7cf92a683910c2a"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/demos/course-player-mobile-web.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/demos/course-player-mobile-web.webm",
       "change": "added",
       "sha256": "73ce113a6062d2c1d2fc1e670a0eeee45eea648daa3b42efc78ed1d9816d8a2e"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/demos/course-player-web.webm",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/demos/course-player-web.webm",
       "change": "added",
       "sha256": "01a3092ebe6b0a797dbaa4be57d942a0c04498947c3b1901e4a189efe0bf30d7"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/handover/community-health-metrics.md",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/handover/community-health-metrics.md",
       "change": "added",
       "sha256": "2afdbed106d70f7625ae98a56318210b99a42ac1f4f6cda8f7c4e5c0350b756d"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/handover/discount-code-management.md",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/handover/discount-code-management.md",
       "change": "added",
       "sha256": "9b87d5ba0d326ca753b693f47994affc8f45b10abbb786c423b7910f17c7ebd6"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/handover/forum-category-guide.md",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/handover/forum-category-guide.md",
       "change": "added",
       "sha256": "e793159286a90a4670a7d36574ecee2ae4175b68d1e677e84e00bb61688995fe"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/handover/moderation-playbook.md",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/handover/moderation-playbook.md",
       "change": "added",
       "sha256": "cc386140127dbcacfae19ec010f5f337c7e3ec96ad145570ad8f4a065e681faa"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/postman/code-execution.postman_collection.json",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/postman/code-execution.postman_collection.json",
       "change": "added",
       "sha256": "3936421ece01765acfe230f3179106c92c188519bc413303c00d60eb98ff10fb"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/postman/learning-days-1-4.postman_collection.json",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/postman/learning-workflows.postman_collection.json",
       "change": "added",
       "sha256": "72bfb19163ac812dae5f40ad21c8652fb9ac7f3ca98394479dc3f7674360d603"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/postman/lms.postman_collection.json",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/postman/lms.postman_collection.json",
       "change": "added",
       "sha256": "c61862e622eec0c0ea7d6773130a7b9d9f12649b3be61f6635ea0b1197e91018"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/postman/local.postman_environment.json",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/postman/local.postman_environment.json",
       "change": "added",
       "sha256": "3b2038abb6a5cf1d20e2757d5db3081dc700d040e2a3d1a5e49367c99569a8b8"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/verification-all/final-checks.json",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/verification-all/final-checks.json",
       "change": "added",
       "sha256": "bd7d0bae28b5cdffcc0475719e804b00e8d4249be6fbc58765a95307ec0f7373"
     },
     {
-      "path": "deliverables/reference-demos/task1_2_3_4_patan_completed/docs/verification-all/stress-fixture.json",
+      "path": "deliverables/reference-demos/lms-feature-reference/docs/verification-all/stress-fixture.json",
       "change": "added",
       "sha256": "0e2f3f05c82d0ae16370e405c07751144adcee18f05acd6ba75462fc6830e1d0"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/01-assessment-results.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/01-assessment-results.webm",
       "change": "added",
       "sha256": "4a43c5cddeb2de1084bca5ce673ea790b94d608ef376fae161e1c975282619a9"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/02-certificate-download.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/02-certificate-download.webm",
       "change": "added",
       "sha256": "34263084b40d0674e197b29b9066c80aa9e06af028a850039f986e513a9e66d3"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/03-analytics-dashboard.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/03-analytics-dashboard.webm",
       "change": "added",
       "sha256": "7205ad7ac356898e766cc3f838e3b843742816384fd3cd65979e81606d61b9aa"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/04-code-playground.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/04-code-playground.webm",
       "change": "added",
       "sha256": "de8211e880478c89005fd6c5f6a22fefa930b7b280e5d8dfb5f45157ef0cbbc3"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/05-learner-profile.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/05-learner-profile.webm",
       "change": "added",
       "sha256": "cee9fd19a980006c6a140f5a6727db196942b24a0d87f626fd0c7d236a6f0e84"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-code-stress.json",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/code-stress.json",
       "change": "added",
       "sha256": "12189e67c210205390eb6bbea1c0b0d38c2c5f97eda1d02166819329b25a4930"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/native-android/03-course-player.mp4",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/native-android/03-course-player.mp4",
       "change": "added",
       "sha256": "b2b98b7331b69fd94d36979ead64614374046f05a58ac2f9ecebdf5cdbd0efee"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/native-android/04-assessment-taking.mp4",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/native-android/04-assessment-taking.mp4",
       "change": "added",
       "sha256": "4865e4dfc2ff0494067a4e376189f55098dc1fa941ee904036f275ba8bbe487d"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/native-android/README.md",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/native-android/README.md",
       "change": "added",
       "sha256": "be6614bfaad1bb8a2e797d6cdf32413c5fcc2fee13e75709d1bd896a2ee0793f"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/native-android/verification.json",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/native-android/verification.json",
       "change": "added",
       "sha256": "fcb3f8b0d7db32e96c9899765c8a503003631eca982cfc1286e849c01fbbbcc9"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/01-course-player.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/01-course-player.webm",
       "change": "added",
       "sha256": "56834caac1f81d652606374479c474799f2ef47419b4f3e4b53337a107b235a1"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/02-assessment-taking.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/02-assessment-taking.webm",
       "change": "added",
       "sha256": "4bf9a96e10c68c75e43662844a80102367b31390f31983768eceafa3b022bdeb"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/03-assessment-results.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/03-assessment-results.webm",
       "change": "added",
       "sha256": "7c0940f0882fbce64aee75c9de476c89f9c403304c9aed369720cfdad42cd39f"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/04-coding-assessment.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/04-coding-assessment.webm",
       "change": "added",
       "sha256": "f061c925ba713584df5bc2dda7ea34ee5c470784540ed22f6309d9e22e0a411f"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/05-certificate-download.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/05-certificate-download.webm",
       "change": "added",
       "sha256": "0904a1e180f0e3011fed6ad7986387551df289876e166b58db1fe81fe0b9a94d"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/06-analytics-dashboard.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/06-analytics-dashboard.webm",
       "change": "added",
       "sha256": "fcf6d011f1d4aab5c8b884af569917c5b677c4e545608eb318c3df4a69c9d614"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/07-code-playground.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/07-code-playground.webm",
       "change": "added",
       "sha256": "7c5b8f005e50c80e725b3648ba4dfaed1b3a287b594272899961fb4ec80901b1"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/08-learner-profile.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/08-learner-profile.webm",
       "change": "added",
       "sha256": "b257d419770276ecdef3baa64b788af7cdbc92437dcee82454b9cc1c5ee7ede2"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/fresh-grade-cert.json",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/fresh-grade-cert.json",
       "change": "added",
       "sha256": "8cb6a32cf12f6966c47e4e3fb0198ca97872a23701dba1ddf445be6fef67377d"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/migration-verification.json",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/migration-verification.json",
       "change": "added",
       "sha256": "47e98c6c2663d8c8fadb84339572fcd982bd3724c9e7a8f9a746084deefaf53a"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/patan-complete-walkthrough.webm",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/complete-walkthrough.webm",
       "change": "added",
       "sha256": "f65df432abb2f7391188ca652c6f474f5600ce4ec368faa58d55f86a4108d908"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/verification.json",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/verification.json",
       "change": "added",
       "sha256": "89d93b64f2d5deaa62215a04b50e8a6d2935063a96d88103e018805cb7369f20"
     },
     {
-      "path": "deliverables/reference-demos/task3_patan_/mobile-demos/patan-all-days/website-verification.json",
+      "path": "deliverables/reference-demos/lms-integration-reference/mobile-demos/learner-journey/website-verification.json",
       "change": "added",
       "sha256": "84151fc1a6e74fc1a19db89a6d0a23da84e4a3a71df304a19ad00d7bea72b4c5"
     },

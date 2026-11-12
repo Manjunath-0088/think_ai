@@ -6,10 +6,10 @@ import { useLms } from "@/lms/LmsProvider";
 import { appendHistory } from "@/lms/storage";
 import type { HistoryEntry, Language } from "@/lms/types";
 export const starter: Record<Language, string> = {
-  python: 'print("Hello, Patan!")',
-  javascript: 'console.log("Hello, Patan!");',
-  java: 'public class Main { public static void main(String[] args) { System.out.println("Hello, Patan!"); } }',
-  cpp: '#include <iostream>\nint main() { std::cout << "Hello, Patan!" << std::endl; }',
+  python: 'print("Hello, world!")',
+  javascript: 'console.log("Hello, world!");',
+  java: 'public class Main { public static void main(String[] args) { System.out.println("Hello, world!"); } }',
+  cpp: '#include <iostream>\nint main() { std::cout << "Hello, world!" << std::endl; }',
 };
 type PlaygroundDraft = { code: string; input: string; expected: string };
 const newDrafts = (): Record<Language, PlaygroundDraft> =>

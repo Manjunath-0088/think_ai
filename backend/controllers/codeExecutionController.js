@@ -2,10 +2,7 @@ const codeExecutionService =
     require("../services/codeExecutionService");
 
 
-// ============================================================
-// RUN CODE
-// ============================================================
-
+// =====================================================
 const executeCode = async (
     req,
     res
@@ -256,11 +253,6 @@ const executeCode = async (
     }
 };
 
-
-// ============================================================
-// SUBMIT CODE
-// ============================================================
-
 const submitCode = async (
     req,
     res
@@ -282,27 +274,6 @@ const submitCode = async (
         const parsedQuestionId =
             Number(questionId);
 
-
-        /*
-         * DEBUG:
-         * Verify that frontend sends the actual
-         * AssessmentSubmission ID.
-         */
-        console.log(
-            "DEBUG submitCode controller:",
-            {
-                receivedSubmissionId:
-                    submissionId,
-
-                parsedSubmissionId:
-                    parsedSubmissionId,
-
-                questionId:
-                    parsedQuestionId,
-
-                language
-            }
-        );
 
 
         if (
@@ -413,6 +384,10 @@ const submitCode = async (
         const message =
             error?.message ||
             "Code submission failed";
+        if ([403, 404, 409].includes(error.status)) {
+            return res.status(error.status).json({ success: false, message });
+        }
+
 
 
         if (
@@ -476,11 +451,7 @@ const submitCode = async (
     }
 };
 
-
-// ============================================================
-// JUDGE0 CALLBACK
-// ============================================================
-
+// =====================================================
 const gradingCallback = async (
     req,
     res
@@ -624,3 +595,11 @@ const practiceRun = async (req, res) => {
 };
 
 module.exports = { executeCode, submitCode, gradingCallback, practiceRun };
+
+module.exports.getCodingAssessment = async (req, res, next) => {
+  try {
+    const assessment = await require("../services/assessmentService").getAssessmentById(req.params.assessmentId);
+    const questions = (assessment?.questions || []).filter(q => q.type === 'coding' || q.coding);
+    res.json({ questions });
+  } catch (err) { next(err); }
+};

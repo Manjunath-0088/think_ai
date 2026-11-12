@@ -3,7 +3,7 @@ import { Text } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LmsProvider, useLms } from "@/lms/LmsProvider";
 import { lmsApi } from "@/lms/api";
-import { enqueueProgress, loadQueue } from "@/lms/storage";
+import { enqueueProgress, loadQueue, storageKey } from "@/lms/storage";
 let mockNetwork: (state: { isConnected: boolean }) => void;
 let mockRole = "Learner";
 let mockSession = { userId: "1", token: "token", isSignedIn: true };
@@ -29,19 +29,19 @@ beforeEach(async () => {
   (lmsApi.sync as jest.Mock).mockResolvedValue([{ enrollmentId: 2, lessonId: 3, conflict: true,
     progress: { ...update, watchedSeconds: 20, updatedAt: "2026-10-27T13:00:00Z" } }]);
 });
-test("NetInfo reconnect drains persisted progress and applies canonical server conflicts", async () => {
+test("NetInfo reconnect retains unsynced progress when an older server refuses merging", async () => {
   const view = render(<LmsProvider><Probe /></LmsProvider>);
   await waitFor(() => expect(view.getByText("Offline - progress stays on this device")).toBeTruthy());
   await enqueueProgress("1", update);
   expect(lmsApi.sync).not.toHaveBeenCalled();
   await act(async () => { mockNetwork({ isConnected: true }); });
-  await waitFor(() => expect(view.getByText("Synced; newer server progress kept.")).toBeTruthy());
+  await waitFor(() => expect(view.getByText("Progress saved on device; some updates are pending. Tap Sync progress to retry.")).toBeTruthy());
   expect(lmsApi.sync).toHaveBeenCalledWith([update], "token");
   expect(view.getByText("20")).toBeTruthy();
-  expect(await loadQueue("1")).toEqual([]);
-});
+  expect((await loadQueue("1"))[0]?.watchedSeconds).toBe(90);
+}, 20000); // Cold native renderer initialization exceeds 5s on the Windows test host.
 test("failed reconnect retains queue and the following reconnect retries it", async () => {
-  (lmsApi.sync as jest.Mock).mockRejectedValueOnce(new Error("Network unavailable"));
+  (lmsApi.sync as jest.Mock).mockRejectedValueOnce(new Error("Network unavailable")).mockResolvedValue([{ enrollmentId:2,lessonId:3,conflict:false,progress:{...update} }]);
   const view = render(<LmsProvider><Probe /></LmsProvider>);
   await waitFor(() => expect(view.getByText("Offline - progress stays on this device")).toBeTruthy());
   await enqueueProgress("1", update);
@@ -86,9 +86,9 @@ test("playback during sync uses the acknowledged version and saves the newer pro
   expect(view.getByText("Up to date")).toBeTruthy();
 });
 
-test("a genuine server conflict keeps server progress even when more playback was queued", async () => {
+test("server conflicts cannot discard playback queued while a request was in flight", async () => {
   let completeFirst!: (value: any) => void;
-  (lmsApi.sync as jest.Mock).mockReset().mockReturnValueOnce(new Promise(resolve => { completeFirst = resolve; }));
+  (lmsApi.sync as jest.Mock).mockReset().mockReturnValueOnce(new Promise(resolve => { completeFirst = resolve; })).mockResolvedValue([{ enrollmentId: 2, lessonId: 3, conflict: true, progress: { ...update, watchedSeconds: 20, updatedAt: "2026-10-27T13:00:00Z" } }]);
   const view = render(<LmsProvider><Probe /></LmsProvider>);
   await waitFor(() => expect(view.getByText("Offline - progress stays on this device")).toBeTruthy());
   await enqueueProgress("1", update);
@@ -97,8 +97,29 @@ test("a genuine server conflict keeps server progress even when more playback wa
   await enqueueProgress("1", { ...update, watchedSeconds: 100, updatedAt: "2026-10-27T12:01:00Z" });
   await act(async () => { completeFirst([{ enrollmentId: 2, lessonId: 3, conflict: true,
     progress: { ...update, watchedSeconds: 20, updatedAt: "2026-10-27T13:00:00Z" } }]); });
-  await waitFor(() => expect(view.getByText("Synced; newer server progress kept.")).toBeTruthy());
+  await waitFor(() => expect(view.getByText("Progress saved on device; some updates are pending. Tap Sync progress to retry.")).toBeTruthy());
   expect(view.getByText("20")).toBeTruthy();
-  expect(await loadQueue("1")).toEqual([]);
+  expect((await loadQueue("1"))[0]?.watchedSeconds).toBe(100);
+  expect(lmsApi.sync).toHaveBeenCalledTimes(2);
+});
+
+
+test("unchanged sync responses stop and retain pending updates", async () => {
+  (lmsApi.sync as jest.Mock).mockReset().mockResolvedValue([]);
+  const view=render(<LmsProvider><Probe /></LmsProvider>);
+  await waitFor(()=>expect(view.getByText("Offline - progress stays on this device")).toBeTruthy());
+  await enqueueProgress("1",update);
+  await act(async()=>{mockNetwork({isConnected:true});});
+  await waitFor(()=>expect(view.getByText("Progress saved on device; some updates are pending. Tap Sync progress to retry.")).toBeTruthy());
   expect(lmsApi.sync).toHaveBeenCalledTimes(1);
+  expect(await loadQueue("1")).toEqual([update]);
+});
+test("one sync drain is capped and the remaining queue is retained", async () => {
+  (lmsApi.sync as jest.Mock).mockReset().mockImplementation(async(rows)=>rows.map((row:any)=>({...row,conflict:false,progress:{...row,updatedAt:row.updatedAt}})));
+  const view=render(<LmsProvider><Probe /></LmsProvider>);
+  await waitFor(()=>expect(view.getByText("Offline - progress stays on this device")).toBeTruthy());
+  await AsyncStorage.setItem(storageKey("1","progress"),JSON.stringify(Array.from({length:1500},(_,i)=>({...update,lessonId:i+1}))));
+  await act(async()=>{mockNetwork({isConnected:true});});
+  await waitFor(()=>expect(view.getByText("Progress saved on device; some updates are pending. Tap Sync progress to retry.")).toBeTruthy());
+  expect(lmsApi.sync).toHaveBeenCalledTimes(10);expect((await loadQueue("1")).length).toBe(500);
 });

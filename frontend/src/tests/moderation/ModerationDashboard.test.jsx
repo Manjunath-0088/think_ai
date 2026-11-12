@@ -112,6 +112,10 @@ describe("ModerationDashboard (Phase 8)", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Resolve" })[0]);
     expect(screen.getByTestId("confirm-dialog")).toBeInTheDocument();
     const resolveDialog = screen.getByTestId("confirm-dialog");
+    // The dashboard refreshes from the server after a successful resolution.
+    fetchFlaggedQueue.mockResolvedValue([
+      flaggedItemFixture({ id: "cm7", type: "comment" }),
+    ]);
     fireEvent.click(within(resolveDialog).getByRole("button", { name: "Resolve" }));
 
     await waitFor(() => {

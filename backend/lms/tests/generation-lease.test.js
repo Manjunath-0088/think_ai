@@ -29,7 +29,7 @@ function fixture(issue) {
     batch: {
       course: {
         completionThreshold: 80,
-        modules: [{ lessons: [{ id: 1 }], assessments: [] }],
+        modules: [{ lessons: [{ id: 1 }], assessments: [{id:7,status:"ACTIVE",passPercentage:60}] }],
       },
     },
   };
@@ -37,7 +37,7 @@ function fixture(issue) {
   const db = {
     assessmentSubmission: {
       updateMany: async () => ({ count: 0 }),
-      findMany: async () => [],
+      findMany: async () => [{assessmentId:7,status:"GRADED",percentage:100}],
     },
     enrollment: { findUnique: async () => enrollment },
     lessonProgress: {

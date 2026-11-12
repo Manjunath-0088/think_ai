@@ -11,7 +11,7 @@ describe('useDebouncedValue', () => {
 
   it('does not emit the new value immediately', () => {
     const { result, rerender } = renderHook(
-      ({ value }) => useDebouncedValue(value),
+      ({ value }: { value: string }) => useDebouncedValue(value),
       { initialProps: { value: 'a' } }
     );
 
@@ -21,7 +21,7 @@ describe('useDebouncedValue', () => {
 
   it('emits the new value after the 300 ms window', () => {
     const { result, rerender } = renderHook(
-      ({ value }) => useDebouncedValue(value),
+      ({ value }: { value: string }) => useDebouncedValue(value),
       { initialProps: { value: 'a' } }
     );
 
@@ -40,7 +40,7 @@ describe('useDebouncedValue', () => {
 
   it('collapses a burst of keystrokes into a single emission', () => {
     const { result, rerender } = renderHook(
-      ({ value }) => useDebouncedValue(value),
+      ({ value }: { value: string }) => useDebouncedValue(value),
       { initialProps: { value: '' } }
     );
 
@@ -61,7 +61,7 @@ describe('useDebouncedValue', () => {
 
   it('cancels the pending timer when the value changes again', () => {
     const { result, rerender } = renderHook(
-      ({ value }) => useDebouncedValue(value),
+      ({ value }: { value: string }) => useDebouncedValue(value),
       { initialProps: { value: 'a' } }
     );
 
@@ -81,7 +81,7 @@ describe('useDebouncedValue', () => {
 
   it('passes the value straight through when the delay is zero', () => {
     const { result, rerender } = renderHook(
-      ({ value }) => useDebouncedValue(value, 0),
+      ({ value }: { value: string }) => useDebouncedValue(value, 0),
       { initialProps: { value: 'a' } }
     );
 

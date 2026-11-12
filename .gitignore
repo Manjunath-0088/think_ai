@@ -16,22 +16,16 @@ patan-ui-artifacts/
 .preview-state.json
 mobile/web-preview/
 # Dependencies
-node_modules/
 frontend/node_modules/
 backend/node_modules/
 mobile/node_modules/
-
 # Expo / React Native build output
 mobile/.expo/
 mobile/.web-build/
 mobile/dist/
 mobile/build/
 mobile/coverage/
-
 # Environment / secrets
-.env
-.env.*
-!.env.example
 **/.env
 **/.env.*
 !**/.env.example
@@ -41,65 +35,51 @@ frontend/.env
 *.key
 *.p12
 *.pfx
-
 # Logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
 # Build / generated files
-dist/
 build/
-coverage/
 frontend/dist/
 frontend/build/
 frontend/coverage/
 backend/dist/
 backend/build/
 backend/coverage/
-
 # Generated certificates
 backend/generated/certificates/*.pdf
-
 # Local test / debug files
 TEST_REPORT.md
 backend/fix-assessment.js
-
 # Test artifacts
 test-results/
 playwright-report/
 blob-report/
 frontend/e2e-artifacts/.tmp/
-
 # Vite / Storybook
 .vite/
 storybook-static/
-
 # OS files
 .DS_Store
 Thumbs.db
 desktop.ini
-
 # Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
-
 # Temporary files
 *.tmp
 *.temp
 *.bak
-
 # Production deployment safety
 backups/
 **/backups/
 *.dump
 *.sql
 *.sha256
-
 # Local safety copies
 *.before-*
 *.backup-*
@@ -108,7 +88,6 @@ backups/
 Dockerfile.test-*-backup
 Dockerfile.v*-working-*
 compose.yml.before-*
-
 # Local mobile design verification output
 mobile/.build-temp/
 mobile/dist-home-brand/

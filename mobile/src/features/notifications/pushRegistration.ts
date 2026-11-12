@@ -75,6 +75,9 @@ export async function registerPushNotifications(): Promise<string | null> {
   });
   await AsyncStorage.setItem(PUSH_TOKEN_KEY, token).catch(() => undefined);
   return token;
+} catch {
+  return null;
+}
 }
 
 async function getDevicePushToken(

@@ -20,7 +20,7 @@ jest.mock("expo-clipboard", () => ({ setStringAsync: jest.fn() }));
 const cert = {
   id: 1,
   certificateNo: "CERT-1",
-  studentName: "Patan",
+  studentName: "Learner",
   courseName: "RN",
   issuedAt: new Date().toISOString(),
   pdfUrl: "https://files.invalid/1.pdf",

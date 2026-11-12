@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { SessionState } from "@/api/session";
 import { lmsApi, LmsApiError } from "./api";
 import type { Profile } from "./types";
+import { HANDOVER_READ_API } from './deployment';
 type Account = Profile["user"];
 type Snapshot = {
   key: string | null;
@@ -65,7 +66,9 @@ export function useAccountAccess(session: SessionState, online: boolean) {
         if (current()) publish({ key: actor, account, error: null });
         return;
       }
-      const profile = await lmsApi.profile(session.token);
+      const profile = HANDOVER_READ_API
+        ? { user: await lmsApi.identity(session.token) }
+        : await lmsApi.profile(session.token);
       if (
         !isAccount(profile.user) ||
         String(profile.user.id) !== session.userId

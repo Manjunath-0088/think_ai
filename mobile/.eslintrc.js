@@ -1,6 +1,11 @@
 // https://docs.expo.dev/guides/using-eslint/
 module.exports = {
   extends: 'expo',
+  settings: {
+    'import/resolver': {
+      typescript: { project: require('node:path').join(__dirname, 'tsconfig.json') },
+    },
+  },
   ignorePatterns: ['node_modules/', '.expo/', 'dist/', 'coverage/'],
   rules: {
     // The Expo 58 rule set enables React Compiler diagnostics in addition to

@@ -47,17 +47,17 @@ beforeEach(async () => {
 });
 test("download tracks progress, verifies size, prefers local video and deletes files", async () => {
   const progress = jest.fn();
-  await downloadLesson("patan", 2, lesson, progress);
+  await downloadLesson("learner", 2, lesson, progress);
   expect(progress).toHaveBeenCalledWith(1);
-  expect((await listDownloads("patan"))[0]?.status).toBe("complete");
-  expect(await localVideo("patan", lesson)).toContain("file:///documents/");
-  await deleteDownload("patan", 1);
-  expect(await listDownloads("patan")).toEqual([]);
+  expect((await listDownloads("learner"))[0]?.status).toBe("complete");
+  expect(await localVideo("learner", lesson)).toContain("file:///documents/");
+  await deleteDownload("learner", 1);
+  expect(await listDownloads("learner")).toEqual([]);
   expect(FS.deleteAsync).toHaveBeenCalled();
 });
 test("quota prevents network download before allocating files", async () => {
   (FS.getFreeDiskStorageAsync as jest.Mock).mockResolvedValue(1000);
-  await expect(downloadLesson("patan", 2, lesson, jest.fn())).rejects.toThrow(
+  await expect(downloadLesson("learner", 2, lesson, jest.fn())).rejects.toThrow(
     "quota",
   );
   expect(FS.createDownloadResumable).not.toHaveBeenCalled();
@@ -68,10 +68,10 @@ test("partial file is removed after download failure", async () => {
       throw new Error("Disconnected");
     },
   });
-  await expect(downloadLesson("patan", 2, lesson, jest.fn())).rejects.toThrow(
+  await expect(downloadLesson("learner", 2, lesson, jest.fn())).rejects.toThrow(
     "Disconnected",
   );
-  expect(await listDownloads("patan")).toEqual([]);
+  expect(await listDownloads("learner")).toEqual([]);
   expect(FS.deleteAsync).toHaveBeenCalledWith(
     expect.stringContaining(".part"),
     { idempotent: true },
@@ -79,16 +79,16 @@ test("partial file is removed after download failure", async () => {
 });
 test("mismatching downloaded byte count never becomes playable offline", async () => {
   (FS.getInfoAsync as jest.Mock).mockResolvedValue({ exists: true, size: 500 });
-  await expect(downloadLesson("patan", 2, lesson, jest.fn())).rejects.toThrow(
+  await expect(downloadLesson("learner", 2, lesson, jest.fn())).rejects.toThrow(
     "Incomplete video",
   );
-  expect(await listDownloads("patan")).toEqual([]);
+  expect(await listDownloads("learner")).toEqual([]);
 });
 test("recovery removes missing downloads and streaming is the fallback", async () => {
-  await downloadLesson("patan", 2, lesson, jest.fn());
+  await downloadLesson("learner", 2, lesson, jest.fn());
   (FS.getInfoAsync as jest.Mock).mockResolvedValue({ exists: false });
-  expect(await localVideo("patan", lesson)).toBe(lesson.videoUrl);
-  expect(await recoverDownloads("patan")).toEqual([]);
+  expect(await localVideo("learner", lesson)).toBe(lesson.videoUrl);
+  expect(await recoverDownloads("learner")).toEqual([]);
 });
 
 test("simultaneous downloads reserve quota before either network request completes", async () => {
@@ -99,13 +99,13 @@ test("simultaneous downloads reserve quota before either network request complet
   });
   const result = await Promise.allSettled([
     downloadLesson(
-      "patan",
+      "learner",
       2,
       { ...lesson, id: 10, videoBytes: bytes },
       jest.fn(),
     ),
     downloadLesson(
-      "patan",
+      "learner",
       2,
       { ...lesson, id: 11, videoBytes: bytes },
       jest.fn(),
@@ -114,7 +114,7 @@ test("simultaneous downloads reserve quota before either network request complet
   expect(result.filter((r) => r.status === "fulfilled")).toHaveLength(1);
   expect(result.filter((r) => r.status === "rejected")).toHaveLength(1);
   expect(FS.createDownloadResumable).toHaveBeenCalledTimes(1);
-  expect(await listDownloads("patan")).toHaveLength(1);
+  expect(await listDownloads("learner")).toHaveLength(1);
 });
 
 test("background execution is released only after the verified file and complete record are committed", async () => {
@@ -122,21 +122,21 @@ test("background execution is released only after the verified file and complete
   const phases: string[] = [];
   (FS.moveAsync as jest.Mock).mockImplementationOnce(async () => { phases.push("move"); });
   const completeAsync = jest.fn(async () => {
-    recordsAtRelease = await listDownloads("patan");
+    recordsAtRelease = await listDownloads("learner");
     phases.push("release");
   });
   (FS.createDownloadResumable as jest.Mock).mockReturnValue({
     downloadAsync: async () => ({ status: 200 }),
     completeAsync,
   });
-  await downloadLesson("patan", 2, lesson, jest.fn());
+  await downloadLesson("learner", 2, lesson, jest.fn());
   expect(completeAsync).toHaveBeenCalledTimes(1);
   expect(phases).toEqual(["move", "release"]);
   expect(recordsAtRelease).toEqual([
     expect.objectContaining({
       lessonId: 1,
       status: "complete",
-      uri: "file:///documents/lms-patan/lesson-1.mp4",
+      uri: "file:///documents/lms-learner/lesson-1.mp4",
     }),
   ]);
 });
@@ -146,14 +146,14 @@ test("failed downloads release background execution after partial-file and recor
   const phases: string[] = [];
   (FS.deleteAsync as jest.Mock).mockImplementationOnce(async () => { phases.push("delete"); });
   const completeAsync = jest.fn(async () => {
-    recordsAtRelease = await listDownloads("patan");
+    recordsAtRelease = await listDownloads("learner");
     phases.push("release");
   });
   (FS.createDownloadResumable as jest.Mock).mockReturnValue({
     downloadAsync: async () => { throw new Error("Network lost"); },
     completeAsync,
   });
-  await expect(downloadLesson("patan", 2, lesson, jest.fn())).rejects.toThrow("Network lost");
+  await expect(downloadLesson("learner", 2, lesson, jest.fn())).rejects.toThrow("Network lost");
   expect(completeAsync).toHaveBeenCalledTimes(1);
   expect(phases).toEqual(["delete", "release"]);
   expect(recordsAtRelease).toEqual([]);
@@ -165,9 +165,9 @@ test("completion acknowledgement failure cannot replace the original download er
     downloadAsync: async () => { throw new Error("Network lost"); },
     completeAsync,
   });
-  await expect(downloadLesson("patan", 2, lesson, jest.fn())).rejects.toThrow("Network lost");
+  await expect(downloadLesson("learner", 2, lesson, jest.fn())).rejects.toThrow("Network lost");
   expect(completeAsync).toHaveBeenCalledTimes(1);
-  expect(await listDownloads("patan")).toEqual([]);
+  expect(await listDownloads("learner")).toEqual([]);
 });
 
 test.each(["partial file", "stored record"])(
@@ -184,7 +184,7 @@ test.each(["partial file", "stored record"])(
       },
       completeAsync,
     });
-    await expect(downloadLesson("patan", 2, lesson, jest.fn())).rejects.toThrow("Cleanup failed");
+    await expect(downloadLesson("learner", 2, lesson, jest.fn())).rejects.toThrow("Cleanup failed");
     expect(completeAsync).toHaveBeenCalledTimes(1);
   },
 );
@@ -196,7 +196,7 @@ function deferred<T>() {
 }
 
 test("recovery preserves a new download reserved after its filesystem snapshot", async () => {
-  await downloadLesson("patan", 2, lesson, jest.fn());
+  await downloadLesson("learner", 2, lesson, jest.fn());
   const inspected = deferred<void>();
   const info = deferred<{ exists: boolean; size: number }>();
   const network = deferred<{ status: number }>();
@@ -204,24 +204,24 @@ test("recovery preserves a new download reserved after its filesystem snapshot",
     inspected.resolve();
     return info.promise;
   });
-  const recovery = recoverDownloads("patan");
+  const recovery = recoverDownloads("learner");
   await inspected.promise;
   const started = deferred<void>();
   (FS.createDownloadResumable as jest.Mock).mockImplementationOnce(() => {
     started.resolve();
     return { downloadAsync: () => network.promise };
   });
-  const downloading = downloadLesson("patan", 2, { ...lesson, id: 2 }, jest.fn());
+  const downloading = downloadLesson("learner", 2, { ...lesson, id: 2 }, jest.fn());
   await started.promise;
   info.resolve({ exists: true, size: 1000 });
   await recovery;
-  const during = await listDownloads("patan");
+  const during = await listDownloads("learner");
   network.resolve({ status: 200 });
   await downloading;
   expect(during).toEqual(expect.arrayContaining([
     expect.objectContaining({ lessonId: 2, status: "downloading" }),
   ]));
-  expect(await listDownloads("patan")).toEqual(expect.arrayContaining([
+  expect(await listDownloads("learner")).toEqual(expect.arrayContaining([
     expect.objectContaining({ lessonId: 2, status: "complete" }),
   ]));
 });
@@ -233,17 +233,17 @@ test("recovery does not replace a completed record with its older downloading sn
     started.resolve();
     return { downloadAsync: () => network.promise };
   });
-  const downloading = downloadLesson("patan", 2, lesson, jest.fn());
+  const downloading = downloadLesson("learner", 2, lesson, jest.fn());
   await started.promise;
-  const snapshot = await AsyncStorage.getItem(storageKey("patan", "downloads"));
+  const snapshot = await AsyncStorage.getItem(storageKey("learner", "downloads"));
   const snapshotRead = deferred<string | null>();
   (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => snapshotRead.promise);
-  const recovery = recoverDownloads("patan");
+  const recovery = recoverDownloads("learner");
   network.resolve({ status: 200 });
   await downloading;
   snapshotRead.resolve(snapshot);
   await recovery;
-  expect(await listDownloads("patan")).toEqual([
+  expect(await listDownloads("learner")).toEqual([
     expect.objectContaining({ lessonId: 1, status: "complete" }),
   ]);
 });

@@ -56,8 +56,8 @@ Source and tests, relative to `think_ai`:
 | mobile/src/tests/lms/editor.test.tsx | Editor load/synchronization/editing checks |
 | mobile/src/tests/lms/execution-api.test.ts | Execution timeout and HTTP error checks |
 
-Handover and evidence: `deliverables/PLAYGROUND_UPDATE.md`, `deliverables/PATAN_REMAINING_WORK.md`, `deliverables/playground-program-verification.json` and the complete `deliverables/PLAYGROUND_CHANGED_FILES.md` / `.json` manifest. Existing status documents receive a dated pointer so historical counts and the earlier reverted-draft statement are not mistaken for the current status. The final changed-file manifest is the authoritative list of files actually delivered.
+Handover and evidence: `deliverables/PLAYGROUND_UPDATE.md`, `deliverables/REMAINING_WORK.md`, `deliverables/playground-program-verification.json` and the complete `deliverables/PLAYGROUND_CHANGED_FILES.md` / `.json` manifest. Existing status documents receive a dated pointer so historical counts and the earlier reverted-draft statement are not mistaken for the current status. The final changed-file manifest is the authoritative list of files actually delivered.
 
 ## Overall assignment status
 
-This update completes the tested local Playground fixes. It does not complete the external acceptance requirements for all of Patan's tasks. See [PATAN_REMAINING_WORK.md](PATAN_REMAINING_WORK.md) for the remaining services, team integration, approved client assets and device checks.
+This update completes the tested local Playground fixes. It does not complete the external acceptance requirements for all of Patan's tasks. See [REMAINING_WORK.md](REMAINING_WORK.md) for the remaining services, team integration, approved client assets and device checks.

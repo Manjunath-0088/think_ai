@@ -137,6 +137,25 @@ function requireOwnedCodeAttempt({ readOnly = false, publicTestCase = false } = 
   });
 }
 
+// Resolve a coding assessment only through an active enrollment owned by the caller.
+const requireOwnedCodingAssessment = guard(async (req) => {
+  const assessmentId = id(req.params.assessmentId, "Assessment ID");
+  const assessment = await prisma.assessment.findUnique({
+    where: { id: assessmentId }, select: { id: true, status: true, module: { select: { courseId: true } } },
+  });
+  if (!assessment || assessment.status !== "ACTIVE") reject(403, "ASSESSMENT_FORBIDDEN", "Assessment is unavailable.");
+  const enrollments = await prisma.enrollment.findMany({ where: {
+    studentEmail: { equals: (req.lmsUser || req.user).email, mode: "insensitive" },
+    courseAccess: true, enrollmentStatus: { in: ["ACTIVE", "ENROLLED"] },
+    batch: { courseId: assessment.module.courseId },
+  }, select: { id: true } });
+  const selected = req.query.enrollmentId !== undefined
+    ? enrollments.find(row => row.id === id(req.query.enrollmentId, "Enrollment ID"))
+    : enrollments.length === 1 ? enrollments[0] : null;
+  if (!selected) reject(403, "ENROLLMENT_FORBIDDEN", "Open this assignment from an active enrolled course.");
+  req.legacyEnrollment = await ownedEnrollment(req, selected.id);
+});
+
 // Legacy controllers return ORM-shaped responses. Keep answer keys and hidden
 // execution input/output out of learner responses, including future nested fields.
 function learnerPayload(value) {
@@ -159,6 +178,7 @@ function redactLearnerAnswers(req, res, next) {
 }
 module.exports = {
   requireOwnedEnrollment,
+  requireOwnedCodingAssessment,
   requireAssessmentEnrollment,
   requireOwnedCodeAttempt,
   redactLearnerAnswers,

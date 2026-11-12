@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { readAuthToken, writeAuthToken, deleteAuthToken } from '@/lms/authStorage';
 
 import {
   CredentialStorageError,
@@ -199,6 +200,9 @@ export async function signIn(
   profile?: SessionProfile | null
 ): Promise<SessionState> {
   const trimmed = userId.trim() || DEFAULT_USER_ID;
+  // Fail sign-in if the authenticated session cannot be securely persisted.
+  if (token) await writeAuthToken(token);
+  else await deleteAuthToken();
   try {
     await writeCredential(USER_ID_KEY, trimmed);
     if (token) {

@@ -5,6 +5,7 @@ import { lmsApi, LmsApiError } from "./api";
 import { useLms } from "./LmsProvider";
 import { clearDraft, loadDraft, read, saveDraft, storageKey } from "./storage";
 import type { Answer, Attempt, Draft } from "./types";
+import { HANDOVER_READ_API } from './deployment';
 export function remainingSeconds(expiresAt: string, now: number, offset = 0) {
   return Math.max(0, Math.ceil((Date.parse(expiresAt) - now - offset) / 1000));
 }
@@ -17,6 +18,7 @@ export function useAssessment(
   const userId = session.userId;
   const [attempt, setAttempt] = useState<Attempt | null>(null),
     [pendingDraft, setPendingDraft] = useState<Draft | null>(null);
+  const [preview, setPreview] = useState<Attempt['assessment'] | null>(null);
   const [answers, setAnswers] = useState<Record<string, Answer>>({}),
     [flags, setFlags] = useState<number[]>([]);
   const [seconds, setSeconds] = useState(0),
@@ -40,6 +42,16 @@ export function useAssessment(
       expirySubmitted.current = false;
       submissionFailed.current = false;
       try {
+        if (HANDOVER_READ_API && !(await lmsApi.timedAssessmentAvailable())) {
+          const content = await lmsApi.assessmentPreview(assessmentId, enrollmentId);
+          if (active.current) {
+            setPreview(content);
+            setError('Assessment preview only. The deployed server does not provide the required timed-attempt, submit and results contract. No attempt or grade has been created. Retry after the backend is updated.');
+          }
+          return;
+        }
+        if (!active.current) return;
+        setPreview(null);
         let value: Attempt;
         try {
           value = await lmsApi.start(assessmentId, enrollmentId);
@@ -208,6 +220,7 @@ export function useAssessment(
     await initialize();
   }
   return {
+    preview,
     attempt,
     pendingDraft,
     answers,

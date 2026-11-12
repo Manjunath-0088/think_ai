@@ -1,4 +1,4 @@
-require('@testing-library/react-native/extend-expect');
+require('@testing-library/react-native');
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
@@ -130,6 +130,7 @@ jest.useFakeTimers();
  * offline cache/queue modules cannot leak state between cases (the mocked
  * AsyncStorage is a shared in-memory store for the whole file). */
 beforeEach(async () => {
+  require('expo-secure-store').__reset();
   const asyncStorageModule = require('@react-native-async-storage/async-storage');
   const asyncStorage = asyncStorageModule.default ?? asyncStorageModule;
   await asyncStorage.clear();
