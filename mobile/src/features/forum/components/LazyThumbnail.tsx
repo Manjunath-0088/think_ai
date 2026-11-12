@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 
-export function LazyThumbnail({ uri }: { uri: string }) {
+type Props = {
+  uri: string;
+  accessibilityLabel?: string;
+};
+
+export function LazyThumbnail({ uri, accessibilityLabel }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const accessible = Boolean(accessibilityLabel);
   return (
     <View style={styles.wrap} testID="lazy-thumbnail">
       {!error && (
@@ -11,6 +17,8 @@ export function LazyThumbnail({ uri }: { uri: string }) {
           source={{ uri }}
           style={styles.img}
           resizeMode="cover"
+          accessibilityLabel={accessibilityLabel}
+          accessible={accessible}
           onLoad={() => setLoading(false)}
           onError={() => {
             setLoading(false);
@@ -18,7 +26,14 @@ export function LazyThumbnail({ uri }: { uri: string }) {
           }}
         />
       )}
-      {error && <View style={[styles.img, styles.error]} testID="lazy-thumbnail-error" />}
+      {error && (
+        <View
+          style={[styles.img, styles.error]}
+          testID="lazy-thumbnail-error"
+          accessibilityLabel={accessibilityLabel}
+          accessible={accessible}
+        />
+      )}
       {loading && <ActivityIndicator style={styles.loader} />}
     </View>
   );

@@ -7,3 +7,23 @@ export const failureMessages: Record<FailureReasonKey, { title: string; body: st
   network: { title: 'Network Error', body: 'We could not reach the payment provider. Check your connection and retry.' },
   unknown: { title: 'Payment Failed', body: 'Something went wrong while processing your payment.' },
 };
+
+export function failureReasonFromCode(code?: string | null): FailureReasonKey {
+  switch ((code ?? '').toUpperCase()) {
+    case 'CARD_DECLINED':
+    case 'PAYMENT_DECLINED':
+    case 'DECLINED':
+      return 'declined';
+    case 'INSUFFICIENT_FUNDS':
+      return 'insufficient_funds';
+    case 'EXPIRED_CARD':
+    case 'SESSION_EXPIRED':
+    case 'EXPIRED':
+      return 'expired';
+    case 'NETWORK_ERROR':
+    case 'TIMEOUT':
+      return 'network';
+    default:
+      return 'unknown';
+  }
+}
