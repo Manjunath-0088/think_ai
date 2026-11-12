@@ -108,3 +108,7 @@ backups/
 Dockerfile.test-*-backup
 Dockerfile.v*-working-*
 compose.yml.before-*
+
+# Local mobile design verification output
+mobile/.build-temp/
+mobile/dist-home-brand/

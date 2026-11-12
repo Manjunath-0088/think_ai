@@ -6,8 +6,9 @@ import type { ScreenProps } from "@/navigation/types";
 import { lmsApi } from "../api";
 import { useLms } from "../LmsProvider";
 import { roleHome } from "../access";
-import { Card, Field, Message, Screen, styles } from "../ui";
+import { Card, Field, Message, Screen, useLmsStyles } from "../ui";
 export function AdminHomeScreen({ navigation }: ScreenProps<"AdminHome">) {
+  const styles = useLmsStyles();
   const { account } = useLms();
   return (
     <Screen title="Admin workspace">
@@ -32,6 +33,17 @@ export function AdminHomeScreen({ navigation }: ScreenProps<"AdminHome">) {
           onPress={() => navigation.navigate("Analytics")}
         />
       </Card>
+      <Card>
+        <Text style={styles.heading}>Teaching and operations</Text>
+        <Text style={styles.text}>
+          Open attendance, grading, live session and role tools available to staff.
+        </Text>
+        <AppButton
+          title="Open teaching tools"
+          variant="secondary"
+          onPress={() => navigation.navigate("StaffTools")}
+        />
+      </Card>
       <View style={styles.row}>
         <AppButton
           title="My account"
@@ -48,6 +60,7 @@ export function AdminHomeScreen({ navigation }: ScreenProps<"AdminHome">) {
   );
 }
 export function AccountScreen() {
+  const styles = useLmsStyles();
   const { account, refreshAccess } = useLms();
   const [name, setName] = useState(account?.name || "");
   const [busy, setBusy] = useState(false);

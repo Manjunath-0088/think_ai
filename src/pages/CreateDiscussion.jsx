@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ForumApi } from '../services/forumApi.js';
+import { ForumApi } from '../services/backendApi.js';
 import { navigate } from '../services/router.js';
 
 export default function CreateDiscussion() {

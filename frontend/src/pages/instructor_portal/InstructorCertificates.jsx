@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Award, CheckCircle, Clock, UserCheck } from 'lucide-react';
+import { Award } from 'lucide-react';
 
 export default function InstructorCertificates() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchStudentProgress();
-  }, []);
 
   const fetchStudentProgress = async () => {
     try {
@@ -24,6 +20,11 @@ export default function InstructorCertificates() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchStudentProgress();
+  }, []);
 
   if (loading) {
     return <div className="p-8 text-slate-400">Loading student records...</div>;

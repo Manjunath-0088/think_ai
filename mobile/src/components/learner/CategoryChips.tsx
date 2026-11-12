@@ -7,6 +7,7 @@ import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { CourseCategoryId } from '@/types';
 
 export interface CategoryChipsProps {
+  tiles?: boolean;
   value: CourseCategoryId | 'all';
   onChange: (next: CourseCategoryId | 'all') => void;
   includeAll?: boolean;
@@ -16,6 +17,7 @@ export interface CategoryChipsProps {
 
 export function CategoryChips({
   value,
+  tiles = false,
   onChange,
   includeAll = true,
   counts,
@@ -40,7 +42,7 @@ export function CategoryChips({
       horizontal
       showsHorizontalScrollIndicator={false}
       testID={testID}>
-      {options.map((option) => {
+      {options.map((option, index) => {
         const selected = option.id === value;
         const count = counts?.[option.id];
         return (
@@ -52,17 +54,17 @@ export function CategoryChips({
             accessibilityState={{ selected }}
             key={option.id}
             onPress={() => onChange(option.id)}
-            style={[styles.chip, selected && styles.chipSelected]}
+            style={[styles.chip, selected && styles.chipSelected, tiles && styles.tile]}
             testID={`category-chip-${option.id}`}>
             <Text
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
-              style={styles.icon}>
+              style={[styles.icon, tiles && [styles.tileIcon, { backgroundColor: ['#A435F0', '#08B9CD', '#9657FF', '#53C93A', '#FF9D4B'][index % 5] }]]}>
               {option.icon}
             </Text>
-            <Text style={[styles.label, selected && styles.labelSelected]}>
+            <Text numberOfLines={2} style={[styles.label, selected && styles.labelSelected, tiles && { fontSize: 10, textAlign: 'center' }]}>
               {option.label}
-              {count === undefined ? '' : ` (${count})`}
+              {tiles || count === undefined ? '' : ` (${count})`}
             </Text>
           </Pressable>
         );
@@ -73,6 +75,8 @@ export function CategoryChips({
 
 const createStyles = (palette: Palette) =>
   StyleSheet.create({
+  tile: { flexDirection: 'column', width: 78, paddingHorizontal: 4, paddingVertical: 8, borderRadius: 14, borderWidth: 0, backgroundColor: palette.surfaceMuted },
+  tileIcon: { fontSize: 22, padding: 6, backgroundColor: '#A435F0', borderRadius: 10, overflow: 'hidden' },
   content: {
     gap: spacing.xs,
     paddingHorizontal: spacing.md,

@@ -1,4 +1,4 @@
-import React from "react";
+
 import { X, CheckCircle } from "lucide-react";
 
 export default function AssessmentViewModal({ assessment, onClose }) {

@@ -11,6 +11,8 @@ describe('ProfileScreen', () => {
     expect(screen.queryByTestId('profile-theme-options')).toBeNull();
     fireEvent.press(screen.getByTestId('profile-appearance-toggle'));
     expect(screen.getByTestId('profile-theme-options')).toBeTruthy();
+    expect(screen.getByText('Theme')).toBeTruthy();
+    expect(screen.queryByText('Appearance')).toBeNull();
     fireEvent.press(screen.getByTestId('profile-community'));
     expect(screen.getByTestId('profile-community')).toBeTruthy();
   });

@@ -17,10 +17,6 @@ function EditCourse() {
     status: "ACTIVE",
   });
 
-  useEffect(() => {
-    loadCourse();
-  }, []);
-
   const loadCourse = async () => {
     try {
       const response = await getCourseById(id);
@@ -42,6 +38,11 @@ function EditCourse() {
     }
   };
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadCourse();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -55,17 +56,7 @@ function EditCourse() {
     e.preventDefault();
 
     try {
-      const payload = {
-        title: course.title,
-        description: course.description,
-        category: course.category,
-        price: Number(course.price),
-        duration: course.duration,
-        thumbnail: course.thumbnail,
-        status: course.status,
-      };
-
-      await updateCourse(id, payload);
+      await updateCourse(id, course);
 
       toast.success("Course Updated Successfully");
 
@@ -77,28 +68,16 @@ function EditCourse() {
         console.log(error.response.data);
       }
 
-      toast.error("Failed to Update Course");
+      toast.error("Update Failed");
     }
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow">
+    <div className="bg-white shadow rounded-lg p-8">
 
-      <div className="flex justify-between items-center mb-6">
-
-        <h1 className="text-3xl font-bold">
-          Edit Course
-        </h1>
-
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
-        >
-          ← Back
-        </button>
-
-      </div>
+      <h1 className="text-3xl font-bold mb-6">
+        Edit Course
+      </h1>
 
       <form
         onSubmit={handleSubmit}
@@ -112,6 +91,16 @@ function EditCourse() {
           value={course.title}
           onChange={handleChange}
           className="border p-3 rounded"
+          required
+        />
+
+        <textarea
+          name="description"
+          placeholder="Description"
+          value={course.description}
+          onChange={handleChange}
+          className="border p-3 rounded col-span-2"
+          rows={4}
           required
         />
 
@@ -148,31 +137,22 @@ function EditCourse() {
         <input
           type="text"
           name="thumbnail"
-          placeholder="Thumbnail"
+          placeholder="Thumbnail URL"
           value={course.thumbnail}
           onChange={handleChange}
-          className="border p-3 rounded"
+          className="border p-3 rounded col-span-2"
         />
 
         <select
           name="status"
           value={course.status}
           onChange={handleChange}
-          className="border p-3 rounded"
+          className="border p-3 rounded col-span-2"
+          required
         >
           <option value="ACTIVE">ACTIVE</option>
           <option value="INACTIVE">INACTIVE</option>
         </select>
-
-        <textarea
-          name="description"
-          placeholder="Description"
-          value={course.description}
-          onChange={handleChange}
-          className="border p-3 rounded col-span-2"
-          rows="5"
-          required
-        />
 
         <button
           type="submit"
@@ -180,7 +160,6 @@ function EditCourse() {
         >
           Update Course
         </button>
-
       </form>
 
     </div>

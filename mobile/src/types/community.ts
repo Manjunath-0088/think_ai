@@ -393,3 +393,15 @@ export type NotificationPreferences = Record<
   NotificationEventGroup,
   NotificationGroupPrefs
 >;
+
+/** Rows returned by the shared website/API notification center. */
+export interface CommunityNotification {
+  id: string;
+  userId: string;
+  actorId?: string | null;
+  type: string;
+  message: string;
+  link?: string | null;
+  read: boolean;
+  createdAt: string;
+}

@@ -11,10 +11,6 @@ function UserDetails() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadUser();
-  }, [id]);
-
   const loadUser = async () => {
     try {
       setLoading(true);
@@ -30,6 +26,10 @@ function UserDetails() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadUser();
+  }, [id, loadUser]);
 
   if (loading) {
     return <DetailsSkeleton />;

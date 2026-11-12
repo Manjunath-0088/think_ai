@@ -3,10 +3,12 @@ import type { NavigationContainerRef } from '@react-navigation/native';
 
 import {
   getInitialDeepLink,
+  rememberPendingDeepLink,
   subscribeToDeepLinks,
   type DeepLinkResolution,
 } from './deepLinks';
 import type { RootStackParamList } from './types';
+import { allowsAudience, roleHome, routeAudience } from '@/lms/access';
 
 /**
  * Bridges incoming deep links to the navigator.
@@ -16,7 +18,8 @@ import type { RootStackParamList } from './types';
  * which should be wired to `NavigationContainer`'s `onReady`.
  */
 export function useDeepLinks(
-  navigationRef: NavigationContainerRef<RootStackParamList>
+  navigationRef: NavigationContainerRef<RootStackParamList>,
+  role?: string | null,
 ): { handleReady: () => void } {
   const pending = useRef<DeepLinkResolution | null>(null);
 
@@ -30,6 +33,7 @@ export function useDeepLinks(
         return;
       }
       if (resolution.status === 'auth-required') {
+        rememberPendingDeepLink(resolution.route);
         navigationRef.navigate(resolution.redirectTo);
         return;
       }
@@ -38,9 +42,14 @@ export function useDeepLinks(
         name: string,
         args?: object
       ) => void;
+      const audience = routeAudience[screen];
+      if (audience && !allowsAudience(audience, role)) {
+        navigate(roleHome(role));
+        return;
+      }
       navigate(screen, params);
     },
-    [navigationRef]
+    [navigationRef, role]
   );
 
   useEffect(() => {

@@ -12,6 +12,7 @@ export const loginApi = (credentials) => {
         (u) => u.email === credentials.email && u.password === credentials.password
       )
       if (match) {
+        // eslint-disable-next-line no-unused-vars
         const { password, ...user } = match
         resolve({ data: { token: 'mock-jwt-token-' + user.role, user } })
       } else {
@@ -37,6 +38,7 @@ export const registerApi = (formData) => {
         role: 'Learner',
       }
       MOCK_USERS = [...MOCK_USERS, newUser]
+      // eslint-disable-next-line no-unused-vars
       const { password, ...user } = newUser
       resolve({ data: { token: 'mock-jwt-token-' + user.role, user } })
     }, 500)
@@ -52,6 +54,7 @@ export const updateProfileApi = (userId, updates) => {
         return
       }
       MOCK_USERS[index] = { ...MOCK_USERS[index], ...updates }
+      // eslint-disable-next-line no-unused-vars
       const { password, ...user } = MOCK_USERS[index]
       resolve({ data: { user } })
     }, 500)

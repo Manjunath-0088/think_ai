@@ -16,10 +16,6 @@ function AddEnrollment() {
     enrollmentStatus: "ACTIVE",
   });
 
-  useEffect(() => {
-    loadBatches();
-  }, []);
-
   const loadBatches = async () => {
     try {
       const response = await getBatches();
@@ -29,6 +25,11 @@ function AddEnrollment() {
       toast.error("Failed to load batches");
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadBatches();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -11,5 +11,11 @@ export type CommunityOverrides = Partial<LearningApiClient>;
 export function createCommunityTestClient(
   overrides: CommunityOverrides = {}
 ): MockApiClient {
-  return { ...createMockApiClient({ latencyMs: 0 }), ...overrides };
+  return {
+    ...createMockApiClient({ latencyMs: 0 }),
+    fetchBookmarks: jest.fn().mockResolvedValue({ bookmarks: [], syncedAt: null }),
+    addBookmark: jest.fn().mockResolvedValue(undefined),
+    removeBookmark: jest.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
 }

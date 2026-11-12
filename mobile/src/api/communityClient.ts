@@ -5,6 +5,7 @@ import type {
   ContentActionResult,
   ContentTarget,
   CheckoutPlan,
+  CommunityNotification,
   CreateDiscussionResult,
   DiscountValidation,
   FlagQueueItem,
@@ -97,13 +98,11 @@ export function createCommunityClient(): CommunityApiClient {
   return {
     // ---- Page 6 — Forum Thread Detail -------------------------------------
     fetchThreadDetail(threadId: string): Promise<ThreadDetail> {
-      return apiData<ThreadDetail>(`/forum/threads/${segment(threadId)}`);
+      return apiData<ThreadDetail>(`/discussions/${segment(threadId)}`);
     },
 
     fetchThreadReplies(threadId: string): Promise<ThreadReply[]> {
-      return apiData<ThreadReply[]>(
-        `/forum/threads/${segment(threadId)}/replies`
-      );
+      return apiData<ThreadReply[]>(`/comments/${segment(threadId)}`);
     },
 
     async submitReply(
@@ -111,10 +110,11 @@ export function createCommunityClient(): CommunityApiClient {
       input: SubmitReplyInput
     ): Promise<SubmitReplyResult> {
       const payload = await apiRequest<ThreadReply>(
-        `/forum/threads/${segment(threadId)}/replies`,
+        '/comments',
         {
           method: 'POST',
           body: {
+            discussionId: threadId,
             body: input.body,
             parentId: input.parentId ?? null,
           },
@@ -138,7 +138,7 @@ export function createCommunityClient(): CommunityApiClient {
 
     setThreadSolved(threadId: string, solved: boolean): Promise<ThreadDetail> {
       return apiData<ThreadDetail>(
-        `/forum/threads/${segment(threadId)}/solved`,
+        `/discussions/${segment(threadId)}/solved`,
         {
           method: 'PATCH',
           body: { solved },
@@ -147,6 +147,8 @@ export function createCommunityClient(): CommunityApiClient {
     },
 
     searchMentionUsers(query: string): Promise<MentionUser[]> {
+      // This shared router endpoint intentionally allows signed-in learners;
+      // the moderation namespace requires a moderator role.
       return apiData<MentionUser[]>('/users/search', {
         query: { q: query },
       });
@@ -156,7 +158,7 @@ export function createCommunityClient(): CommunityApiClient {
       userId: string
     ): Promise<NotificationPreferences> {
       return apiData<NotificationPreferences>(
-        `/users/${segment(userId)}/notification-preferences`
+        `/notifications/preferences/${segment(userId)}`
       );
     },
 
@@ -165,9 +167,29 @@ export function createCommunityClient(): CommunityApiClient {
       preferences: NotificationPreferences
     ): Promise<NotificationPreferences> {
       return apiData<NotificationPreferences>(
-        `/users/${segment(userId)}/notification-preferences`,
-        { method: 'PATCH', body: preferences }
+        `/notifications/preferences/${segment(userId)}`,
+        { method: 'PUT', body: preferences }
       );
+    },
+
+    fetchCommunityNotifications(unreadOnly = false): Promise<CommunityNotification[]> {
+      return apiData<CommunityNotification[]>('/notifications', {
+        query: { unreadOnly: unreadOnly ? 'true' : undefined },
+      });
+    },
+
+    markCommunityNotificationRead(notificationId: string): Promise<CommunityNotification> {
+      return apiData<CommunityNotification>(
+        `/notifications/${segment(notificationId)}/read`,
+        { method: 'PATCH' }
+      );
+    },
+
+    markAllCommunityNotificationsRead(): Promise<{ userId: string; marked: number }> {
+      return apiData<{ userId: string; marked: number }>('/notifications/read-all', {
+        method: 'POST',
+        body: {},
+      });
     },
 
     // ---- Page 7 — Create Post ---------------------------------------------
@@ -181,6 +203,59 @@ export function createCommunityClient(): CommunityApiClient {
         slug: slugify(row.name),
         color: row.color ?? '#6366f1',
       }));
+    },
+
+    async fetchCommunityCategories(): Promise<ForumCategory[]> {
+      const rows = await apiData<{
+        id: string;
+        name: string;
+        slug?: string;
+        color?: string;
+        description?: string;
+        discussionCount?: number;
+      }[]>('/categories');
+      return rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        slug: row.slug ?? slugify(row.name),
+        color: row.color ?? '#6366f1',
+        description: row.description ?? '',
+        discussionCount: row.discussionCount ?? 0,
+      }));
+    },
+
+    async createCommunityCategory(input): Promise<ForumCategory> {
+      const row = await apiData<{
+        id: string; name: string; slug?: string; color?: string;
+        description?: string; discussionCount?: number;
+      }>('/categories', { method: 'POST', body: input });
+      return {
+        id: row.id,
+        name: row.name,
+        slug: row.slug ?? slugify(row.name),
+        color: row.color ?? input.color,
+        description: row.description ?? input.description,
+        discussionCount: row.discussionCount ?? 0,
+      };
+    },
+
+    async updateCommunityCategory(categoryId, input): Promise<ForumCategory> {
+      const row = await apiData<{
+        id: string; name: string; slug?: string; color?: string;
+        description?: string; discussionCount?: number;
+      }>(`/categories/${segment(categoryId)}`, { method: 'PUT', body: input });
+      return {
+        id: row.id,
+        name: row.name,
+        slug: row.slug ?? slugify(row.name),
+        color: row.color ?? input.color,
+        description: row.description ?? input.description,
+        discussionCount: row.discussionCount ?? 0,
+      };
+    },
+
+    async deleteCommunityCategory(categoryId): Promise<void> {
+      await apiData(`/categories/${segment(categoryId)}`, { method: 'DELETE' });
     },
 
     async createDiscussion(input: CreateThreadInput): Promise<CreateDiscussionResult> {
@@ -200,6 +275,20 @@ export function createCommunityClient(): CommunityApiClient {
             ? payload.notificationsCreated
             : 0,
       };
+    },
+
+    async reportDiscussion(discussionId, reason): Promise<void> {
+      await apiData(`/discussions/${segment(discussionId)}/flag`, {
+        method: 'POST',
+        body: { reason },
+      });
+    },
+
+    async reportComment(commentId, reason): Promise<void> {
+      await apiData(`/comments/${segment(commentId)}/flag`, {
+        method: 'POST',
+        body: { reason },
+      });
     },
 
     // ---- Page 8 — Bookmarks ------------------------------------------------
@@ -226,7 +315,7 @@ export function createCommunityClient(): CommunityApiClient {
 
     // ---- Page 9 — Moderation Dashboard ------------------------------------
     fetchFlaggedQueue(): Promise<FlagQueueItem[]> {
-      return apiData<FlagQueueItem[]>('/forum/flags');
+      return apiData<FlagQueueItem[]>('/moderation/flagged');
     },
 
     fetchFlagReports(): Promise<FlagReport[]> {
@@ -262,8 +351,8 @@ export function createCommunityClient(): CommunityApiClient {
 
     async dismissFlag(target: ContentTarget): Promise<ContentActionResult> {
       const data = await apiData<{ id: string; type: string; resolved?: boolean }>(
-        `/forum/posts/${segment(target.id)}/action`,
-        { method: 'PATCH', body: { type: target.type, action: 'resolve' } }
+        `/moderation/content/${segment(target.id)}/resolve`,
+        { method: 'POST', body: { type: target.type } }
       );
       return { id: data.id, type: target.type, resolved: data.resolved ?? true };
     },
@@ -273,10 +362,10 @@ export function createCommunityClient(): CommunityApiClient {
       hidden: boolean
     ): Promise<ContentActionResult> {
       const data = await apiData<{ id: string; type: string; hidden: boolean }>(
-        `/forum/posts/${segment(target.id)}/action`,
+        `/moderation/content/${segment(target.id)}`,
         {
           method: 'PATCH',
-          body: { type: target.type, action: hidden ? 'hide' : 'show' },
+          body: { type: target.type, hidden },
         }
       );
       return { id: data.id, type: target.type, hidden: data.hidden };

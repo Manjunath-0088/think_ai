@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { palette, spacing, typography } from '@/theme/tokens';
+import { spacing, typography } from '@/theme/tokens';
+import type { Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/useThemedStyles';
 import type { UserRole } from '@/screens/onboarding/RoleSelectionScreen';
 
 interface TourStep {
@@ -44,6 +46,7 @@ interface Props {
 }
 
 export function GuidedTourOverlay({ role, onDismiss }: Props) {
+  const styles = useThemedStyles(createStyles);
   const [currentStep, setCurrentStep] = useState(0);
   const relevantSteps = tourSteps.filter((step) => step.role.includes(role));
   const step = relevantSteps[currentStep];
@@ -87,7 +90,7 @@ export function GuidedTourOverlay({ role, onDismiss }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (palette: Palette) => StyleSheet.create({
   overlay: {
     position: 'absolute',
     top: 0,

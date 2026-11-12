@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Search, Loader2, CheckCircle, X } from "lucide-react";
 
 // NOTE: this file lives one folder deeper than the original AssessmentManager.jsx
@@ -11,25 +11,9 @@ import { getEnrollments } from "../../api/enrollmentApi";
 export default function AssessmentAnalyticsView({ assessmentId, courseId, onBack }) {
   const [enrolledStudents, setEnrolledStudents] = useState([]);
   const [submissions, setSubmissions] = useState([]);
-  const [assessmentDetails, setAssessmentDetails] = useState(null);
   const [loadingEnrollments, setLoadingEnrollments] = useState(true);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
   const [analyticsSearchQuery, setAnalyticsSearchQuery] = useState("");
-
-  // Fetch assessment details to know total questions count
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const asmRes = await api.get(`/assessments/${assessmentId}`).catch(() => null);
-        const asmData = asmRes?.data?.data || asmRes?.data;
-        if (isMounted && asmData) setAssessmentDetails(asmData);
-      } catch (err) {
-        console.error("Failed to load assessment details", err);
-      }
-    })();
-    return () => { isMounted = false; };
-  }, [assessmentId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -95,9 +79,6 @@ export default function AssessmentAnalyticsView({ assessmentId, courseId, onBack
   }, [enrolledStudents, analyticsSearchQuery]);
 
   const loading = loadingEnrollments || loadingSubmissions;
-
-  // Determine total available questions for this assessment
-  const totalQuestionsCount = assessmentDetails?.questions?.length || assessmentDetails?.totalQuestions || 0;
 
   return (
     <div className="space-y-6 animate-fade-in" style={{ fontFamily: "Inter, sans-serif" }}>
@@ -165,12 +146,6 @@ export default function AssessmentAnalyticsView({ assessmentId, courseId, onBack
                 const sub = submissionsByEnrollmentId.get(enrollmentId);
                 const hasSubmitted = !!sub;
                 const pct = hasSubmitted && sub.percentage != null ? Number(sub.percentage) : null;
-
-                // Count how many answers the student submitted
-                const answersArray = sub?.answers || sub?.responses || sub?.submittedAnswers || [];
-                const answeredCount = hasSubmitted
-                  ? (Array.isArray(answersArray) ? answersArray.length : (sub.answeredCount ?? sub.answersCount ?? 0))
-                  : 0;
 
                 return (
                   <tr key={enrollmentId || index} className="hover:bg-black/5 dark:hover:bg-white/5 transition">

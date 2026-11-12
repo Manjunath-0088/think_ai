@@ -10,13 +10,16 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
-import { restoreSession, signOut } from '@/api/session';
+import { registerSignOutCleanup, restoreSession, signOut } from '@/api/session';
 import { ErrorBoundary } from '@/components/common';
-import { subscribeToNotificationDeepLinks } from '@/features/notifications/pushRegistration';
+import {
+  subscribeToNotificationDeepLinks,
+  unregisterPushNotifications,
+} from '@/features/notifications/pushRegistration';
 import { isOnboardingCompleted } from '@/features/onboarding/utils/onboardingStorage';
 import { ApiClientProvider } from '@/hooks/useApiClient';
 import { AccessGate } from '@/lms/AccessGate';
-import { isAdministrator, type AccessAudience } from '@/lms/access';
+import { roleHome, type AccessAudience } from '@/lms/access';
 import { LmsErrorBoundary } from '@/lms/ErrorBoundary';
 import { useLms, LmsProvider } from '@/lms/LmsProvider';
 import { AdminHomeScreen, AccountScreen } from '@/lms/screens/AdminHomeScreen';
@@ -38,12 +41,15 @@ import { BookmarksScreen } from '@/screens/forum/BookmarksScreen';
 import { CreatePostScreen } from '@/screens/forum/CreatePostScreen';
 import { ForumHomeScreen } from '@/screens/forum/ForumHomeScreen';
 import { ForumThreadDetailScreen } from '@/screens/forum/ForumThreadDetailScreen';
+import { ForumCategoriesScreen } from '@/screens/forum/ForumCategoriesScreen';
+import { ForumNotificationsScreen } from '@/screens/forum/ForumNotificationsScreen';
 import { ModerationScreen } from '@/screens/forum/ModerationScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
+import { RegisterScreen } from '@/screens/auth/RegisterScreen';
 import { AssessmentScreen } from '@/screens/learning/AssessmentScreen';
 import { CertificateScreen } from '@/screens/learning/CertificateScreen';
 import { ResultsScreen } from '@/screens/learning/ResultsScreen';
-import { VideoPlayerScreen } from '@/screens/learning/VideoPlayerScreen';
+import { IntegratedVideoPlayerScreen } from '@/screens/learning/IntegratedVideoPlayerScreen';
 import { LearnerDashboardScreen } from '@/screens/learner/LearnerDashboardScreen';
 import { MyCoursesScreen } from '@/screens/learner/MyCoursesScreen';
 import { MyLearningScreen } from '@/screens/learner/MyLearningScreen';
@@ -75,7 +81,7 @@ function protect<Name extends keyof RootStackParamList>(
       <AccessGate
         audience={audience}
         onHome={() => {
-          props.navigation.navigate(isAdministrator(account?.role) ? 'AdminHome' : 'LmsHome');
+          props.navigation.navigate(roleHome(account?.role));
         }}>
         <Component {...props} />
       </AccessGate>
@@ -92,10 +98,13 @@ function ThemedStatusBar() {
 
 function RootNavigator() {
   const navigationRef = useNavigationContainerRef<RootStackParamList>();
-  const { handleReady } = useDeepLinks(navigationRef);
   const { session, account, ready, accessStatus } = useLms();
+  const { handleReady } = useDeepLinks(
+    navigationRef,
+    account?.role ?? session.profile?.role,
+  );
   const { palette, isDark } = useTheme();
-  const admin = isAdministrator(account?.role ?? session.profile?.role);
+  const workspaceRoute = roleHome(account?.role ?? session.profile?.role);
   const baseTheme = isDark ? DarkTheme : DefaultTheme;
   const navigationTheme = useMemo(() => ({
     ...baseTheme,
@@ -122,7 +131,7 @@ function RootNavigator() {
       ref={navigationRef}
       theme={navigationTheme}>
       <Stack.Navigator
-        initialRouteName={!session.token ? 'Login' : admin ? 'AdminHome' : 'LearnerDashboard'}
+        initialRouteName={!session.token ? 'Login' : workspaceRoute}
         screenOptions={({ navigation }) => ({
           headerStyle: { backgroundColor: palette.surface },
           headerTintColor: palette.textPrimary,
@@ -134,7 +143,7 @@ function RootNavigator() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Open my workspace"
-                    onPress={() => navigation.navigate(admin ? 'AdminHome' : 'LearnerDashboard')}
+                    onPress={() => navigation.navigate(workspaceRoute)}
                     style={{ padding: 8, minHeight: 44, justifyContent: 'center' }}>
                     <Text style={{ color: palette.textPrimary }}>Home</Text>
                   </Pressable>
@@ -151,6 +160,7 @@ function RootNavigator() {
         })}>
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Sign in', headerShown: false }} />
         <Stack.Screen name="SignIn" component={LoginScreen} options={{ title: 'Sign in', headerShown: false }} />
+        <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Create account', headerShown: false }} />
         <Stack.Screen name="AdminHome" component={protect(AdminHomeScreen, 'admin')} options={{ title: 'Admin workspace' }} />
         <Stack.Screen name="Account" component={protect(AccountScreen, 'account')} options={{ title: 'My account' }} />
         <Stack.Screen name="LearnerDashboard" component={protect(LearnerDashboardScreen, 'learner')} options={{ title: 'Dashboard' }} />
@@ -162,6 +172,8 @@ function RootNavigator() {
         <Stack.Screen name="Wishlist" component={protect(WishlistScreen, 'learner')} options={{ title: 'Wishlist' }} />
         <Stack.Screen name="Profile" component={protect(ProfileScreen, 'learner')} options={{ title: 'Profile' }} />
         <Stack.Screen name="ForumHome" component={protect(ForumHomeScreen, 'account')} options={{ title: 'Forum' }} />
+        <Stack.Screen name="ForumCategories" component={protect(ForumCategoriesScreen, 'account')} options={{ title: 'Forum Categories' }} />
+        <Stack.Screen name="ForumNotifications" component={protect(ForumNotificationsScreen, 'account')} options={{ title: 'Notifications' }} />
         <Stack.Screen name="ForumThread" component={protect(ForumThreadDetailScreen, 'account')} options={{ title: 'Thread' }} />
         <Stack.Screen name="CreatePost" component={protect(CreatePostScreen, 'account')} options={{ title: 'New Thread' }} />
         <Stack.Screen name="Bookmarks" component={protect(BookmarksScreen, 'account')} options={{ title: 'Bookmarks' }} />
@@ -170,7 +182,7 @@ function RootNavigator() {
         <Stack.Screen name="PaymentSuccess" component={protect(PaymentSuccessScreen, 'learner')} options={{ title: 'Payment Successful' }} />
         <Stack.Screen name="PaymentFailed" component={protect(PaymentFailedScreen, 'learner')} options={{ title: 'Payment Failed' }} />
         <Stack.Screen name="NotificationPreferences" component={protect(NotificationPreferencesScreen, 'account')} options={{ title: 'Notification Preferences' }} />
-        <Stack.Screen name="VideoPlayer" component={protect(VideoPlayerScreen, 'learner')} options={{ title: 'Lesson' }} />
+        <Stack.Screen name="VideoPlayer" component={protect(IntegratedVideoPlayerScreen, 'learner')} options={{ title: 'Lesson' }} />
         <Stack.Screen name="Assessment" component={protect(AssessmentScreen, 'learner')} options={{ title: 'Assessment' }} />
         <Stack.Screen name="Results" component={protect(ResultsScreen, 'learner')} options={{ title: 'Results' }} />
         <Stack.Screen name="Certificate" component={protect(CertificateScreen, 'learner')} options={{ title: 'Certificate' }} />
@@ -184,13 +196,13 @@ function RootNavigator() {
         <Stack.Screen name="PlaygroundHistory" component={protect(PlaygroundHistoryScreen, 'learner')} options={{ title: 'History' }} />
         <Stack.Screen name="LearnerProfile" component={protect(LearnerProfileScreen, 'learner')} options={{ title: 'Profile' }} />
         <Stack.Screen name="LmsSettings" component={protect(LmsSettingsScreen, 'learner')} options={{ title: 'Settings' }} />
-        <Stack.Screen name="StaffTools" component={StaffToolsScreen} options={{ title: 'Teaching tools' }} />
-        <Stack.Screen name="LiveStudio" component={LiveStudioScreen} options={{ title: 'Live Studio' }} />
-        <Stack.Screen name="AttendanceRegister" component={AttendanceRegisterScreen} options={{ title: 'Attendance register' }} />
-        <Stack.Screen name="AttendanceReport" component={AttendanceReportScreen} options={{ title: 'Attendance report' }} />
-        <Stack.Screen name="GradingQueue" component={GradingQueueScreen} options={{ title: 'Grading queue' }} />
-        <Stack.Screen name="InstructorControls" component={InstructorControlsScreen} options={{ title: 'Instructor controls' }} />
-        <Stack.Screen name="RbacMatrix" component={RbacMatrixScreen} options={{ title: 'Role permissions' }} />
+        <Stack.Screen name="StaffTools" component={protect(StaffToolsScreen, 'staff')} options={{ title: 'Teaching tools' }} />
+        <Stack.Screen name="LiveStudio" component={protect(LiveStudioScreen, 'account')} options={{ title: 'Live Studio' }} />
+        <Stack.Screen name="AttendanceRegister" component={protect(AttendanceRegisterScreen, 'staff')} options={{ title: 'Attendance register' }} />
+        <Stack.Screen name="AttendanceReport" component={protect(AttendanceReportScreen, 'staff')} options={{ title: 'Attendance report' }} />
+        <Stack.Screen name="GradingQueue" component={protect(GradingQueueScreen, 'staff')} options={{ title: 'Grading queue' }} />
+        <Stack.Screen name="InstructorControls" component={protect(InstructorControlsScreen, 'staff')} options={{ title: 'Instructor controls' }} />
+        <Stack.Screen name="RbacMatrix" component={protect(RbacMatrixScreen, 'admin')} options={{ title: 'Role permissions' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -203,6 +215,11 @@ export function App() {
   useEffect(() => {
     return subscribeToNotificationDeepLinks();
   }, []);
+
+  useEffect(
+    () => registerSignOutCleanup(() => unregisterPushNotifications().then(() => undefined)),
+    [],
+  );
 
   useEffect(() => {
     Promise.all([isOnboardingCompleted(), restoreSession()])

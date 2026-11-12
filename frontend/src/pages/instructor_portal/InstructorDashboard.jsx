@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../services/apiClient';
 import SessionPrepChecklist from '../../components/instructor/SessionPrepChecklist';
@@ -25,7 +25,10 @@ export default function InstructorDashboard() {
       .finally(() => setIsLoadingReport(false));
   };
 
-  useEffect(() => { loadReport(); }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadReport();
+  }, []);
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">

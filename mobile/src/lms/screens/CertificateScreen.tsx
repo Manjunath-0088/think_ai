@@ -12,8 +12,9 @@ import {
   shareCertificatePng,
 } from "../certificateShare";
 import { PdfPreview } from "../PdfPreview";
-import { Card, LoadState, Message, Screen, styles } from "../ui";
+import { Card, LoadState, Message, Screen, useLmsStyles } from "../ui";
 export function CertificateScreen({ route }: ScreenProps<"LmsCertificate">) {
+  const styles = useLmsStyles();
   const resource = useCertificate(route.params.certificateId);
   const cert = resource.data;
   const preview = useRef<ElementRef<typeof View>>(null);

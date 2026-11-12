@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ForumApi, getAllUserVotes } from '../services/forumApi.js';
+import { ForumApi } from '../services/backendApi.js';
 import ForumCard from '../components/ForumCard.jsx';
 import TagFilter from '../components/TagFilter.jsx';
 
@@ -34,7 +34,7 @@ export default function CommunityForum({ initialTag = null }) {
         setPosts(postsData);
         setUsers(usersData);
         setTags(tagsData);
-        setUserVotes(getAllUserVotes());
+        setUserVotes({});
       })
       .catch((err) => {
         if (!mounted.current) return;
@@ -62,7 +62,7 @@ export default function CommunityForum({ initialTag = null }) {
       try {
         const updated = await ForumApi.votePost(postId, direction);
         setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-        setUserVotes(getAllUserVotes());
+        setUserVotes((prev) => ({ ...prev, [postId]: direction }));
       } catch (err) {
         setError(err.message ?? 'Could not record your vote');
       } finally {

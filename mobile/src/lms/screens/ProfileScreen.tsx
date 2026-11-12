@@ -4,10 +4,11 @@ import { Text, View } from "react-native";
 import { AppButton } from "@/components/common/AppButton";
 import type { ScreenProps } from "@/navigation/types";
 import { lmsApi } from "../api";
-import { Card, Field, LoadState, Message, Screen, styles } from "../ui";
+import { Card, Field, LoadState, Message, Screen, useLmsStyles } from "../ui";
 export function LearnerProfileScreen({
   navigation,
 }: ScreenProps<"LearnerProfile">) {
+  const styles = useLmsStyles();
   const resource = useLearnerProfile();
   const profile = resource.data;
   return (

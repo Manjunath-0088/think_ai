@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { BookmarkService } from '../services/bookmarkService.js';
-import { ForumApi } from '../services/forumApi.js';
-import { NotificationService } from '../services/notificationService.js';
+import { BookmarkService, ForumApi } from '../services/backendApi.js';
+import { NotificationService } from '../services/backendApi.js';
 
 function timeAgo(dateString) {
   const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
@@ -29,9 +28,9 @@ export default function BookmarksPage() {
   const loadBookmarks = useCallback(async () => {
     setLoading(true);
     try {
-      const bookmarkIds = await BookmarkService.getBookmarks();
+      const bookmarks = await BookmarkService.getBookmarks();
       const posts = await Promise.all(
-        bookmarkIds.map((id) => ForumApi.getPostById(id).catch(() => null))
+        bookmarks.map((id) => ForumApi.getPostById(id).catch(() => null))
       );
       setBookmarkedPosts(posts.filter(Boolean));
     } catch {
@@ -46,6 +45,8 @@ export default function BookmarksPage() {
   }, [loadBookmarks]);
 
   const handleRemove = async (postId, title) => {
+    const userId = localStorage.getItem('thinkz_user_id');
+    if (!userId) return;
     await BookmarkService.removeBookmark(postId);
     NotificationService.pushNotification({
       type: 'bookmark',

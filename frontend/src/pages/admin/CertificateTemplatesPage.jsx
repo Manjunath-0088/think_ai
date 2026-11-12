@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Award, Plus, Loader2, CheckCircle, Edit3 } from 'lucide-react';
+import { Edit3, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 import {

@@ -7,8 +7,9 @@ import type { ScreenProps } from "@/navigation/types";
 import { lmsApi } from "../api";
 import { useLms } from "../LmsProvider";
 import { useLmsResource } from "../useLmsResource";
-import { Card, LoadState, Screen, styles } from "../ui";
+import { Card, LoadState, Screen, useLmsStyles } from "../ui";
 export function LmsHomeScreen({ navigation }: ScreenProps<"LmsHome">) {
+  const styles = useLmsStyles();
   const { session, sync } = useLms();
   const focused = useIsFocused();
   const fetcher = useCallback(() => lmsApi.enrollments(), [session.token]);
@@ -33,11 +34,6 @@ export function LmsHomeScreen({ navigation }: ScreenProps<"LmsHome">) {
           title="Downloads"
           variant="secondary"
           onPress={() => navigation.navigate("Downloads")}
-        />
-        <AppButton
-          title="Teaching tools"
-          variant="secondary"
-          onPress={() => navigation.navigate("StaffTools")}
         />
       </View>
       <LoadState {...resource} retry={resource.refresh} />

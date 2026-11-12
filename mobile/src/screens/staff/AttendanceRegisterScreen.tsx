@@ -3,12 +3,17 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError } from '@/api/http';
 import { getAttendanceRegister, saveAttendance, type AttendanceRecord, type AttendanceStatus } from '@/api/staffApi';
-import { palette, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import type { Palette } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeProvider';
+import { useThemedStyles } from '@/theme/useThemedStyles';
 
 const statusOrder: AttendanceStatus[] = ['PRESENT', 'TARDY', 'ABSENT', 'EXCUSED'];
 const today = new Date().toISOString().slice(0, 10);
 
 export function AttendanceRegisterScreen() {
+  const { palette } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [sessionDate, setSessionDate] = useState(today);
   const [sessionTitle, setSessionTitle] = useState('TA session');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -50,4 +55,4 @@ export function AttendanceRegisterScreen() {
     <Text style={styles.hint}>Tap a status to cycle: Present → Tardy → Absent → Excused.</Text><Pressable onPress={save} disabled={saving || !records.length} style={[styles.button, (!records.length || saving) && styles.disabled]} accessibilityRole="button"><Text style={styles.buttonText}>{saving ? 'Saving…' : 'Save attendance'}</Text></Pressable>
   </ScrollView></SafeAreaView>;
 }
-const styles = StyleSheet.create({ safe:{flex:1,backgroundColor:palette.background},content:{padding:spacing.md,gap:spacing.md},title:{...typography.title,color:palette.textPrimary},note:{...typography.body,color:palette.textSecondary},filters:{gap:spacing.sm},input:{borderWidth:1,borderColor:palette.border,borderRadius:radii.sm,color:palette.textPrimary,padding:spacing.sm,backgroundColor:palette.surface},secondary:{borderColor:palette.brand,borderWidth:1,borderRadius:radii.md,padding:spacing.sm,alignItems:'center'},secondaryText:{...typography.label,color:palette.brand},summary:{backgroundColor:palette.surfaceMuted,borderRadius:radii.md,padding:spacing.md},summaryLabel:{...typography.label,color:palette.textSecondary},summaryValue:{...typography.display,color:palette.brand,marginTop:spacing.xs},card:{backgroundColor:palette.surface,borderWidth:1,borderColor:palette.border,borderRadius:radii.md,padding:spacing.md,gap:spacing.sm},row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:spacing.sm},nameBox:{flex:1},name:{...typography.subtitle,color:palette.textPrimary},email:{...typography.caption,color:palette.textSecondary},status:{backgroundColor:palette.brand,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs,borderRadius:radii.pill},statusText:{...typography.caption,color:palette.textPrimary},hint:{...typography.caption,color:palette.textMuted},button:{backgroundColor:palette.brand,borderRadius:radii.md,padding:spacing.md,alignItems:'center'},buttonText:{...typography.label,color:palette.textPrimary},disabled:{opacity:.45} });
+const createStyles = (palette: Palette) => StyleSheet.create({ safe:{flex:1,backgroundColor:palette.background},content:{padding:spacing.md,gap:spacing.md},title:{...typography.title,color:palette.textPrimary},note:{...typography.body,color:palette.textSecondary},filters:{gap:spacing.sm},input:{borderWidth:1,borderColor:palette.border,borderRadius:radii.sm,color:palette.textPrimary,padding:spacing.sm,backgroundColor:palette.surface},secondary:{borderColor:palette.brand,borderWidth:1,borderRadius:radii.md,padding:spacing.sm,alignItems:'center'},secondaryText:{...typography.label,color:palette.brand},summary:{backgroundColor:palette.surfaceMuted,borderRadius:radii.md,padding:spacing.md},summaryLabel:{...typography.label,color:palette.textSecondary},summaryValue:{...typography.display,color:palette.brand,marginTop:spacing.xs},card:{backgroundColor:palette.surface,borderWidth:1,borderColor:palette.border,borderRadius:radii.md,padding:spacing.md,gap:spacing.sm},row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:spacing.sm},nameBox:{flex:1},name:{...typography.subtitle,color:palette.textPrimary},email:{...typography.caption,color:palette.textSecondary},status:{backgroundColor:palette.brand,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs,borderRadius:radii.pill},statusText:{...typography.caption,color:palette.textPrimary},hint:{...typography.caption,color:palette.textMuted},button:{backgroundColor:palette.brand,borderRadius:radii.md,padding:spacing.md,alignItems:'center'},buttonText:{...typography.label,color:palette.textPrimary},disabled:{opacity:.45} });

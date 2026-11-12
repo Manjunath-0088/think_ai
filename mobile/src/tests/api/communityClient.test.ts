@@ -51,7 +51,7 @@ describe('Page 6 — thread detail', () => {
 
     expect(result).toEqual(thread);
     const [url, init] = lastCall();
-    expect(url).toBe(`${API_BASE_URL}/forum/threads/t-1`);
+    expect(url).toBe(`${API_BASE_URL}/discussions/t-1`);
     expect(init.method).toBe('GET');
     expect((init.headers as Record<string, string>)['x-user-id']).toBe('u1');
   });
@@ -65,9 +65,10 @@ describe('Page 6 — thread detail', () => {
     const result = await client.submitReply('t-1', { body: 'Hello @prema' });
 
     const [url, init] = lastCall();
-    expect(url).toBe(`${API_BASE_URL}/forum/threads/t-1/replies`);
+    expect(url).toBe(`${API_BASE_URL}/comments`);
     expect(init.method).toBe('POST');
     expect(parsedBody(init)).toEqual({
+      discussionId: 't-1',
       body: 'Hello @prema',
       parentId: null,
     });
@@ -98,7 +99,7 @@ describe('Page 6 — thread detail', () => {
     const result = await client.setThreadSolved('t-1', true);
 
     const [url, init] = lastCall();
-    expect(url).toBe(`${API_BASE_URL}/forum/threads/t-1/solved`);
+    expect(url).toBe(`${API_BASE_URL}/discussions/t-1/solved`);
     expect(init.method).toBe('PATCH');
     expect(parsedBody(init)).toEqual({ solved: true });
     expect(result.solved).toBe(true);
@@ -168,6 +169,67 @@ describe('Page 7 — categories and discussions', () => {
       categoryId: 'cat-1',
     });
     expect(result).toEqual({ id: 't-new', notificationsCreated: 1 });
+  });
+
+  it('uses the shared category CRUD routes', async () => {
+    fetchMock
+      .mockResolvedValueOnce(respond(envelope({ id: 'cat-new', name: 'Mobile', color: '#123456', description: 'Mobile topics' })))
+      .mockResolvedValueOnce(respond(envelope({ id: 'cat-new', name: 'Android', color: '#654321', description: 'Android topics' })))
+      .mockResolvedValueOnce(respond(envelope({ id: 'cat-new', deleted: true })));
+    const client = createCommunityClient();
+
+    await client.createCommunityCategory({ name: 'Mobile', color: '#123456', description: 'Mobile topics' });
+    expect(lastCall()[0]).toBe(`${API_BASE_URL}/categories`);
+    expect(lastCall()[1].method).toBe('POST');
+
+    await client.updateCommunityCategory('cat-new', { name: 'Android', color: '#654321', description: 'Android topics' });
+    expect(lastCall()[0]).toBe(`${API_BASE_URL}/categories/cat-new`);
+    expect(lastCall()[1].method).toBe('PUT');
+
+    await client.deleteCommunityCategory('cat-new');
+    expect(lastCall()[0]).toBe(`${API_BASE_URL}/categories/cat-new`);
+    expect(lastCall()[1].method).toBe('DELETE');
+  });
+});
+
+describe('shared community notifications', () => {
+  it('uses the website notification list and read endpoints', async () => {
+    fetchMock
+      .mockResolvedValueOnce(respond(envelope([{ id: 'n-1', userId: 'u1', type: 'reply', message: 'New reply', read: false, createdAt: '2026-11-01T10:00:00Z' }])))
+      .mockResolvedValueOnce(respond(envelope({ id: 'n-1', userId: 'u1', type: 'reply', message: 'New reply', read: true, createdAt: '2026-11-01T10:00:00Z' })))
+      .mockResolvedValueOnce(respond(envelope({ userId: 'u1', marked: 3 })));
+    const client = createCommunityClient();
+
+    const rows = await client.fetchCommunityNotifications(true);
+    expect(rows).toHaveLength(1);
+    expect(lastCall()[0]).toBe(`${API_BASE_URL}/notifications?unreadOnly=true`);
+
+    await client.markCommunityNotificationRead('n-1');
+    expect(lastCall()[0]).toBe(`${API_BASE_URL}/notifications/n-1/read`);
+    expect(lastCall()[1].method).toBe('PATCH');
+
+    await expect(client.markAllCommunityNotificationsRead()).resolves.toEqual({ userId: 'u1', marked: 3 });
+    expect(lastCall()[0]).toBe(`${API_BASE_URL}/notifications/read-all`);
+    expect(lastCall()[1].method).toBe('POST');
+  });
+
+  it('uses the shared per-user notification preferences route', async () => {
+    const preferences = {
+      replies: { email: true, inApp: true, sms: false },
+      mentions: { email: true, inApp: true, sms: false },
+      sessions: { email: true, inApp: true, sms: false },
+      payments: { email: true, inApp: true, sms: false },
+    };
+    fetchMock
+      .mockResolvedValueOnce(respond(envelope(preferences)))
+      .mockResolvedValueOnce(respond(envelope(preferences)));
+    const client = createCommunityClient();
+
+    await client.fetchNotificationPreferences('u1');
+    expect(lastCall()[0]).toBe(`${API_BASE_URL}/notifications/preferences/u1`);
+    await client.saveNotificationPreferences('u1', preferences);
+    expect(lastCall()[0]).toBe(`${API_BASE_URL}/notifications/preferences/u1`);
+    expect(lastCall()[1].method).toBe('PUT');
   });
 });
 

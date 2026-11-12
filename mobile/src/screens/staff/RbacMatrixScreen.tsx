@@ -3,9 +3,12 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError } from '@/api/http';
 import { getRbacMatrix, saveRbacPermission, type RbacMatrix } from '@/api/staffApi';
-import { palette, radii, spacing, typography } from '@/theme/tokens';
+import { radii, spacing, typography } from '@/theme/tokens';
+import type { Palette } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/useThemedStyles';
 
 export function RbacMatrixScreen() {
+  const styles = useThemedStyles(createStyles);
   const [matrix, setMatrix] = useState<RbacMatrix | null>(null);
   const [role, setRole] = useState('');
   const [notice, setNotice] = useState('Loading role permissions…');
@@ -30,4 +33,4 @@ export function RbacMatrixScreen() {
     <Pressable onPress={load} style={styles.reload}><Text style={styles.reloadText}>Reload permissions</Text></Pressable>
   </ScrollView></SafeAreaView>;
 }
-const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.background},content:{padding:spacing.md,gap:spacing.md},title:{...typography.title,color:palette.textPrimary},note:{...typography.body,color:palette.textSecondary},tabs:{flexDirection:'row',gap:spacing.xs,flexWrap:'wrap'},tab:{padding:spacing.sm,borderRadius:radii.pill,backgroundColor:palette.surfaceMuted},activeTab:{backgroundColor:palette.brand},tabText:{...typography.label,color:palette.textSecondary},activeText:{color:palette.textPrimary},permission:{backgroundColor:palette.surface,borderColor:palette.border,borderWidth:1,borderRadius:radii.md,padding:spacing.md,flexDirection:'row',justifyContent:'space-between'},permissionName:{...typography.label,color:palette.textPrimary},granted:{...typography.label,color:palette.success},denied:{...typography.label,color:palette.danger},reload:{borderColor:palette.brand,borderWidth:1,borderRadius:radii.md,padding:spacing.md,alignItems:'center'},reloadText:{...typography.label,color:palette.brand}});
+const createStyles=(palette: Palette)=>StyleSheet.create({safe:{flex:1,backgroundColor:palette.background},content:{padding:spacing.md,gap:spacing.md},title:{...typography.title,color:palette.textPrimary},note:{...typography.body,color:palette.textSecondary},tabs:{flexDirection:'row',gap:spacing.xs,flexWrap:'wrap'},tab:{padding:spacing.sm,borderRadius:radii.pill,backgroundColor:palette.surfaceMuted},activeTab:{backgroundColor:palette.brand},tabText:{...typography.label,color:palette.textSecondary},activeText:{color:palette.textPrimary},permission:{backgroundColor:palette.surface,borderColor:palette.border,borderWidth:1,borderRadius:radii.md,padding:spacing.md,flexDirection:'row',justifyContent:'space-between'},permissionName:{...typography.label,color:palette.textPrimary},granted:{...typography.label,color:palette.success},denied:{...typography.label,color:palette.danger},reload:{borderColor:palette.brand,borderWidth:1,borderRadius:radii.md,padding:spacing.md,alignItems:'center'},reloadText:{...typography.label,color:palette.brand}});

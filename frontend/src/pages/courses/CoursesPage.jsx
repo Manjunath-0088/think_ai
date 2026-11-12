@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import CourseList from './CourseList';
@@ -59,14 +59,14 @@ export default function CoursesPage() {
   const handleSaveCourse = async (courseData) => {
     const isEdit = Boolean(courseData.id);
     const {
-      level,
-      language,
-      createdAt,
-      updatedAt,
-      id,
-      thumbnailFile,
-      videoFile,
-      videoUrl,
+      level: _level,
+      language: _language,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
+      id: _id,
+      thumbnailFile: _thumbnailFile,
+      videoFile: _videoFile,
+      videoUrl: _videoUrl,
       ...cleanData
     } = courseData;
 

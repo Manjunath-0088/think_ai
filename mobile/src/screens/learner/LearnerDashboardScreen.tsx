@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LmsSyncIndicator } from '@/lms/SyncIndicator';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  RefreshControl,
+  Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,8 +14,8 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
-  ScreenHeader,
 } from '@/components/common';
+import { ThinkzHomeHero } from '@/components/learner/ThinkzHomeHero';
 import { CategoryChips } from '@/components/learner/CategoryChips';
 import { CourseCard } from '@/components/learner/CourseCard';
 import { CourseRail } from '@/components/learner/CourseRail';
@@ -26,6 +26,7 @@ import type { LearnerTabKey } from '@/components/learner';
 import { LEARNER_TAB_ROUTES } from '@/components/learner/LearnerTabBar';
 import { useCourseSearch } from '@/hooks/useCourseSearch';
 import { useEnrollments } from '@/hooks/useEnrollments';
+import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus';
 import { useWishlist } from '@/hooks/useWishlist';
 import type { ScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -38,16 +39,19 @@ import {
   getCourseCategoryId,
   sortCourses,
 } from '@/utils/course';
+import NotificationDropdown from '@/features/notifications/components/NotificationDropdown';
 
 export function LearnerDashboardScreen({
   navigation,
 }: ScreenProps<'LearnerDashboard'>) {
   const styles = useThemedStyles(createStyles);
   const { palette, mode } = useTheme();
+  const notificationColor = mode === 'dark' ? '#FFFFFF' : '#6D28D9';
   const { count: wishlistCount } = useWishlist();
 
   useEffect(() => {
     navigation.setOptions({
+      headerShown: false,
       headerRight: () => (
         <AppearanceToggle compact testID="dashboard-appearance-toggle" />
       ),
@@ -62,6 +66,7 @@ export function LearnerDashboardScreen({
     isEmpty,
     refresh,
   } = useEnrollments();
+  useRefreshOnFocus(navigation, refresh);
 
   // The dashboard is discovery-led, so it also reads the catalogue. Failures
   // here never block the learner's own enrollments.
@@ -71,6 +76,17 @@ export function LearnerDashboardScreen({
   });
 
   const [query, setQuery] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationAnchorRef = useRef<View>(null);
+
+  const handleNotificationPress = useCallback(() => {
+    setShowNotifications((prev) => !prev);
+  }, []);
+
+  const handleNotificationClose = useCallback(() => {
+    setShowNotifications(false);
+  }, []);
+
   const handleTabSelect = useCallback(
     (key: LearnerTabKey) => navigation.navigate(LEARNER_TAB_ROUTES[key] as never),
     [navigation]
@@ -163,21 +179,32 @@ export function LearnerDashboardScreen({
           />
         }
         testID="dashboard-scroll-view">
-        <ScreenHeader
-          right={
-            <View style={styles.headerRight}>
-              <View style={styles.stat} testID="dashboard-enrollment-count">
-                <Text style={styles.statLabel}>Enrolled</Text>
-                <Text style={styles.statValue}>{enrollments.length}</Text>
+        <View style={styles.brandRow}>
+          <View style={styles.logoMark}><Text style={styles.logoLetters}>tz</Text></View><Text style={styles.brandTitle}>Thinkz <Text style={{ color: '#A435F0' }}>.ai</Text></Text>
+          <View style={styles.headerRight}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
+              onPress={handleNotificationPress}
+              hitSlop={10}
+              ref={notificationAnchorRef}
+              testID="notification-settings"
+              style={({ pressed }) => [styles.notificationButton, { opacity: pressed ? 0.65 : 1 }]}>
+              <View style={[styles.notificationFrame, { borderColor: notificationColor }]}>
+                <View style={[styles.bell, { borderColor: notificationColor }]}>
+                  <View style={[styles.bellClapper, { backgroundColor: notificationColor }]} />
+                </View>
+                <View style={styles.notificationBadge} testID="notification-badge" />
               </View>
-            </View>
-          }
-          subtitle={`${completedCount} completed · ${
-            enrollments.length - completedCount
-          } in progress`}
-          title="Welcome back"
-        />
-
+            </Pressable>
+            <NotificationDropdown
+              visible={showNotifications}
+              onClose={handleNotificationClose}
+              anchorRef={notificationAnchorRef}
+            />
+            <AppearanceToggle compact testID="dashboard-appearance-toggle" />
+          </View>
+        </View>
         <SearchBar
           onChangeText={setQuery}
           onClear={() => setQuery('')}
@@ -187,24 +214,7 @@ export function LearnerDashboardScreen({
           value={query}
         />
 
-        <View style={styles.actionRow}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => navigation.navigate('NotificationPreferences')}
-            style={styles.browseButton}
-            testID="notification-settings">
-            <Text style={styles.browseLabel}>Alerts</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => navigation.navigate('MyCourses')}
-            style={styles.browseButton}
-            testID="browse-tab">
-            <Text style={styles.browseLabel}>Browse</Text>
-          </Pressable>
-        </View>
-        <LmsSyncIndicator/>
-
+        <ThinkzHomeHero onBrowse={() => navigation.navigate('MyCourses')} onLearning={() => navigation.navigate('MyLearning')} />
         {showSkeleton ? (
           <View style={styles.section}>
             <LoadingState rows={3} testID="dashboard-loading" />
@@ -236,16 +246,58 @@ export function LearnerDashboardScreen({
         {!showSkeleton && !hasError ? (
           <View testID="dashboard-categories">
             <SectionHeader
-              actionLabel="All courses"
+              actionLabel="See All →"
               onAction={() => navigation.navigate('MyCourses')}
-              subtitle="Find the track that fits your goal"
-              title="Browse by category"
+              title="Popular Categories"
             />
             <CategoryChips
+              includeAll={false}
+              tiles
               counts={categoryCounts}
               onChange={openCategory}
               testID="dashboard-category-chips"
               value="all"
+            />
+          </View>
+        ) : null}
+
+        {!showSkeleton && !hasError && hasEnrollments ? (
+          <View testID="dashboard-continue">
+            <SectionHeader
+              actionLabel="My Learning"
+              onAction={() => navigation.navigate('MyLearning')}
+              testID="dashboard-continue-header"
+              title="Continue learning"
+            />
+            <View style={styles.section} testID="dashboard-course-list">
+              {enrollments.map((enrollment) => (
+                <CourseCard
+                  compact
+                  actionLabel={
+                    enrollment.status === 'completed'
+                      ? 'Review course'
+                      : 'Continue learning'
+                  }
+                  enrollment={enrollment}
+                  key={enrollment.id}
+                  onPress={openCourse}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {!showSkeleton && !hasError && recommended.length > 0 ? (
+          <View testID="dashboard-recommended">
+            <SectionHeader
+              actionLabel="See all"
+              onAction={() => navigation.navigate('MyCourses')}
+              title="Recommended for you"
+            />
+            <CourseRail
+              courses={recommended}
+              onSelect={openCatalogCourse}
+              testID="dashboard-recommended-rail"
             />
           </View>
         ) : null}
@@ -266,48 +318,7 @@ export function LearnerDashboardScreen({
           </View>
         ) : null}
 
-        {!showSkeleton && !hasError && hasEnrollments ? (
-          <View testID="dashboard-continue">
-            <SectionHeader
-              actionLabel="My Learning"
-              onAction={() => navigation.navigate('MyLearning')}
-              subtitle="Pick up where you left off"
-              testID="dashboard-continue-header"
-              title="Continue learning"
-            />
-            <View style={styles.section} testID="dashboard-course-list">
-              {enrollments.map((enrollment) => (
-                <CourseCard
-                  actionLabel={
-                    enrollment.status === 'completed'
-                      ? 'Review course'
-                      : 'Continue learning'
-                  }
-                  enrollment={enrollment}
-                  key={enrollment.id}
-                  onPress={openCourse}
-                />
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {!showSkeleton && !hasError && recommended.length > 0 ? (
-          <View testID="dashboard-recommended">
-            <SectionHeader
-              actionLabel="See all"
-              onAction={() => navigation.navigate('MyCourses')}
-              subtitle="Based on your learning history"
-              title="Recommended for you"
-            />
-            <CourseRail
-              courses={recommended}
-              onSelect={openCatalogCourse}
-              testID="dashboard-recommended-rail"
-            />
-          </View>
-        ) : null}
-
+        <Text style={styles.footer} testID="dashboard-enrollment-count">Enrolled {enrollments.length} · {completedCount} completed</Text>
         <Text style={styles.footer}>
           Keep going — a little practice every day compounds.
         </Text>
@@ -318,12 +329,69 @@ export function LearnerDashboardScreen({
 }
 
 const createStyles = (palette: Palette) => StyleSheet.create({
+  logoMark: { flexShrink: 0, width: 30, height: 30, backgroundColor: '#A435F0', borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  logoLetters: { color: '#1C1D1F', fontSize: 14, fontWeight: '700' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12, minHeight: 64, backgroundColor: palette.background === '#0B1020' ? '#28292B' : '#FFFFFF' },
+  brandTitle: { flex: 1, minWidth: 0, flexShrink: 1, fontSize: 22, fontWeight: '700', color: palette.textPrimary },
+  notificationButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 7,
+    backgroundColor: 'transparent',
+  },
+  notificationFrame: {
+    // Match the adjacent theme frame's rendered size (its scale is 0.55).
+    width: Platform.OS === 'android' ? 19.8 : 24.2,
+    height: Platform.OS === 'android' ? 19.8 : 24.2,
+    borderWidth: Platform.OS === 'android' ? 1.65 : 2.2,
+    borderRadius: Platform.OS === 'android' ? 6.6 : 7.7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  bell: {
+    width: 10,
+    height: 11,
+    marginTop: -2,
+    borderWidth: 1.3,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 5,
+    borderBottomRightRadius: 5,
+  },
+  bellClapper: {
+    position: 'absolute',
+    bottom: -4,
+    left: 2,
+    width: 3,
+    height: 2,
+    borderRadius: 2,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: palette.background === '#0B1020' ? '#28292B' : '#FFFFFF',
+    backgroundColor: '#F87171',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: palette.background,
+    backgroundColor: palette.background === '#0B1020' ? '#1C1D1F' : '#FFFFFF',
   },
   content: {
     paddingBottom: spacing.xxl,
+    width: '100%',
+    maxWidth: 1100,
+    alignSelf: 'center',
   },
   section: {
     paddingHorizontal: spacing.md,

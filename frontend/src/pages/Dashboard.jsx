@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getCourses } from "../api/courseApi";
@@ -11,10 +12,6 @@ function Dashboard() {
     batches: 0,
     enrollments: 0,
   });
-
-  useEffect(() => {
-    loadDashboard();
-  }, []);
 
   const loadDashboard = async () => {
     try {
@@ -34,6 +31,10 @@ function Dashboard() {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
 
   return (
     <div>

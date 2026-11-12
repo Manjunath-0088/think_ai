@@ -19,11 +19,6 @@ function EditBatch() {
     status: "ACTIVE",
   });
 
-  useEffect(() => {
-    loadCourses();
-    loadBatch();
-  }, []);
-
   const loadCourses = async () => {
     try {
       const response = await getCourses();
@@ -49,11 +44,16 @@ function EditBatch() {
         endDate: data.endDate.split("T")[0],
         status: data.status,
       });
-
     } catch (error) {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadCourses();
+    loadBatch();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -71,7 +71,6 @@ function EditBatch() {
     e.preventDefault();
 
     try {
-
       // ✅ Send only allowed fields
       const payload = {
         name: batch.name,
@@ -88,7 +87,6 @@ function EditBatch() {
       alert("Batch Updated Successfully");
 
       navigate("/batches");
-
     } catch (error) {
       console.error(error);
 
@@ -195,7 +193,6 @@ function EditBatch() {
         >
           Update Batch
         </button>
-
       </form>
 
     </div>

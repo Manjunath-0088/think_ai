@@ -11,6 +11,13 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
 const app = require("./app");
+const liveService = require("./src/live/liveService");
+
+test.before(async () => {
+    // Reads no longer create sessions implicitly, so seed the shared fixture
+    // explicitly for this mounted-route smoke suite.
+    await liveService.ensureSession("s1");
+});
 
 const USER = { "x-user-id": "u1" };
 const STUDIO_AUTH = `Bearer ${jwt.sign(

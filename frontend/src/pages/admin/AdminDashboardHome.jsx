@@ -1,7 +1,6 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import KPICard from '../../components/admin/KPICard';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { fetchCourses, selectCourses, selectCoursesLoading } from '../../features/courses/courseSlice';
 
 export default function AdminDashboardHome() {

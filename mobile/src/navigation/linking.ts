@@ -16,6 +16,10 @@ export const DEEP_LINK_PREFIXES = [
 export const DEEP_LINK_ALIASES = [
   'course/:id',
   'forum/thread/:id',
+  'forum/:threadId',
+  'forum/preferences',
+  'forum/studio',
+  'forum/moderation',
   'assessment/:id',
 ] as const;
 
@@ -23,6 +27,7 @@ export const DEEP_LINK_ALIASES = [
 export const DEEP_LINK_ROUTES: Readonly<Partial<Record<ScreenName, string>>> = {
   SignIn: 'auth/login',
   Login: 'login',
+  Register: 'register',
   AdminHome: 'admin',
   Account: 'account',
   LmsHome: 'learner/workspace',
@@ -34,6 +39,8 @@ export const DEEP_LINK_ROUTES: Readonly<Partial<Record<ScreenName, string>>> = {
   Wishlist: 'learner/wishlist',
   Profile: 'learner/profile',
   ForumHome: 'forum',
+  ForumCategories: 'forum/categories',
+  ForumNotifications: 'forum/notifications',
   ForumThread: 'forum/threads/:threadId',
   CreatePost: 'forum/new',
   Bookmarks: 'forum/bookmarks',
@@ -69,6 +76,10 @@ function canonicalPath(path: string) {
   return path
     .replace(/^\/?course\//, 'learner/courses/')
     .replace(/^\/?forum\/thread\//, 'forum/threads/')
+    .replace(/^\/?forum\/preferences\/?$/, 'settings/notifications')
+    .replace(/^\/?forum\/studio\/?$/, 'staff/live-studio')
+    .replace(/^\/?forum\/moderation\/?$/, 'forum/moderate')
+    .replace(/^\/?forum\/(?!categories(?:\/|$)|bookmarks(?:\/|$)|notifications(?:\/|$)|new(?:\/|$)|moderate(?:\/|$)|threads(?:\/|$)|preferences(?:\/|$)|studio(?:\/|$))([^/?#]+)$/, 'forum/threads/$1')
     .replace(/^\/?assessment\//, 'learning/assessments/');
 }
 
@@ -109,7 +120,7 @@ export function linkingForRole(
       if (!state) return state;
       const current = state.routes[state.index ?? state.routes.length - 1];
       const name = current?.name as ScreenName | undefined;
-      if (name === 'SignIn' || name === 'Login') {
+      if (name === 'SignIn' || name === 'Login' || name === 'Register') {
         return signedIn ? { routes: [{ name: roleHome(role) }] } : state;
       }
       const audience = name ? routeAudience[name] : undefined;

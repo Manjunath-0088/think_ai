@@ -8,10 +8,6 @@ function CourseDetails() {
 
   const [course, setCourse] = useState(null);
 
-  useEffect(() => {
-    loadCourse();
-  }, []);
-
   const loadCourse = async () => {
     try {
       const response = await getCourseById(id);
@@ -20,6 +16,11 @@ function CourseDetails() {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadCourse();
+  }, []);
 
   if (!course) {
     return (

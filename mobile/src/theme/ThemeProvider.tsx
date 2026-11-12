@@ -35,7 +35,7 @@ const DEFAULT_THEME: ThemeContextValue = {
   toggleMode: () => undefined,
 };
 
-const ThemeContext = createContext<ThemeContextValue>(DEFAULT_THEME);
+export const ThemeContext = createContext<ThemeContextValue>(DEFAULT_THEME);
 
 export interface ThemeProviderProps {
   children: React.ReactNode;

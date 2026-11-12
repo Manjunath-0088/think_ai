@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
+  activateWishlist,
   getWishlistIds,
-  hydrateWishlist,
   isWishlistHydrated,
   removeFromWishlist,
   subscribeToWishlist,
   toggleWishlist,
 } from '@/features/wishlist/wishlistStore';
+import { useSession } from '@/hooks/useSession';
 
 /**
  * Reactive wishlist state shared by every course surface.
@@ -16,31 +17,46 @@ import {
  * saves or removes a course.
  */
 export function useWishlist() {
-  const [ids, setIds] = useState<string[]>(getWishlistIds());
+  const session = useSession();
+  const wishlistUserId = session.token ? session.userId : null;
+  const [snapshot, setSnapshot] = useState(() => ({
+    userId: wishlistUserId,
+    ids: getWishlistIds(wishlistUserId),
+  }));
 
   useEffect(() => {
     let active = true;
-    void hydrateWishlist().then((next) => {
+    const unsubscribe = subscribeToWishlist(() => {
       if (active) {
-        setIds(next);
+        setSnapshot({ userId: wishlistUserId, ids: getWishlistIds(wishlistUserId) });
       }
     });
-    const unsubscribe = subscribeToWishlist(() => setIds(getWishlistIds()));
+    void activateWishlist(wishlistUserId).then((next) => {
+      if (active) {
+        setSnapshot({ userId: wishlistUserId, ids: next });
+      }
+    });
     return () => {
       active = false;
       unsubscribe();
     };
-  }, []);
+  }, [wishlistUserId]);
+
+  // Never render the previous account's saved IDs during an account switch.
+  const ids = useMemo(
+    () => (snapshot.userId === wishlistUserId ? snapshot.ids : []),
+    [snapshot.ids, snapshot.userId, wishlistUserId],
+  );
 
   const savedCourseIds = useMemo(() => new Set(ids), [ids]);
 
   const toggle = useCallback((courseId: string) => {
-    toggleWishlist(courseId);
-  }, []);
+    toggleWishlist(courseId, wishlistUserId);
+  }, [wishlistUserId]);
 
   const remove = useCallback((courseId: string) => {
-    removeFromWishlist(courseId);
-  }, []);
+    removeFromWishlist(courseId, wishlistUserId);
+  }, [wishlistUserId]);
 
   const isSaved = useCallback(
     (courseId: string) => savedCourseIds.has(courseId),
@@ -54,7 +70,7 @@ export function useWishlist() {
     isSaved,
     toggle,
     remove,
-    isReady: isWishlistHydrated(),
+    isReady: snapshot.userId === wishlistUserId && isWishlistHydrated(wishlistUserId),
   };
 }
 

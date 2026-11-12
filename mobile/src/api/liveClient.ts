@@ -59,12 +59,15 @@ type BackendEnrollment = {
     lessonId: number | string;
     completed: boolean;
     completedAt?: string | null;
+    updatedAt?: string | null;
     watchedSeconds?: number;
     watchPercentage?: number;
   }[];
 };
 
-type CourseList = { courses?: BackendCourse[]; pagination?: { total?: number } };
+type CourseList =
+  | BackendCourse[]
+  | { courses?: BackendCourse[]; pagination?: { total?: number } };
 type DiscussionList = {
   items?: {
     id: string;
@@ -164,8 +167,13 @@ function mapEnrollment(row: BackendEnrollment): Enrollment {
       ? 'in-progress'
       : 'not-started';
   const lastProgress = [...lessonProgress]
-    .filter((progress) => progress.completedAt)
-    .sort((left, right) => String(right.completedAt).localeCompare(String(left.completedAt)))[0];
+    .filter((progress) => progress.updatedAt || progress.completedAt || (progress.watchedSeconds ?? 0) > 0)
+    .sort((left, right) =>
+      String(right.updatedAt ?? right.completedAt ?? '').localeCompare(
+        String(left.updatedAt ?? left.completedAt ?? ''),
+      ),
+    )[0];
+  const resumeProgress = lastProgress && !lastProgress.completed ? lastProgress : undefined;
 
   return {
     id: String(row.id),
@@ -177,8 +185,9 @@ function mapEnrollment(row: BackendEnrollment): Enrollment {
     progressPercent,
     completedLessons,
     totalLessons,
-    lastAccessedAt: lastProgress?.completedAt ?? row.enrolledAt,
+    lastAccessedAt: lastProgress?.updatedAt ?? lastProgress?.completedAt ?? row.enrolledAt,
     completedLessonIds,
+    ...(resumeProgress ? { resumeLessonId: String(resumeProgress.lessonId) } : {}),
   };
 }
 
@@ -220,7 +229,8 @@ export function createLiveApiClient(): LearningApiClient {
     const payload = await apiData<CourseList>('/courses', {
       query: { page: 1, limit: 100, search: query },
     });
-    return (payload.courses ?? []).map((course) => mapCourse(course));
+    const rows = Array.isArray(payload) ? payload : payload.courses ?? [];
+    return rows.map((course) => mapCourse(course));
   };
 
   return {
@@ -257,11 +267,22 @@ export function createLiveApiClient(): LearningApiClient {
     },
 
     async fetchCourse(courseId: string): Promise<Course> {
-      const [row, enrollments] = await Promise.all([
-        apiData<BackendCourse>(`/courses/${encodeURIComponent(courseId)}/content`),
-        fetchMyEnrollments(),
-      ]);
-      return mapCourse(row, enrollments.some((enrollment) => enrollment.courseId === String(row.id)));
+      const enrollments = await fetchMyEnrollments();
+      const enrolledCourse = enrollments.find(
+        (enrollment) => enrollment.courseId === String(courseId),
+      )?.course;
+      if (enrolledCourse) return enrolledCourse;
+
+      // The legacy public catalogue contract returns a plain array, and the
+      // individual public route is /courses/:id. The former /content path was
+      // never mounted and was staff-gated, so it failed for learner accounts.
+      const catalogCourse = (await fetchCourses('')).find(
+        (course) => course.id === String(courseId),
+      );
+      if (catalogCourse) return catalogCourse;
+
+      const row = await apiData<BackendCourse>(`/courses/${encodeURIComponent(courseId)}`);
+      return mapCourse(row, false);
     },
 
     async enrollCourse(courseId: string): Promise<Enrollment> {
@@ -308,8 +329,8 @@ export function createLiveApiClient(): LearningApiClient {
           page: query.page,
           limit: query.pageSize,
           categoryId: query.categoryId ?? undefined,
-          tag: query.tags[0],
-          sort: query.sort === 'most-voted' ? 'votes' : 'recent',
+          tags: query.tags.length ? query.tags.join(',') : undefined,
+          sort: query.sort,
         },
       });
       const total = page.total ?? 0;

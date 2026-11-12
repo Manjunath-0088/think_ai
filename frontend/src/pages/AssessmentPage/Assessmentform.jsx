@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
 

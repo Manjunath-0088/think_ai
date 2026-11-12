@@ -1,13 +1,15 @@
 import { useThemedStyles } from "@/theme/useThemedStyles";
 import type { Palette } from "@/theme/tokens";
-import { memo, useCallback } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { memo, useCallback, type ReactElement } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ListViewToken } from 'react-native';
 import { EmptyState, ErrorState, InlineSpinner } from '@/components/common';
 import { LazyThumbnail } from '@/features/forum/components/LazyThumbnail';
+import { useOptionalSafeAreaInsets } from '@/hooks/useOptionalSafeAreaInsets';
 import { radii, spacing, typography } from '@/theme/tokens';
 import type { ForumCategory, ForumThread } from '@/types';
 export interface ThreadListProps {
+  header?: ReactElement;
   threads: ForumThread[];
   categories: ForumCategory[];
   isLoading: boolean;
@@ -42,7 +44,7 @@ function ThreadListRow({
   const styles = useThemedStyles(createStyles);
   const handlePress = useCallback(() => onSelect?.(thread), [onSelect, thread]);
   const thumbnailUrl = (thread as any).thumbnailUrl || (thread as any).thumbnail;
-  return <View style={styles.card} testID={`${testID}-${thread.id}`}>
+  return <Pressable accessibilityLabel={thread.title} accessibilityRole="button" onPress={handlePress} style={styles.card} testID={`${testID}-${thread.id}`}>
       <View style={styles.cardHeader}>
         {thread.isPinned ? <Text style={styles.pin} testID={`${testID}-${thread.id}-pinned`}>
             📌 Pinned
@@ -55,7 +57,7 @@ function ThreadListRow({
       <View style={styles.rowContent}>
         {thumbnailUrl ? <LazyThumbnail uri={thumbnailUrl} /> : <View style={styles.thumbPlaceholder} />}
         <View style={styles.mainContent}>
-          <Text accessibilityRole="button" numberOfLines={2} onPress={handlePress} style={styles.title} testID={`${testID}-${thread.id}-title`}>
+          <Text numberOfLines={2} style={styles.title} testID={`${testID}-${thread.id}-title`}>
             {thread.title}
           </Text>
 
@@ -81,15 +83,19 @@ function ThreadListRow({
           </View>
         </View>
       </View>
-    </View>;
+    </Pressable>;
 }
 const MemoisedThreadListRow = memo(ThreadListRow);
+
+/** Extra scroll space so the floating action button never covers the last card. */
+const FAB_CLEARANCE = 96;
 
 /**
  * Paginated forum thread list. Pagination is driven by `onEndReached`, which the
  * screen wires to the 80%-threshold handler in `useForumThreads`.
  */
 export function ThreadList({
+  header,
   threads,
   categories,
   isLoading,
@@ -107,8 +113,9 @@ export function ThreadList({
   testID = 'forum-thread-list'
 }: ThreadListProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useOptionalSafeAreaInsets();
   const categoryById = new Map(categories.map(c => [c.id, c]));
-  return <FlatList contentContainerStyle={styles.content} data={threads} initialNumToRender={8} keyExtractor={item => item.id} ListEmptyComponent={hasError ? <ErrorState message={errorMessage ?? 'Unable to load threads.'} /> : isLoading ? undefined : <EmptyState icon="💬" message={emptyMessage} testID={`${testID}-empty`} title={emptyTitle} />} ListFooterComponent={<View>
+  return <FlatList ListHeaderComponent={header} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: FAB_CLEARANCE + insets.bottom }]} data={threads} initialNumToRender={8} keyExtractor={item => item.id} ListEmptyComponent={hasError ? <ErrorState onRetry={onRefresh} message={errorMessage ?? 'Unable to load threads.'} /> : isLoading ? undefined : <EmptyState icon="💬" message={emptyMessage} testID={`${testID}-empty`} title={emptyTitle} />} ListFooterComponent={<View>
           {hasError ? null : isLoading || isRefreshing ? <InlineSpinner testID={`${testID}-loading`} /> : null}
           {!isLoading && !isRefreshing && !hasMore && threads.length > 0 ? <Text style={styles.endOfList} testID={`${testID}-end`}>
               You have reached the end
@@ -120,7 +127,7 @@ export function ThreadList({
 const createStyles = (palette: Palette) => StyleSheet.create({
   content: {
     paddingHorizontal: spacing.md,
-    paddingBottom: 96,
+    paddingBottom: FAB_CLEARANCE,
     flexGrow: 1
   },
   card: {
@@ -144,6 +151,7 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     borderRadius: radii.sm
   },
   mainContent: {
+    minWidth: 0,
     flex: 1,
     gap: spacing.xxs
   },
@@ -168,6 +176,7 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     color: palette.textSecondary
   },
   metaRow: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,

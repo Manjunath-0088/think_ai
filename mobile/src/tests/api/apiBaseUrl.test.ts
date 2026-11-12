@@ -19,6 +19,18 @@ describe('resolveApiBaseUrl', () => {
     ).toBe('https://api.thinkzai.example/api');
   });
 
+  it('adds the backend API prefix when given a host-only URL', () => {
+    expect(resolveApiBaseUrl('android', 'https://api.thinkzai.example')).toBe(
+      'https://api.thinkzai.example/api',
+    );
+  });
+
+  it('does not duplicate the API prefix when it is already present', () => {
+    expect(resolveApiBaseUrl('android', 'https://api.thinkzai.example/api/')).toBe(
+      'https://api.thinkzai.example/api',
+    );
+  });
+
   it('falls back to the emulator host if Expo has no usable LAN address', () => {
     expect(resolveApiBaseUrl('android', undefined, 'localhost:8081')).toBe(
       'http://10.0.2.2:5000/api',

@@ -2,7 +2,7 @@ import type { NavigationContainerRef } from '@react-navigation/native';
 import { act, renderHook } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 
-import { __resetSessionForTests } from '@/api/session';
+import { __resetSessionForTests, signIn } from '@/api/session';
 import { useDeepLinks } from '@/navigation/useDeepLinks';
 import type { RootStackParamList } from '@/navigation/types';
 import { flushAllPendingWork } from '../helpers';
@@ -46,9 +46,14 @@ describe('useDeepLinks', () => {
     jest.restoreAllMocks();
   });
 
-  it('navigates when an incoming URL maps to a route', () => {
+  it('navigates when an incoming URL maps to a route for the signed-in audience', async () => {
+    await signIn('learner-1', 'test-token', {
+      name: 'Learner',
+      email: 'learner@example.com',
+      role: 'Learner',
+    });
     const { ref, navigate } = createRef(true);
-    renderHook(() => useDeepLinks(ref));
+    renderHook(() => useDeepLinks(ref, 'Learner'));
 
     act(() => {
       listener?.({ url: 'thinkzai://learner/courses/course-1?moduleId=mod-1' });
@@ -83,12 +88,17 @@ describe('useDeepLinks', () => {
   });
 
   it('defers the launch URL until the container is ready', async () => {
+    await signIn('learner-1', 'test-token', {
+      name: 'Learner',
+      email: 'learner@example.com',
+      role: 'Learner',
+    });
     const { ref, navigate, setReady } = createRef(false);
     jest
       .spyOn(Linking, 'getInitialURL')
       .mockResolvedValue('thinkzai://search');
 
-    const { result } = renderHook(() => useDeepLinks(ref));
+    const { result } = renderHook(() => useDeepLinks(ref, 'Learner'));
 
     await flushAllPendingWork();
     expect(navigate).not.toHaveBeenCalled();
@@ -102,12 +112,17 @@ describe('useDeepLinks', () => {
   });
 
   it('navigates the launch URL once ready', async () => {
+    await signIn('learner-1', 'test-token', {
+      name: 'Learner',
+      email: 'learner@example.com',
+      role: 'Learner',
+    });
     const { ref, navigate } = createRef(true);
     jest
       .spyOn(Linking, 'getInitialURL')
       .mockResolvedValue('thinkzai://learner/dashboard');
 
-    renderHook(() => useDeepLinks(ref));
+    renderHook(() => useDeepLinks(ref, 'Learner'));
 
     await flushAllPendingWork();
 

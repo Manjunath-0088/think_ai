@@ -99,6 +99,36 @@ describe('MyLearningScreen', () => {
     });
   });
 
+  it('opens the real LMS player for backend numeric course and lesson IDs', async () => {
+    const { client, fetchEnrollments } = buildClient();
+    const [fixture] = await fixtureEnrollments();
+    const firstModule = fixture!.course.modules[0]!;
+    const firstLesson = firstModule.lessons[0]!;
+    const numericEnrollment: Enrollment = {
+      ...fixture!,
+      id: 'enr-42',
+      courseId: '42',
+      course: {
+        ...fixture!.course,
+        id: '42',
+        modules: [{ ...firstModule, lessons: [{ ...firstLesson, id: '9' }] }],
+      },
+      completedLessonIds: [],
+      resumeLessonId: '9',
+    };
+    fetchEnrollments.mockResolvedValue([numericEnrollment]);
+    const navigation = createMockNavigation();
+
+    renderScreen(MyLearningScreen, { client, name: 'MyLearning', navigation });
+    await waitFor(() => expect(screen.getByTestId('my-learning-list')).toBeTruthy());
+    fireEvent.press(screen.getByTestId('my-learning-card-enr-42'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith('CoursePlayer', {
+      courseId: 42,
+      lessonId: 9,
+    });
+  });
+
   it('filters the shelf by title without another API request', async () => {
     const { client, fetchEnrollments } = buildClient();
     const enrollments = await fixtureEnrollments();
@@ -192,6 +222,34 @@ describe('MyLearningScreen', () => {
     fireEvent.press(screen.getByTestId('my-learning-browse'));
 
     expect(navigation.navigate).toHaveBeenCalledWith('MyCourses');
+  });
+
+  it('opens the existing community forum from My Learning', async () => {
+    const { client } = buildClient();
+    const navigation = createMockNavigation();
+    renderScreen(MyLearningScreen, { client, name: 'MyLearning', navigation });
+
+    fireEvent.press(screen.getByTestId('my-learning-community-forum'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith('ForumHome');
+  });
+
+  it('refreshes saved progress when returning to My Learning', async () => {
+    const { client, fetchEnrollments } = buildClient();
+    const navigation = createMockNavigation();
+    let focus: (() => void) | undefined;
+    navigation.addListener.mockImplementation((event, listener) => {
+      if (event === 'focus') focus = listener as () => void;
+      return jest.fn();
+    });
+
+    renderScreen(MyLearningScreen, { client, name: 'MyLearning', navigation });
+    await waitFor(() => expect(screen.getByTestId('my-learning-list')).toBeTruthy());
+    expect(fetchEnrollments).toHaveBeenCalledTimes(1);
+    await act(async () => { focus?.(); });
+    expect(fetchEnrollments).toHaveBeenCalledTimes(1);
+    await act(async () => { focus?.(); });
+    await waitFor(() => expect(fetchEnrollments).toHaveBeenCalledTimes(2));
   });
 
   it('re-fetches when pull-to-refresh is triggered', async () => {

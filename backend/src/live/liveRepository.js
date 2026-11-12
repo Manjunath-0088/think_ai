@@ -31,6 +31,29 @@ function getSession(sessionId) {
     return findSessionWithRelations(sessionId);
 }
 
+function listSessions() {
+    return prisma.liveSession.findMany({
+        orderBy: [{ scheduledAt: "asc" }, { createdAt: "asc" }],
+        include: {
+            attendees: { orderBy: { id: "asc" } },
+            polls: { orderBy: { id: "asc" }, include: { options: true, votes: true } },
+        },
+    });
+}
+
+function createSession(data) {
+    return prisma.liveSession.create({
+        data: {
+            id: data.id,
+            title: data.title,
+            hostId: data.hostId,
+            status: data.status || "scheduled",
+            ...(data.scheduledAt ? { scheduledAt: data.scheduledAt } : {}),
+            ...(data.startedAt ? { startedAt: data.startedAt } : {}),
+        },
+    });
+}
+
 function upsertSession(data) {
     return prisma.liveSession.upsert({
         where: { id: data.id },
@@ -119,6 +142,12 @@ function listMessages(sessionId) {
     return prisma.liveMessage.findMany({
         where: { sessionId, deleted: false },
         orderBy: { id: "asc" }
+    });
+}
+
+function getMessage(sessionId, messageId) {
+    return prisma.liveMessage.findFirst({
+        where: { sessionId, id: messageId }
     });
 }
 
@@ -247,6 +276,8 @@ function leaveBreakoutRoom(roomId, userId) {
 
 module.exports = {
     getSession,
+    listSessions,
+    createSession,
     upsertSession,
     updateSessionStatus,
     getAttendee,
@@ -255,6 +286,7 @@ module.exports = {
     markAttendeeOffline,
     createMessage,
     listMessages,
+    getMessage,
     softDeleteMessage,
     createPoll,
     getPoll,

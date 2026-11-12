@@ -6,7 +6,7 @@ import { Loader2, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 import api from '../../../api/axios';
-import { useTheme } from '../../../components/ThemeContext';
+import { useTheme } from '../../../components/useTheme';
 import { runCode, submitSolution, resetExecution } from '../../../features/codeExecution/codeExecutionSlice';
 import { selectUser } from '../../../features/auth/authSlice';
 

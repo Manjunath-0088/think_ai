@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout, selectUser } from '../features/auth/authSlice';
-import { useTheme } from '../components/ThemeContext';
+import { useTheme } from '../components/useTheme';
 import GlobalSearch from '../pages/search/GlobalSearch';
 import NotificationContainer from '../components/preferenceNotification/PreferenceNotificationContainer';
 import NotificationDropdown from '../components/preferenceNotification/PreferenceNotificationsDropDown';

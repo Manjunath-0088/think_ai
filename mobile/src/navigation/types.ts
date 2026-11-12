@@ -6,6 +6,7 @@ import type { CourseCategoryId } from '@/types';
 export type RootStackParamList = {
   SignIn: undefined;
   Login: undefined;
+  Register: undefined;
   AdminHome: undefined;
   Account: undefined;
   LmsHome: undefined;
@@ -27,6 +28,8 @@ export type RootStackParamList = {
   Wishlist: undefined;
   Profile: undefined;
   ForumHome: { categoryId?: string; threadId?: string } | undefined;
+  ForumCategories: undefined;
+  ForumNotifications: undefined;
   // Pages 6–10.
   ForumThread: { threadId: string };
   CreatePost: undefined;
@@ -57,11 +60,11 @@ export type RootStackParamList = {
   Results: { assessmentId: string; score: number; passed: boolean };
   Certificate: { courseId: string };
   StaffTools: undefined;
-  LiveStudio: undefined;
+  LiveStudio: { sessionId?: string } | undefined;
   AttendanceRegister: undefined;
   AttendanceReport: undefined;
   GradingQueue: undefined;
-  InstructorControls: undefined;
+  InstructorControls: { sessionId?: string } | undefined;
   RbacMatrix: undefined;
 };
 

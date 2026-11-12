@@ -1,7 +1,8 @@
 import { Text, View } from "react-native";
 import type { DateFieldProps } from "./DateField";
-import { styles } from "./ui";
+import { useLmsStyles } from "./ui";
 export function DateField({ label, value, onChange }: DateFieldProps) {
+  const styles = useLmsStyles();
   return (
     <View style={{ gap: 6 }}>
       <Text style={styles.muted}>{label}</Text>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ForumApi } from '../services/forumApi.js';
+import { ForumApi } from '../services/backendApi.js';
 
 function timeAgo(dateString) {
   const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);

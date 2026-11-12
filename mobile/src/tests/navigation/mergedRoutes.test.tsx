@@ -41,9 +41,19 @@ test.each([
   ['checkout/success?paymentId=payment-7', 'PaymentSuccess'],
   ['checkout/failed?reason=network', 'PaymentFailed'],
   ['settings/notifications', 'NotificationPreferences'],
-])('company route %s remains reachable and requires verified account access', (path, name) => {
-  expect(destination(path)).toMatchObject({ name });
+  ['forum/categories', 'ForumCategories'],
+  ['forum/notifications', 'ForumNotifications'],
+  ['forum/d2', 'ForumThread'],
+  ['forum/preferences', 'NotificationPreferences'],
+  ['forum/studio', 'LiveStudio', 'Instructor'],
+])('company route %s remains reachable and requires verified account access', (path, name, role = 'Learner') => {
+  expect(destination(path, role)).toMatchObject({ name });
   expect(destination(path, null, false)).toMatchObject({ name: 'SignIn' });
+});
+
+test('the website moderation route remains limited to moderator roles', () => {
+  expect(destination('forum/moderation', 'Moderator')).toMatchObject({ name: 'Moderation' });
+  expect(destination('forum/moderation', 'Learner')).toMatchObject({ name: 'LearnerDashboard' });
 });
 
 test('the login alias keeps role-based homes and learner pages reject admin access', () => {

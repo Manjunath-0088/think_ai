@@ -18,10 +18,6 @@ function AddBatch() {
     status: "ACTIVE",
   });
 
-  useEffect(() => {
-    loadCourses();
-  }, []);
-
   const loadCourses = async () => {
     try {
       const response = await getCourses();
@@ -30,6 +26,11 @@ function AddBatch() {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadCourses();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

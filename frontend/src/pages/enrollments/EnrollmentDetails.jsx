@@ -8,10 +8,6 @@ function EnrollmentDetails() {
 
   const [enrollment, setEnrollment] = useState(null);
 
-  useEffect(() => {
-    loadEnrollment();
-  }, []);
-
   const loadEnrollment = async () => {
     try {
       const response = await getEnrollmentById(id);
@@ -20,6 +16,11 @@ function EnrollmentDetails() {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadEnrollment();
+  }, []);
 
   if (!enrollment) {
     return (

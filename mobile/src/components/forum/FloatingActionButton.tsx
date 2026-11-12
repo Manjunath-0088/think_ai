@@ -1,6 +1,7 @@
 import { useThemedStyles } from "@/theme/useThemedStyles";
 import type { Palette } from "@/theme/tokens";
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useOptionalSafeAreaInsets } from '@/hooks/useOptionalSafeAreaInsets';
 import { hitSlop, radii, spacing } from '@/theme/tokens';
 export interface FloatingActionButtonProps {
   onPress: () => void;
@@ -15,7 +16,8 @@ export function FloatingActionButton({
   testID = 'forum-fab'
 }: FloatingActionButtonProps) {
   const styles = useThemedStyles(createStyles);
-  return <View pointerEvents="box-none" style={styles.container} testID={`${testID}-container`}>
+  const insets = useOptionalSafeAreaInsets();
+  return <View pointerEvents="box-none" style={[styles.container, { bottom: spacing.lg + insets.bottom }]} testID={`${testID}-container`}>
       <Pressable accessibilityLabel={accessibilityLabel} accessibilityRole="button" hitSlop={hitSlop} onPress={onPress} style={styles.button} testID={testID}>
         <Text style={styles.label}>{label}</Text>
       </Pressable>

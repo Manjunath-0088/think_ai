@@ -10,21 +10,12 @@ export interface AuthenticationResult {
   user: AuthenticatedLearner;
 }
 
-/** Authenticate against the existing LMS PostgreSQL-backed auth endpoint. */
-export async function authenticate(
-  email: string,
-  password: string,
-  signal?: AbortSignal
-): Promise<AuthenticationResult> {
-  const payload = await apiRequest<never>('/auth/login', {
-    method: 'POST',
-    body: { email: email.trim().toLowerCase(), password },
-    signal,
-  });
+function parseAuthenticationResult(
+  payload: Awaited<ReturnType<typeof apiRequest<never>>>,
+): AuthenticationResult {
   const response = payload as typeof payload & {
     token?: unknown;
     user?: Partial<AuthenticatedLearner>;
-    error?: string;
   };
 
   if (
@@ -46,4 +37,37 @@ export async function authenticate(
       createdAt: typeof response.user.createdAt === 'string' ? response.user.createdAt : null,
     },
   };
+}
+
+/** Authenticate against the existing LMS PostgreSQL-backed auth endpoint. */
+export async function authenticate(
+  email: string,
+  password: string,
+  signal?: AbortSignal
+): Promise<AuthenticationResult> {
+  const payload = await apiRequest<never>('/auth/login', {
+    method: 'POST',
+    body: { email: email.trim().toLowerCase(), password },
+    signal,
+  });
+  return parseAuthenticationResult(payload);
+}
+
+/** Create an account through the website's existing PostgreSQL-backed auth endpoint. */
+export async function registerAccount(
+  name: string,
+  email: string,
+  password: string,
+  signal?: AbortSignal,
+): Promise<AuthenticationResult> {
+  const payload = await apiRequest<never>('/auth/register', {
+    method: 'POST',
+    body: {
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password,
+    },
+    signal,
+  });
+  return parseAuthenticationResult(payload);
 }

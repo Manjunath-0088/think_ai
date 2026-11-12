@@ -1,6 +1,7 @@
 import { Linking } from 'react-native';
 
 import { getSession, restoreSession } from '@/api/session';
+import { allowsAudience, routeAudience } from '@/lms/access';
 
 import {
   DEEP_LINK_PREFIXES,
@@ -28,6 +29,8 @@ const ROUTE_QUERY_PARAMS: Readonly<Partial<Record<ScreenName, readonly string[]>
   AssessmentTaking: ['assessmentId', 'enrollmentId'],
   AssessmentResults: ['assessmentId', 'attemptId'],
   LmsCertificate: ['certificateId'],
+  LiveStudio: ['sessionId'],
+  InstructorControls: ['sessionId'],
 };
 
 /**
@@ -35,10 +38,23 @@ const ROUTE_QUERY_PARAMS: Readonly<Partial<Record<ScreenName, readonly string[]>
  * signed out is bounced to the dashboard.
  */
 const AUTH_GATED_ROUTES: ReadonlySet<ScreenName> = new Set<ScreenName>([
+  'AdminHome',
+  'Account',
+  'LmsHome',
+  'LearnerDashboard',
+  'MyLearning',
+  'MyCourses',
+  'CourseDetail',
+  'GlobalSearch',
   'Wishlist',
   'Profile',
   'CreatePost',
   'Bookmarks',
+  'ForumCategories',
+  'ForumNotifications',
+  'ForumThread',
+  'NotificationPreferences',
+  'LiveStudio',
   'Moderation',
   'Checkout',
   'VideoPlayer',
@@ -49,6 +65,19 @@ const AUTH_GATED_ROUTES: ReadonlySet<ScreenName> = new Set<ScreenName>([
   'CoursePlayer',
   'AssessmentTaking',
   'AssessmentResults',
+  'Downloads',
+  'Analytics',
+  'CodePlayground',
+  'PlaygroundHistory',
+  'LearnerProfile',
+  'LmsSettings',
+  'ForumHome',
+  'StaffTools',
+  'AttendanceRegister',
+  'AttendanceReport',
+  'GradingQueue',
+  'InstructorControls',
+  'RbacMatrix',
 ]);
 
 export function isAuthGatedRoute(screen: ScreenName): boolean {
@@ -58,6 +87,29 @@ export function isAuthGatedRoute(screen: ScreenName): boolean {
 export interface DeepLinkRoute {
   screen: ScreenName;
   params: Record<string, unknown>;
+}
+
+let pendingAuthenticatedRoute: DeepLinkRoute | null = null;
+
+export function rememberPendingDeepLink(route: DeepLinkRoute): void {
+  pendingAuthenticatedRoute = route;
+}
+
+export function consumePendingDeepLink(): DeepLinkRoute | null {
+  const route = pendingAuthenticatedRoute;
+  pendingAuthenticatedRoute = null;
+  return route;
+}
+
+export function consumeAllowedPendingDeepLink(role?: string | null): DeepLinkRoute | null {
+  const route = consumePendingDeepLink();
+  if (!route) return null;
+  const audience = routeAudience[route.screen];
+  return audience && allowsAudience(audience, role) ? route : null;
+}
+
+export function __resetPendingDeepLinkForTests(): void {
+  pendingAuthenticatedRoute = null;
 }
 
 export type DeepLinkResolution =
@@ -149,6 +201,34 @@ const ALIAS_PATTERNS: AliasPattern[] = [
     paramNames: ['threadId'],
     segmentCount: 3,
     staticCount: 2,
+  },
+  {
+    screen: 'NotificationPreferences',
+    regex: /^forum\/preferences$/,
+    paramNames: [],
+    segmentCount: 2,
+    staticCount: 2,
+  },
+  {
+    screen: 'LiveStudio',
+    regex: /^forum\/studio$/,
+    paramNames: [],
+    segmentCount: 2,
+    staticCount: 2,
+  },
+  {
+    screen: 'Moderation',
+    regex: /^forum\/moderation$/,
+    paramNames: [],
+    segmentCount: 2,
+    staticCount: 2,
+  },
+  {
+    screen: 'ForumThread',
+    regex: /^forum\/([^/]+)$/,
+    paramNames: ['threadId'],
+    segmentCount: 2,
+    staticCount: 1,
   },
   {
     screen: 'Assessment',

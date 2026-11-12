@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { AppButton } from "@/components/common/AppButton";
-import { styles } from "./ui";
+import { useLmsStyles } from "./ui";
 export interface DateFieldProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
 }
 export function DateField({ label, value, onChange }: DateFieldProps) {
+  const styles = useLmsStyles();
   const [open, setOpen] = useState(false);
   const selected = new Date(`${value}T12:00:00`);
   return (

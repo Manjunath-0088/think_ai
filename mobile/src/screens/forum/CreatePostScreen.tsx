@@ -16,8 +16,14 @@ import { CreatePostSkeleton } from '@/components/forum/CreatePostSkeleton';
 import { PostPreviewModal } from '@/components/forum/PostPreviewModal';
 import { RichTextEditor } from '@/components/forum/RichTextEditor';
 import { TagMultiSelect } from '@/components/forum/TagMultiSelect';
-import { TITLE_MIN_LENGTH } from '@/components/forum/CreatePostModal';
+import {
+  BODY_MAX_LENGTH,
+  BODY_MIN_LENGTH,
+  TITLE_MAX_LENGTH,
+  TITLE_MIN_LENGTH,
+} from '@/components/forum/CreatePostModal';
 import { useCreateThread } from '@/hooks/useCreateThread';
+import { useOptionalSafeAreaInsets } from '@/hooks/useOptionalSafeAreaInsets';
 import type { ScreenProps } from '@/navigation/types';
 import {radii, spacing, typography} from '@/theme/tokens';
 import type { Palette } from '@/theme/tokens';
@@ -32,6 +38,7 @@ import { useTheme } from '@/theme/ThemeProvider';
  */
 export function CreatePostScreen({ navigation }: ScreenProps<'CreatePost'>) {
   const styles = useThemedStyles(createStyles);
+  const insets = useOptionalSafeAreaInsets();
   const { palette } = useTheme();
   const {
     categories,
@@ -62,11 +69,19 @@ export function CreatePostScreen({ navigation }: ScreenProps<'CreatePost'>) {
   }, [categories, categoryId]);
 
   const validate = useCallback((): string | null => {
-    if (title.trim().length < TITLE_MIN_LENGTH) {
+    const trimmedTitle = title.trim();
+    if (trimmedTitle.length < TITLE_MIN_LENGTH) {
       return `Add a title of at least ${TITLE_MIN_LENGTH} characters.`;
     }
-    if (body.trim() === '') {
-      return 'Add a body before posting.';
+    if (trimmedTitle.length > TITLE_MAX_LENGTH) {
+      return `Keep the title under ${TITLE_MAX_LENGTH} characters.`;
+    }
+    const trimmedBody = body.trim();
+    if (trimmedBody.length < BODY_MIN_LENGTH) {
+      return `Add a body of at least ${BODY_MIN_LENGTH} characters.`;
+    }
+    if (trimmedBody.length > BODY_MAX_LENGTH) {
+      return `Keep the body under ${BODY_MAX_LENGTH} characters.`;
     }
     if (categoryId === '') {
       return 'Pick a category.';
@@ -127,7 +142,8 @@ export function CreatePostScreen({ navigation }: ScreenProps<'CreatePost'>) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl + insets.bottom }]}
+          keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           testID="create-post-scroll">
           {isLoading ? (
@@ -146,6 +162,7 @@ export function CreatePostScreen({ navigation }: ScreenProps<'CreatePost'>) {
                 </Text>
                 <TextInput
                   accessibilityLabel="Thread title"
+                  maxLength={TITLE_MAX_LENGTH}
                   onChangeText={setTitle}
                   placeholder="What do you want to discuss?"
                   placeholderTextColor={palette.textMuted}
@@ -178,6 +195,9 @@ export function CreatePostScreen({ navigation }: ScreenProps<'CreatePost'>) {
                   testID="create-post-body"
                   value={body}
                 />
+                <Text style={styles.hint} testID="create-post-body-hint">
+                  {body.trim().length}/{BODY_MIN_LENGTH} characters minimum
+                </Text>
               </View>
 
               <View>

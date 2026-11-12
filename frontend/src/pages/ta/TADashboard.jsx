@@ -5,7 +5,7 @@ import apiClient from "../../services/apiClient";
 import { logout } from "../../features/auth/authSlice";
 import { ATTENDANCE_STATUSES } from "../../constants/attendance";
 import useTADashboard from "../../hooks/useTADashboard";
-import { useTheme } from "../../components/ThemeContext";
+import { useTheme } from "../../components/useTheme";
 
 const dashboardPreview = {
   courses: ["Java Fundamentals", "React Essentials", "Python for Data"],

@@ -1,70 +1,44 @@
-# Current Android app and backend verification
+# Current Android and backend verification
 
-Date: 2026-11-03
+Date: 2026-11-08
 
-## Verified
+For the full website-to-Android comparison and outstanding blockers, see
+[mobile/FEATURE_PARITY_REPORT.md](mobile/FEATURE_PARITY_REPORT.md).
+For the detailed Android technical audit and prioritized findings, see
+[mobile/TECHNICAL_AUDIT_REPORT.md](mobile/TECHNICAL_AUDIT_REPORT.md).
 
-- Mobile TypeScript: `npm run typecheck` passed with 0 errors after Expo SDK
-  compatibility updates.
-- Mobile lint: `npm run lint` passed with 0 errors and 55 warnings.
-- Mobile Jest: 73 suites, 675 tests passed, including API host selection,
-  responsive 375px/390px layouts, accessibility labels/touch targets, themes,
-  navigation, progress, wishlist, search, and playback/resume coverage. The
-  Jest timeout is 15 seconds to accommodate slower async-storage UI tests.
-- Mobile API host selection uses Expo Go's LAN host on physical Android/iOS,
-  preserves the emulator fallback, and honors `EXPO_PUBLIC_API_URL` first.
-- Backend health returned HTTP 200 through both localhost and the development
-  machine LAN address (`10.184.219.53:5000`). Physical-phone reachability still
-  depends on the phone sharing Wi-Fi and the host firewall allowing port 5000.
-- `npx expo install --fix` now completes. Dynamic app config retains the existing
-  notifications/download plugins and includes the datetime picker and sharing
-  config plugins. Expo used its local compatibility map because network access
-  to the well-known versions endpoint is disabled in this environment.
-- Metro startup reached `Waiting on http://localhost:8082`.
-- Backend unit/integration suite (rerun after the LMS schema fix): 62 passed,
-  0 failed, 1 skipped. The skipped
-  authentication E2E requires `E2E_BASE_URL` and a separately running backend.
-- LMS suite (rerun after the schema fix): all 166 tests passed.
-- Backend forum/live-studio route suite (rerun after the schema fix): 15 passed,
-  0 failed.
-- Backend lint and `npx prisma validate` passed after the schema fix.
-- The LMS assessment worker reported `Unknown argument gradingLeaseAt` because
-  the generated Prisma Client and configured PostgreSQL database were behind the
-  checked-in schema. Regenerated Prisma Client and applied the additive LMS SQL
-  migration with `prisma db execute`; applying it a second time also succeeded.
-- A fresh backend smoke run on port 5001 connected to PostgreSQL and kept the
-  LMS queue worker running without Prisma errors.
-- Prisma schema diff after migration reports only the legacy `User.status`
-  column as extra in the database. It was preserved to avoid deleting existing
-  data.
-- PostgreSQL database records both community migrations as applied:
-  `20261103090000_community_relations` and `20261103100000_seed_vote_counts`.
-- Android Expo export passed: `npx expo export --platform android
-  --output-dir .expo-export-check` bundled 1,179 modules and emitted a 3 MB
-  Hermes Android bundle. The export used a repository-local temporary directory
-  because the sandbox blocks Hermes from writing to its external temp folder.
+## Current verification
 
-## Remaining verification / dependencies
+- Mobile TypeScript passed with 0 errors.
+- Mobile Jest passed: 77 suites and 709 tests (2026-11-08).
+- Mobile TypeScript passed with 0 errors; ESLint passed with 0 errors and 56
+  warnings (2026-11-08).
+- Expo config resolves; production EAS HTTPS URL validation and cleartext-off
+  behavior passed. Android Expo export passed and emitted a roughly 3 MB Hermes bundle from
+  1,188 modules. This verifies the JS/Hermes export, not a signed APK/AAB.
+- Root community website tests passed: 10 files and 111 tests. They were run
+  with the installed Vitest binary and a temporary config because the root
+  community app has no test script or local test dependency set.
+- The `frontend/` LMS production build passed. Its lint command currently
+  reports 319 errors and 19 warnings.
+- Backend unit tests passed: 62 passed, 0 failed, 1 skipped. The skipped auth
+  E2E requires `E2E_BASE_URL` and a separately running backend.
+- LMS backend tests passed: 166 tests.
+- Backend route smoke tests passed: 15 tests in test-only in-memory community
+  mode. With the configured PostgreSQL community router, their `u1` placeholder
+  account is rejected as invalid; that run does not verify production DB routes.
+- PostgreSQL LMS integration tests skipped because a dedicated
+  `LMS_TEST_DATABASE_URL` is not configured. No DB writes were run as part of
+  this audit.
+- ADB starts outside the sandbox but reports no connected devices. Java and
+  Gradle are unavailable and `mobile/android` is absent, so APK/AAB and physical
+  screenshot verification are not complete.
+- The LMS frontend has active learner/instructor/TA placeholders and a legacy
+  nested-router issue. Community persistence also differs: the root web forum
+  uses browser storage, while Android calls backend APIs.
 
-- Physical Android screenshot verification is pending: ADB could not start its
-  local server, and Java is not installed. An APK/AAB native build and signing
-  were not performed.
-- `npx prisma migrate status` is blocked by `P3019`: the checked-in
-  `migration_lock.toml` says `sqlite` while `schema.prisma` says `postgresql`.
-  The community migration records are present in the configured database; the
-  LMS additive SQL was applied manually and is not registered in
-  `_prisma_migrations`. The mixed historical migrations need a safe
-  baseline/provider reconciliation before `migrate deploy` can be used for a
-  new database. No migration history was rewritten.
-- If an older backend process is already running, restart it once after client
-  generation so it loads the updated Prisma Client. The existing process on
-  port 5000 was left untouched; verification used a fresh process on port 5001.
-- Production checkout requires a real Stripe/Razorpay provider, webhook
-  verification, and durable provider-backed payment ledger. Those credentials
-  and services are not configured, so payment creation/confirmation intentionally
-  returns 503 in live storage mode.
-- Backend `npm install` reported 70 dependency advisories (6 low, 38 moderate,
-  25 high, 1 critical); no audit remediation was applied.
+Older backend/schema and migration validation history remains below; the
+2026-11-08 parity report records the scope and current acceptance status.
 
 ## Earlier module test report
 

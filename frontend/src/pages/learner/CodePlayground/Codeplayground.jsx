@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
-import { useTheme } from '../../../components/ThemeContext';
+import { useTheme } from '../../../components/useTheme';
 import { executeCode  } from '../../../api/codeExecutionApi';
 
 const LANGUAGES = [

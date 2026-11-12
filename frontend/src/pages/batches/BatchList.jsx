@@ -6,10 +6,6 @@ function BatchList() {
   const [batches, setBatches] = useState([]);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetchBatches(search);
-  }, [search]);
-
   const fetchBatches = async (searchText = "") => {
     try {
       const response = await getBatches(searchText);
@@ -18,6 +14,11 @@ function BatchList() {
       console.error("Error fetching batches:", error);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchBatches(search);
+  }, [search]);
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(

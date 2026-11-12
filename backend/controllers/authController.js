@@ -44,8 +44,10 @@ exports.register = async (req, res) => {
         return res.status(201).json({
             success: true,
             message: 'User registered successfully!',
-            token: issueToken(newUser),
-            user: publicUser(newUser),
+            data: {
+                token: issueToken(newUser),
+                user: publicUser(newUser),
+            },
         });
     } catch (error) {
         console.error('Registration error:', error);
@@ -70,8 +72,10 @@ exports.login = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: 'Login successful!',
-            token: issueToken(user),
-            user: publicUser(user),
+            data: {
+                token: issueToken(user),
+                user: publicUser(user),
+            },
         });
     } catch (error) {
         console.error('Login error:', error);

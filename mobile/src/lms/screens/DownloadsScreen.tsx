@@ -5,8 +5,9 @@ import type { ScreenProps } from "@/navigation/types";
 import { deleteDownload, recoverDownloads } from "../downloads";
 import { useLms } from "../LmsProvider";
 import { useLmsResource } from "../useLmsResource";
-import { Card, LoadState, Message, Screen, styles } from "../ui";
+import { Card, LoadState, Message, Screen, useLmsStyles } from "../ui";
 export function DownloadsScreen({ navigation }: ScreenProps<"Downloads">) {
+  const styles = useLmsStyles();
   const { session } = useLms();
   const fetcher = useCallback(
     () => recoverDownloads(session.userId),

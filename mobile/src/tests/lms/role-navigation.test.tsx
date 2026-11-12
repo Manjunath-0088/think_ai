@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Text } from "react-native";
 import { fireEvent, render } from "@testing-library/react-native";
 import { AccessGate } from "@/lms/AccessGate";
+import { allowsAudience, roleHome } from "@/lms/access";
 import { AdminHomeScreen } from "@/lms/screens/AdminHomeScreen";
 import { LmsHomeScreen } from "@/lms/screens/HomeScreen";
 import { linkingForRole } from "@/navigation/linking";
@@ -142,7 +143,7 @@ test("deep links preserve allowed learner attempt identifiers", () => {
 
 test("direct admin and learner URLs redirect to the correct role workspace", () => {
   expect(destination("Learner", "admin/analytics")).toMatchObject({
-    name: "LmsHome",
+    name: "LearnerDashboard",
   });
   expect(destination("Admin", "learner/downloads")).toMatchObject({
     name: "AdminHome",
@@ -157,17 +158,30 @@ test("direct admin and learner URLs redirect to the correct role workspace", () 
     name: "AdminHome",
   });
   expect(destination("Learner", "auth/login")).toMatchObject({
-    name: "LmsHome",
+    name: "LearnerDashboard",
   });
 });
 
 test("moderation requires an explicit moderator or administrator role", () => {
   for (const role of ["Learner", "Instructor", "TA"])
-    expect(destination(role, "forum/moderate")).toMatchObject({
-      name: "LmsHome",
-    });
+    expect(destination(role, "forum/moderate")?.name).not.toBe("Moderation");
+  expect(destination("Learner", "forum/moderate")).toMatchObject({ name: "LearnerDashboard" });
+  expect(destination("Instructor", "forum/moderate")).toMatchObject({ name: "StaffTools" });
+  expect(destination("TA", "forum/moderate")).toMatchObject({ name: "StaffTools" });
   for (const role of ["Admin", "Moderator"])
     expect(destination(role, "forum/moderate")).toMatchObject({
       name: "Moderation",
     });
+});
+
+test("role homes and staff route permissions distinguish learner, instructor, TA, and admin", () => {
+  expect(roleHome("Learner")).toBe("LearnerDashboard");
+  expect(roleHome("Instructor")).toBe("StaffTools");
+  expect(roleHome("TA")).toBe("StaffTools");
+  expect(roleHome("Admin")).toBe("AdminHome");
+  expect(roleHome("Moderator")).toBe("ForumHome");
+  expect(allowsAudience("learner", "Instructor")).toBe(false);
+  expect(allowsAudience("staff", "TA")).toBe(true);
+  expect(allowsAudience("admin", "Instructor")).toBe(false);
+  expect(allowsAudience("instructor", "Admin")).toBe(true);
 });

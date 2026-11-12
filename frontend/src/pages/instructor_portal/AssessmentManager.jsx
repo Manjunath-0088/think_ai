@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
@@ -890,6 +890,7 @@ export default function AssessmentManager({ initialCourseId = null }) {
     }
   }, [assessmentsError, dispatch]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (selectedCourseId) dispatch(fetchModulesByCourseId(selectedCourseId));
     setSelectedModuleId(null);

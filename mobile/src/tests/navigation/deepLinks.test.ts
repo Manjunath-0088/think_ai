@@ -3,10 +3,13 @@ import { Linking } from 'react-native';
 import {
   DEEP_LINK_PREFIXES,
   DEEP_LINK_ROUTES,
+  consumeAllowedPendingDeepLink,
   getInitialDeepLink,
+  __resetPendingDeepLinkForTests,
   isAuthGatedRoute,
   parseDeepLink,
   resolveDeepLink,
+  rememberPendingDeepLink,
   subscribeToDeepLinks,
 } from '@/navigation/deepLinks';
 import { __resetSessionForTests, signIn } from '@/api/session';
@@ -44,7 +47,7 @@ describe('resolveDeepLink', () => {
   });
 
   it('maps a static route', () => {
-    const result = resolveDeepLink('thinkzai://learner/dashboard');
+    const result = resolveDeepLink('thinkzai://learner/dashboard', { isSignedIn: true });
 
     expect(result).toEqual({
       status: 'navigate',
@@ -54,7 +57,8 @@ describe('resolveDeepLink', () => {
 
   it('extracts path params', () => {
     const result = resolveDeepLink(
-      'thinkzai://learner/courses/course-9?moduleId=mod-2'
+      'thinkzai://learner/courses/course-9?moduleId=mod-2',
+      { isSignedIn: true },
     );
 
     expect(result).toEqual({
@@ -67,7 +71,7 @@ describe('resolveDeepLink', () => {
   });
 
   it('passes through known query params on the forum index', () => {
-    const result = resolveDeepLink('thinkzai://forum?categoryId=cat-1');
+    const result = resolveDeepLink('thinkzai://forum?categoryId=cat-1', { isSignedIn: true });
 
     expect(result).toEqual({
       status: 'navigate',
@@ -76,7 +80,7 @@ describe('resolveDeepLink', () => {
   });
 
   it('ignores unknown query params', () => {
-    const result = resolveDeepLink('thinkzai://forum?utm_source=email');
+    const result = resolveDeepLink('thinkzai://forum?utm_source=email', { isSignedIn: true });
 
     expect(result).toEqual({
       status: 'navigate',
@@ -85,11 +89,11 @@ describe('resolveDeepLink', () => {
   });
 
   it('accepts the short thinkz scheme and route aliases', () => {
-    expect(resolveDeepLink('thinkz://course/course-7')).toEqual({
+    expect(resolveDeepLink('thinkz://course/course-7', { isSignedIn: true })).toEqual({
       status: 'navigate',
       route: { screen: 'CourseDetail', params: { courseId: 'course-7' } },
     });
-    expect(resolveDeepLink('thinkz://forum/thread/thread-7')).toEqual({
+    expect(resolveDeepLink('thinkz://forum/thread/thread-7', { isSignedIn: true })).toEqual({
       status: 'navigate',
       route: { screen: 'ForumThread', params: { threadId: 'thread-7' } },
     });
@@ -130,6 +134,44 @@ describe('resolveDeepLink', () => {
       route: { screen: 'Bookmarks', params: {} },
     });
   });
+
+  it('resumes a signed-out deep link after sign-in only when the role may open it', () => {
+    rememberPendingDeepLink({ screen: 'ForumThread', params: { threadId: 'topic-8' } });
+    expect(consumeAllowedPendingDeepLink('Learner')).toEqual({
+      screen: 'ForumThread',
+      params: { threadId: 'topic-8' },
+    });
+    rememberPendingDeepLink({ screen: 'Analytics', params: {} });
+    expect(consumeAllowedPendingDeepLink('Learner')).toBeNull();
+    expect(consumeAllowedPendingDeepLink('Admin')).toBeNull();
+  });
+
+  it('routes community categories and notifications through the forum deep links', () => {
+    expect(resolveDeepLink('thinkzai://forum/categories', { isSignedIn: true })).toMatchObject({
+      status: 'navigate', route: { screen: 'ForumCategories', params: {} },
+    });
+    expect(resolveDeepLink('thinkzai://forum/notifications', { isSignedIn: true })).toMatchObject({
+      status: 'navigate', route: { screen: 'ForumNotifications', params: {} },
+    });
+    expect(resolveDeepLink('thinkzai://forum/notifications', { isSignedIn: false })).toMatchObject({
+      status: 'auth-required', route: { screen: 'ForumNotifications', params: {} },
+    });
+  });
+
+  it('opens website forum thread and section links in their Android routes', () => {
+    expect(resolveDeepLink('thinkzai://forum/d2', { isSignedIn: true })).toMatchObject({
+      status: 'navigate', route: { screen: 'ForumThread', params: { threadId: 'd2' } },
+    });
+    expect(resolveDeepLink('thinkzai://forum/preferences', { isSignedIn: true })).toMatchObject({
+      status: 'navigate', route: { screen: 'NotificationPreferences', params: {} },
+    });
+    expect(resolveDeepLink('thinkzai://forum/studio', { isSignedIn: true })).toMatchObject({
+      status: 'navigate', route: { screen: 'LiveStudio', params: {} },
+    });
+    expect(resolveDeepLink('thinkzai://forum/moderation', { isSignedIn: true })).toMatchObject({
+      status: 'navigate', route: { screen: 'Moderation', params: {} },
+    });
+  });
 });
 
 describe('isAuthGatedRoute', () => {
@@ -138,11 +180,13 @@ describe('isAuthGatedRoute', () => {
     expect(isAuthGatedRoute('Bookmarks')).toBe(true);
     expect(isAuthGatedRoute('Moderation')).toBe(true);
     expect(isAuthGatedRoute('Checkout')).toBe(true);
+    expect(isAuthGatedRoute('LearnerDashboard')).toBe(true);
+    expect(isAuthGatedRoute('ForumHome')).toBe(true);
   });
 
-  it('leaves public routes open', () => {
-    expect(isAuthGatedRoute('ForumHome')).toBe(false);
-    expect(isAuthGatedRoute('LearnerDashboard')).toBe(false);
+  it('leaves the auth entry points open', () => {
+    expect(isAuthGatedRoute('Login')).toBe(false);
+    expect(isAuthGatedRoute('Register')).toBe(false);
   });
 });
 
@@ -177,8 +221,9 @@ describe('subscribeToDeepLinks', () => {
     listener?.({ url: 'thinkzai://search' });
     expect(handler).toHaveBeenCalledWith(
       {
-        status: 'navigate',
+        status: 'auth-required',
         route: { screen: 'GlobalSearch', params: {} },
+        redirectTo: 'Login',
       },
       'thinkzai://search'
     );
@@ -191,6 +236,7 @@ describe('subscribeToDeepLinks', () => {
 describe('getInitialDeepLink', () => {
   afterEach(() => {
     __resetSessionForTests();
+    __resetPendingDeepLinkForTests();
     jest.restoreAllMocks();
   });
 

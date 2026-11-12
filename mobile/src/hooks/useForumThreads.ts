@@ -14,6 +14,7 @@ import type {
 
 export interface UseForumThreadsOptions {
   pageSize?: number;
+  initialCategoryId?: string;
   /** 0–1 fraction of the list that triggers the next page. Spec: 0.8. */
   threshold?: number;
 }
@@ -35,6 +36,7 @@ export function useForumThreads(options: UseForumThreadsOptions = {}) {
   const {
     pageSize = FORUM_PAGE_SIZE,
     threshold = INFINITE_SCROLL_THRESHOLD,
+    initialCategoryId,
   } = options;
 
   const client = useApiClient();
@@ -46,7 +48,7 @@ export function useForumThreads(options: UseForumThreadsOptions = {}) {
   const [categories, setCategories] = useState<ForumCategory[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [filters, setFilters] = useState<ForumFilters>({
-    categoryId: null,
+    categoryId: initialCategoryId ?? null,
     tags: [],
     sort: 'newest',
   });
@@ -63,6 +65,13 @@ export function useForumThreads(options: UseForumThreadsOptions = {}) {
 
   // Guards against duplicate in-flight requests from rapid scroll events.
   const isFetchingRef = useRef(false);
+
+  useEffect(() => {
+    const categoryId = initialCategoryId ?? null;
+    setFilters((previous) => previous.categoryId === categoryId
+      ? previous
+      : { ...previous, categoryId });
+  }, [initialCategoryId]);
 
   const setCategoryId = useCallback((categoryId: string | null) => {
     setFilters((prev) => ({ ...prev, categoryId }));

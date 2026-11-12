@@ -1,10 +1,20 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { ScrollView } from 'react-native';
 
+jest.mock('@/features/notifications/components/NotificationDropdown', () => {
+  const React = require('react');
+  const NotificationDropdown = (props) => React.createElement('View', { ...props, testID: 'notification-dropdown' });
+  return {
+    NotificationDropdown,
+    default: NotificationDropdown,
+  };
+});
+
 import { createMockApiClient } from '@/api/mockClient';
 import { createEnrollmentFactory } from '@/mock/factories';
 import { LearnerDashboardScreen } from '@/screens/learner/LearnerDashboardScreen';
 import { createMockNavigation, renderScreen } from '@/tests/helpers';
+import type { Enrollment } from '@/types';
 
 const createEnrollment = createEnrollmentFactory(77);
 
@@ -23,22 +33,29 @@ async function pullToRefresh() {
 }
 
 describe('LearnerDashboardScreen', () => {
-  it('places the compact theme selector in the Dashboard header action area', () => {
+  it('places the compact theme selector in the branded Home header', async () => {
     const { navigation } = renderScreen(LearnerDashboardScreen, { name: 'LearnerDashboard' });
     const options = navigation.setOptions.mock.calls.map(([value]) => value);
     const headerOptions = options.find((value) => typeof value.headerRight === 'function');
     expect(headerOptions).toBeDefined();
     const panel = headerOptions!.headerRight!();
     expect(panel).toMatchObject({ props: { compact: true, testID: 'dashboard-appearance-toggle' } });
-    expect(screen.queryByTestId('dashboard-appearance-toggle')).toBeNull();
+    await waitFor(() => expect(screen.getByTestId('dashboard-appearance-toggle')).toBeTruthy());
+    expect(headerOptions!.headerShown).toBe(false);
   });
 
   it('shows a loading skeleton before enrollments arrive', async () => {
     const { client } = buildClient();
+    let resolveEnrollments: ((value: Enrollment[]) => void) | undefined;
+    jest.spyOn(client, 'fetchEnrollments').mockImplementation(
+      () => new Promise((resolve) => { resolveEnrollments = resolve; })
+    );
     renderScreen(LearnerDashboardScreen, { client, name: 'LearnerDashboard' });
 
     expect(screen.getByTestId('dashboard-loading')).toBeTruthy();
-    await act(async () => {});
+    await act(async () => {
+      resolveEnrollments?.([]);
+    });
   });
 
   it('renders one card per enrollment once loaded', async () => {
@@ -170,7 +187,7 @@ describe('LearnerDashboardScreen', () => {
     expect(screen.getByTestId('dashboard-category-chips')).toBeTruthy();
     expect(screen.getByTestId('dashboard-featured')).toBeTruthy();
     expect(screen.getByTestId('dashboard-recommended')).toBeTruthy();
-    expect(screen.getByText('Browse by category')).toBeTruthy();
+    expect(screen.getByText('Popular Categories')).toBeTruthy();
     expect(screen.getByText('Featured courses')).toBeTruthy();
     expect(screen.getByText('Recommended for you')).toBeTruthy();
   });

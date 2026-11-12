@@ -2,16 +2,18 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { authenticate } from '@/api/auth';
 import { signIn } from '@/api/session';
 import { registerPushNotifications } from '@/features/notifications/pushRegistration';
+import { roleHome } from '@/lms/access';
+import { consumeAllowedPendingDeepLink } from '@/navigation/deepLinks';
 import type { ScreenProps } from '@/navigation/types';
 import {radii, spacing, typography} from '@/theme/tokens';
 import type { Palette } from '@/theme/tokens';
@@ -44,11 +46,15 @@ export function LoginScreen({ navigation }: ScreenProps<'Login' | 'SignIn'>) {
       await signIn(String(result.user.id), result.token, result.user);
       // Permission may be declined; that must never block sign-in.
       void registerPushNotifications().catch(() => undefined);
-      navigation.replace(
-        ['admin', 'superadmin'].includes(result.user.role.toLowerCase())
-          ? 'AdminHome'
-          : 'LearnerDashboard',
-      );
+      const pendingRoute = consumeAllowedPendingDeepLink(result.user.role);
+      if (pendingRoute) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: pendingRoute.screen, params: pendingRoute.params } as never],
+        });
+      } else {
+        navigation.replace(roleHome(result.user.role));
+      }
     } catch (loginError) {
       setError(
         loginError instanceof Error && loginError.name === 'AbortError'
@@ -111,6 +117,13 @@ export function LoginScreen({ navigation }: ScreenProps<'Login' | 'SignIn'>) {
             <Text style={styles.buttonLabel}>Sign in</Text>
           )}
         </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('Register')}
+          style={styles.registerLink}
+          testID="login-register-link">
+          <Text style={styles.registerLabel}>New to Thinkz AI? Create an account</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -154,6 +167,8 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     color: palette.textInverse,
     fontWeight: '700',
   },
+  registerLink: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  registerLabel: { ...typography.caption, color: palette.accent },
 });
 
 export default LoginScreen;

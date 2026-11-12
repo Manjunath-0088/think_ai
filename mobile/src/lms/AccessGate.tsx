@@ -4,12 +4,13 @@ import { AppButton } from "@/components/common/AppButton";
 import { signOut } from "@/api/session";
 import { allowsAudience, type AccessAudience } from "./access";
 import { useLms } from "./LmsProvider";
-import { Screen, styles } from "./ui";
+import { Screen, useLmsStyles } from "./ui";
 export function AccessGate({
   audience,
   onHome,
   children,
 }: PropsWithChildren<{ audience: AccessAudience; onHome: () => void }>) {
+  const styles = useLmsStyles();
   const { session, ready, account, accessStatus, accessError, refreshAccess } =
     useLms();
   if (!ready || (session.token && accessStatus === "checking"))

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
@@ -9,7 +10,6 @@ import { getCourses } from "../../api/courseApi";
 import {
   fetchModulesByCourseId,
   selectModules,
-  selectModulesLoading,
   selectModulesError,
   clearModuleError,
 } from "../../features/modules/moduleSlice";
@@ -38,10 +38,9 @@ export default function AssessmentManager({ initialCourseId = null }) {
   const [courses, setCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [selectedCourseId, setSelectedCourseId] = useState(initialCourseId);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery] = useState("");
 
   const modules = useSelector(selectModules);
-  const modulesLoading = useSelector(selectModulesLoading);
   const modulesError = useSelector(selectModulesError);
 
   // Safety net: some slices keep a flat/cached module list across course

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ShieldAlert, Download, Loader2, Filter } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 
 import {
   fetchAuditLogs,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { 
@@ -85,6 +85,7 @@ export default function InstructorVideoPreview() {
   }, [courseId]);
 
   // Find Lesson data across loaded modules or fallback to route identifier
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (lessonId) {
       let found = null;
@@ -125,6 +126,38 @@ export default function InstructorVideoPreview() {
         setShowControls(false);
       }
     }, 2500);
+  };
+
+  // Robust Fullscreen & Landscape Rotation Trigger
+  const toggleFullscreen = async () => {
+    const elem = containerRef.current;
+    if (!elem) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        if (elem.requestFullscreen) {
+          await elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        }
+        
+        if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+          window.screen.orientation.lock("landscape").catch(() => {});
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+
+        if (window.screen && window.screen.orientation && window.screen.orientation.unlock) {
+          window.screen.orientation.unlock();
+        }
+      }
+    } catch (err) {
+      console.error("Fullscreen or orientation trigger error:", err);
+    }
   };
 
   // Keyboard Shortcuts Handler
@@ -190,38 +223,6 @@ export default function InstructorVideoPreview() {
       vid.currentTime = Math.max(0, vid.currentTime - 5); // Left tap: -5s
     } else if (clickX > rect.width * 0.65) {
       vid.currentTime = Math.min(vid.duration, vid.currentTime + 5); // Right tap: +5s
-    }
-  };
-
-  // Robust Fullscreen & Landscape Rotation Trigger
-  const toggleFullscreen = async () => {
-    const elem = containerRef.current;
-    if (!elem) return;
-
-    try {
-      if (!document.fullscreenElement) {
-        if (elem.requestFullscreen) {
-          await elem.requestFullscreen();
-        } else if (elem.webkitRequestFullscreen) {
-          elem.webkitRequestFullscreen();
-        }
-        
-        if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
-          window.screen.orientation.lock("landscape").catch(() => {});
-        }
-      } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        }
-
-        if (window.screen && window.screen.orientation && window.screen.orientation.unlock) {
-          window.screen.orientation.unlock();
-        }
-      }
-    } catch (err) {
-      console.error("Fullscreen or orientation trigger error:", err);
     }
   };
 

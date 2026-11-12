@@ -3,9 +3,12 @@ import { useThemedStyles } from "@/theme/useThemedStyles";
 import type { Palette } from "@/theme/tokens";
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useOptionalSafeAreaInsets } from '@/hooks/useOptionalSafeAreaInsets';
 import { hitSlop, radii, spacing, typography } from '@/theme/tokens';
 import type { ForumCategory } from '@/types';
 export interface CreatePostModalProps {
+  /** Category selected when the sheet opens (e.g. the active forum filter). */
+  initialCategoryId?: string;
   visible: boolean;
   categories: ForumCategory[];
   availableTags: string[];
@@ -21,10 +24,15 @@ export interface CreatePostModalProps {
   testID?: string;
 }
 export const TITLE_MIN_LENGTH = 6;
+export const TITLE_MAX_LENGTH = 150;
+/** Mirrors `POST /api/discussions` in `postgresCommunityService.createDiscussion`. */
+export const BODY_MIN_LENGTH = 10;
+export const BODY_MAX_LENGTH = 5000;
 export function CreatePostModal({
   visible,
   categories,
   availableTags,
+  initialCategoryId,
   isSubmitting = false,
   errorMessage = null,
   onClose,
@@ -35,9 +43,10 @@ export function CreatePostModal({
     palette
   } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useOptionalSafeAreaInsets();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [categoryId, setCategoryId] = useState<string>(categories[0]?.id ?? '');
+  const [categoryId, setCategoryId] = useState<string>(initialCategoryId ?? categories[0]?.id ?? '');
   const [tags, setTags] = useState<string[]>([]);
   const [validationError, setValidationError] = useState<string | null>(null);
   useEffect(() => {
@@ -50,44 +59,67 @@ export function CreatePostModal({
   // first category once it arrives instead of blocking submit on an empty id.
   useEffect(() => {
     if (categoryId === '' && categories.length > 0) {
-      setCategoryId(categories[0]?.id ?? '');
+      setCategoryId(initialCategoryId ?? categories[0]?.id ?? '');
     }
-  }, [categories, categoryId]);
-  const canSubmit = title.trim().length >= TITLE_MIN_LENGTH && categoryId !== '';
+  }, [categories, categoryId, initialCategoryId]);
+  const trimmedTitle = title.trim();
+  const trimmedBody = body.trim();
+  const canSubmit =
+    trimmedTitle.length >= TITLE_MIN_LENGTH &&
+    trimmedTitle.length <= TITLE_MAX_LENGTH &&
+    trimmedBody.length >= BODY_MIN_LENGTH &&
+    trimmedBody.length <= BODY_MAX_LENGTH &&
+    categories.some(category => category.id === categoryId);
   const toggleTag = (tag: string) => {
     setTags(current => current.includes(tag) ? current.filter(entry => entry !== tag) : [...current, tag]);
   };
   const handleSubmit = () => {
+    if (isSubmitting) return;
     if (!canSubmit) {
-      setValidationError(`Add a title of at least ${TITLE_MIN_LENGTH} characters and pick a category.`);
+      if (trimmedTitle.length < TITLE_MIN_LENGTH || categoryId === '') {
+        setValidationError(`Add a title of at least ${TITLE_MIN_LENGTH} characters and pick a category.`);
+        return;
+      }
+      if (trimmedTitle.length > TITLE_MAX_LENGTH) {
+        setValidationError(`Keep the title under ${TITLE_MAX_LENGTH} characters.`);
+        return;
+      }
+      if (trimmedBody.length < BODY_MIN_LENGTH) {
+        setValidationError(`Add a body of at least ${BODY_MIN_LENGTH} characters.`);
+        return;
+      }
+      setValidationError(`Keep the body under ${BODY_MAX_LENGTH} characters.`);
       return;
     }
     onSubmit({
-      title: title.trim(),
-      body: body.trim(),
+      title: trimmedTitle,
+      body: trimmedBody,
       categoryId,
       tags
     });
   };
-  return <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
+  return <Modal animationType="slide" statusBarTranslucent onRequestClose={() => { if (!isSubmitting) onClose(); }} transparent visible={visible}>
       <View style={styles.backdrop} testID={`${testID}-backdrop`}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetWrap}>
-          <View accessibilityViewIsModal style={styles.sheet} testID={testID}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheetWrap}>
+          <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: spacing.lg + insets.bottom }]} testID={testID}>
             <View style={styles.header}>
               <Text accessibilityRole="header" style={styles.headerTitle}>
                 New thread
               </Text>
-              <Pressable accessibilityLabel="Close" accessibilityRole="button" hitSlop={hitSlop} onPress={onClose} testID={`${testID}-close`}>
+              <Pressable accessibilityLabel="Close" accessibilityRole="button" hitSlop={hitSlop} disabled={isSubmitting} onPress={onClose} testID={`${testID}-close`}>
                 <Text style={styles.close}>✕</Text>
               </Pressable>
             </View>
 
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" testID={`${testID}-body`}>
+            <ScrollView contentContainerStyle={styles.body} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" testID={`${testID}-body`}>
               <Text style={styles.label}>Title</Text>
-              <TextInput accessibilityLabel="Thread title" onChangeText={setTitle} placeholder="What do you want to discuss?" placeholderTextColor={palette.textMuted} style={styles.input} testID={`${testID}-title`} value={title} />
+              <TextInput accessibilityLabel="Thread title" maxLength={TITLE_MAX_LENGTH} onChangeText={setTitle} placeholder="What do you want to discuss?" placeholderTextColor={palette.textMuted} style={styles.input} testID={`${testID}-title`} value={title} />
 
               <Text style={styles.label}>Body</Text>
-              <TextInput accessibilityLabel="Thread body" multiline onChangeText={setBody} placeholder="Add context, code or links…" placeholderTextColor={palette.textMuted} style={[styles.input, styles.textarea]} testID={`${testID}-body-input`} value={body} />
+              <TextInput accessibilityLabel="Thread body" maxLength={BODY_MAX_LENGTH} multiline onChangeText={setBody} placeholder="Add context, code or links…" placeholderTextColor={palette.textMuted} style={[styles.input, styles.textarea]} testID={`${testID}-body-input`} value={body} />
+              <Text style={styles.hint} testID={`${testID}-body-hint`}>
+                {trimmedBody.length}/{BODY_MIN_LENGTH} characters minimum
+              </Text>
 
               <Text style={styles.label}>Category</Text>
               <View style={styles.chipRow} testID={`${testID}-categories`}>
@@ -147,6 +179,7 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     maxHeight: '90%'
   },
   sheet: {
+    flexShrink: 1,
     backgroundColor: palette.surfaceElevated,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
@@ -198,6 +231,8 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     gap: spacing.xs
   },
   chip: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
     borderRadius: radii.pill,
@@ -222,6 +257,11 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     color: palette.danger,
     marginTop: spacing.sm
   },
+  hint: {
+    ...typography.caption,
+    color: palette.textMuted,
+    marginTop: spacing.xxs
+  },
   submit: {
     marginHorizontal: spacing.md,
     marginTop: spacing.md,
@@ -235,7 +275,7 @@ const createStyles = (palette: Palette) => StyleSheet.create({
   },
   submitText: {
     ...typography.label,
-    color: palette.textInverse,
+    color: '#FFFFFF',
     fontWeight: '700'
   }
 });

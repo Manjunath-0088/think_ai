@@ -16,6 +16,7 @@ import type {
   ContentActionResult,
   ContentTarget,
   CheckoutPlan,
+  CommunityNotification,
   CreateDiscussionResult,
   DiscountValidation,
   FlagQueueItem,
@@ -80,16 +81,32 @@ export interface LearningApiClient {
   setThreadSolved(threadId: string, solved: boolean): Promise<ThreadDetail>;
   searchMentionUsers(query: string): Promise<MentionUser[]>;
 
-  // Notification preferences (/users/:id/notification-preferences)
+  // Shared forum notification preferences and notification center.
   fetchNotificationPreferences(userId: string): Promise<NotificationPreferences>;
   saveNotificationPreferences(
     userId: string,
     preferences: NotificationPreferences
   ): Promise<NotificationPreferences>;
+  fetchCommunityNotifications(unreadOnly?: boolean): Promise<CommunityNotification[]>;
+  markCommunityNotificationRead(notificationId: string): Promise<CommunityNotification>;
+  markAllCommunityNotificationsRead(): Promise<{ userId: string; marked: number }>;
 
   // Page 7 — Create Post (/forum/new)
   fetchDiscussionCategories(): Promise<ForumCategory[]>;
+  fetchCommunityCategories(): Promise<ForumCategory[]>;
+  createCommunityCategory(input: {
+    name: string;
+    color: string;
+    description: string;
+  }): Promise<ForumCategory>;
+  updateCommunityCategory(
+    categoryId: string,
+    input: { name: string; color: string; description: string }
+  ): Promise<ForumCategory>;
+  deleteCommunityCategory(categoryId: string): Promise<void>;
   createDiscussion(input: CreateThreadInput): Promise<CreateDiscussionResult>;
+  reportDiscussion(discussionId: string, reason: string): Promise<void>;
+  reportComment(commentId: string, reason: string): Promise<void>;
 
   // Page 8 — Bookmarks (/forum/bookmarks)
   fetchBookmarks(): Promise<BookmarkPage>;
@@ -136,8 +153,17 @@ export type CommunityApiMethod =
   | 'searchMentionUsers'
   | 'fetchNotificationPreferences'
   | 'saveNotificationPreferences'
+  | 'fetchCommunityNotifications'
+  | 'markCommunityNotificationRead'
+  | 'markAllCommunityNotificationsRead'
   | 'fetchDiscussionCategories'
+  | 'fetchCommunityCategories'
+  | 'createCommunityCategory'
+  | 'updateCommunityCategory'
+  | 'deleteCommunityCategory'
   | 'createDiscussion'
+  | 'reportDiscussion'
+  | 'reportComment'
   | 'fetchBookmarks'
   | 'addBookmark'
   | 'removeBookmark'

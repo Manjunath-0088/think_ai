@@ -1,5 +1,5 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
-import { FlatList } from 'react-native';
+import { FlatList, StyleSheet } from 'react-native';
 
 import { createMockApiClient } from '@/api/mockClient';
 import { ForumHomeScreen } from '@/screens/forum/ForumHomeScreen';
@@ -285,11 +285,29 @@ describe('ForumHomeScreen', () => {
     renderScreen(ForumHomeScreen, { client, name: 'ForumHome', navigation });
 
     await flushAllPendingWork();
+    const [card] = screen.getAllByTestId(/^forum-thread-list-thread-\d+$/);
     await act(async () => {
-      fireEvent.press(screen.getAllByTestId(/^forum-thread-list-.*-title$/)[0]!);
+      fireEvent.press(card!);
     });
 
-    expect(navigation.navigate).toHaveBeenCalledWith('GlobalSearch');
+    const threadId = card!.props.testID.replace('forum-thread-list-', '');
+    expect(navigation.navigate).toHaveBeenCalledWith('ForumThread', { threadId });
+  });
+
+  it('applies a category deep link and opens a thread deep link', async () => {
+    const { client, fetchForumThreads } = buildClient();
+    const navigation = createMockNavigation();
+    renderScreen(ForumHomeScreen, {
+      client,
+      name: 'ForumHome',
+      navigation,
+      params: { categoryId: 'cat-1', threadId: 'thread-linked' },
+    });
+
+    await flushAllPendingWork();
+
+    expect(fetchForumThreads).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 'cat-1' }));
+    expect(navigation.navigate).toHaveBeenCalledWith('ForumThread', { threadId: 'thread-linked' });
   });
 
   it('tunes the list for smooth scrolling', async () => {
@@ -304,4 +322,44 @@ describe('ForumHomeScreen', () => {
     expect(list.props.windowSize).toBe(7);
     expect(list.props.removeClippedSubviews).toBe(true);
   });
+});
+
+
+describe('native forum panels', () => {
+  it.each([['categories','ForumCategories'], ['saved','Bookmarks'], ['notifications','ForumNotifications'], ['preferences','NotificationPreferences'], ['live studio','LiveStudio']])('opens %s', async (label, destination) => {
+    const { client } = buildClient();
+    const navigation = createMockNavigation();
+    renderScreen(ForumHomeScreen, { client, name: 'ForumHome', navigation });
+    await flushAllPendingWork();
+    fireEvent.press(screen.getByLabelText('Open community ' + label));
+    expect(navigation.navigate).toHaveBeenCalledWith(destination);
+  });
+  it('keeps horizontal filter rails from taking vertical list space', async () => {
+    const { client } = buildClient();
+    renderScreen(ForumHomeScreen, { client, name: 'ForumHome' });
+    await flushAllPendingWork();
+    for (const id of ['category-chips','tag-filter']) {
+      expect(StyleSheet.flatten(screen.getByTestId(id).props.style).flexGrow).toBe(0);
+      expect(StyleSheet.flatten(screen.getByTestId(id).props.contentContainerStyle).alignItems).toBe('center');
+    }
+  });
+});
+
+it('prevents duplicate publication and clears the successful draft', async () => {
+  const { client } = buildClient();
+  const create = jest.spyOn(client, 'createThread');
+  renderScreen(ForumHomeScreen, { client, name: 'ForumHome' });
+  await flushAllPendingWork();
+  fireEvent.press(screen.getByTestId('forum-fab'));
+  fireEvent.changeText(screen.getByTestId('create-post-modal-title'), 'Native publish regression');
+  fireEvent.changeText(screen.getByTestId('create-post-modal-body-input'), 'A complete discussion body for submission.');
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('create-post-modal-submit'));
+    fireEvent.press(screen.getByTestId('create-post-modal-submit'));
+  });
+  await flushAllPendingWork();
+  expect(create).toHaveBeenCalledTimes(1);
+  fireEvent.press(screen.getByTestId('forum-fab'));
+  expect(screen.getByTestId('create-post-modal-title').props.value).toBe('');
+  expect(screen.getByTestId('create-post-modal-body-input').props.value).toBe('');
 });

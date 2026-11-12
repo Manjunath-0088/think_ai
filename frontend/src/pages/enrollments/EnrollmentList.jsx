@@ -10,10 +10,6 @@ function EnrollmentList() {
   const [enrollments, setEnrollments] = useState([]);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetchEnrollments();
-  }, []);
-
   const fetchEnrollments = async () => {
     try {
       const response = await getEnrollments();
@@ -23,6 +19,11 @@ function EnrollmentList() {
       toast.error("Failed to load enrollments");
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchEnrollments();
+  }, []);
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(

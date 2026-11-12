@@ -8,6 +8,9 @@ export interface TagFilterProps {
   onChange: (nextSelected: string[]) => void;
   testID?: string;
 }
+
+const CHIP_HEIGHT = 44;
+const RAIL_HEIGHT = CHIP_HEIGHT + spacing.xs * 2;
 export function TagFilter({
   tags,
   selectedTags,
@@ -26,13 +29,13 @@ export function TagFilter({
     // Multi-select: tapping an unselected tag adds it to the set.
     onChange([...selectedTags, tag]);
   };
-  return <ScrollView contentContainerStyle={styles.content} horizontal showsHorizontalScrollIndicator={false} testID={testID}>
+  return <ScrollView style={styles.scroll} contentContainerStyle={styles.content} horizontal showsHorizontalScrollIndicator={false} bounces={false} testID={testID}>
       {tags.map(tag => {
       const isSelected = selectedTags.includes(tag);
       return <Pressable accessibilityLabel={tag} accessibilityRole="checkbox" accessibilityState={{
         checked: isSelected
       }} hitSlop={hitSlop} key={tag} onPress={() => toggle(tag)} style={[styles.chip, isSelected && styles.chipSelected]} testID={`${testID}-${tag}`}>
-            <Text style={[styles.label, isSelected && styles.labelSelected]}>
+            <Text numberOfLines={1} style={[styles.label, isSelected && styles.labelSelected]}>
               {isSelected ? `✓ ${tag}` : tag}
             </Text>
           </Pressable>;
@@ -40,18 +43,31 @@ export function TagFilter({
     </ScrollView>;
 }
 const createStyles = (palette: Palette) => StyleSheet.create({
+  scroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+    height: RAIL_HEIGHT
+  },
   content: {
+    alignItems: 'center',
+    flexGrow: 0,
+    gap: spacing.xs,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xxs,
-    gap: spacing.xs
+    paddingVertical: spacing.xs
   },
   chip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
+    alignSelf: 'center',
+    backgroundColor: palette.surfaceMuted,
+    borderColor: palette.border,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.surface
+    flexGrow: 0,
+    flexShrink: 0,
+    height: CHIP_HEIGHT,
+    justifyContent: 'center',
+    maxHeight: CHIP_HEIGHT,
+    minHeight: CHIP_HEIGHT,
+    paddingHorizontal: spacing.sm
   },
   chipSelected: {
     backgroundColor: palette.brandAlt,
@@ -62,7 +78,7 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     color: palette.textSecondary
   },
   labelSelected: {
-    color: palette.textPrimary,
+    color: '#FFFFFF',
     fontWeight: '700'
   }
 });

@@ -13,6 +13,7 @@ const accounts = [
   { name: 'Instructor Demo', email: 'instructordemo@gmail.com', role: 'Instructor' },
   { name: 'Teaching Assistant Demo', email: 'tademo@gmail.com', role: 'TA' },
   { name: 'Demo Learner', email: 'ta.demo.learner@thinkz.local', role: 'Learner' },
+  { name: 'Demo Learner', email: 'learner@example.com', role: 'Learner' },
 ];
 
 async function seedDemoAccounts() {

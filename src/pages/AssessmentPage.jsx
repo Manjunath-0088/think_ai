@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { AssessmentApi } from '../services/assessmentApi.js';
-import { NotificationService } from '../services/notificationService.js';
+import { AssessmentApi } from '../services/backendApi.js';
+import { NotificationService } from '../services/backendApi.js';
 
 export default function AssessmentPage() {
   const [questions, setQuestions] = useState([]);

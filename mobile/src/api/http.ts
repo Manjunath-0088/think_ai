@@ -39,7 +39,9 @@ export function resolveApiBaseUrl(
   expoHostUri?: string | null,
 ): string {
   const configured = configuredUrl?.trim().replace(/\/+$/, '');
-  if (configured) return configured;
+  if (configured) {
+    return /\/api$/i.test(configured) ? configured : `${configured}/api`;
+  }
 
   const expoHost = getExpoLanHost(expoHostUri);
   if (expoHost && (platform === 'android' || platform === 'ios')) {

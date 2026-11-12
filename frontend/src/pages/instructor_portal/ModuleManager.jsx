@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -497,6 +497,7 @@ export default function ModuleLessonManager({ initialCourseId = null }) {
     }
   }, [lessonsError, dispatch]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (selectedCourseId) dispatch(fetchModulesByCourseId(selectedCourseId));
     setSelectedId(null);

@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -22,6 +23,7 @@ import { LearnerTabBar } from '@/components/learner';
 import type { LearnerTabKey } from '@/components/learner';
 import { LEARNER_TAB_ROUTES } from '@/components/learner/LearnerTabBar';
 import { useEnrollments } from '@/hooks/useEnrollments';
+import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus';
 import { useWishlist } from '@/hooks/useWishlist';
 import type { ScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -42,6 +44,7 @@ import {
 export function MyLearningScreen({
   navigation,
 }: ScreenProps<'MyLearning'>) {
+  useEffect(() => { navigation.setOptions({ headerShown: false }); }, [navigation]);
   const styles = useThemedStyles(createStyles);
   const { palette } = useTheme();
   const { count: wishlistCount } = useWishlist();
@@ -54,6 +57,7 @@ export function MyLearningScreen({
     isEmpty,
     refresh,
   } = useEnrollments();
+  useRefreshOnFocus(navigation, refresh);
 
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<CourseStatusFilter>('all');
@@ -66,10 +70,19 @@ export function MyLearningScreen({
   const openCourse = useCallback(
     (enrollment: Enrollment) => {
       const resumeLesson = getResumeLesson(enrollment.course, enrollment);
-      navigation.navigate('VideoPlayer', {
-        courseId: enrollment.courseId,
-        lessonId: resumeLesson?.id,
-      });
+      const courseId = Number(enrollment.courseId);
+      const lessonId = resumeLesson ? Number(resumeLesson.id) : undefined;
+      if (Number.isSafeInteger(courseId) && courseId > 0) {
+        navigation.navigate('CoursePlayer', {
+          courseId,
+          ...(Number.isSafeInteger(lessonId) && lessonId! > 0 ? { lessonId } : {}),
+        });
+      } else {
+        navigation.navigate('VideoPlayer', {
+          courseId: enrollment.courseId,
+          lessonId: resumeLesson?.id,
+        });
+      }
     },
     [navigation]
   );
@@ -152,51 +165,9 @@ export function MyLearningScreen({
           testID="my-learning-header"
         />
 
-        <View style={styles.statsRow} testID="my-learning-stats">
-          <View style={styles.statCard}>
-            <Text style={styles.statValue} testID="my-learning-stat-enrolled">
-              {enrollments.length}
-            </Text>
-            <Text style={styles.statLabel}>Enrolled</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue} testID="my-learning-stat-lessons">
-              {stats.lessons}
-            </Text>
-            <Text style={styles.statLabel}>Lessons done</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue} testID="my-learning-stat-completed">
-              {stats.completed}
-            </Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
-        </View>
-
-        <SearchBar
-          onChangeText={setQuery}
-          onClear={() => setQuery('')}
-          placeholder="Search your courses…"
-          testID="my-learning-search"
-          value={query}
-        />
-
-        <View style={styles.categories}>
-          <CategoryChips
-            counts={categoryCounts}
-            onChange={setCategory}
-            testID="my-learning-category-chips"
-            value={category}
-          />
-        </View>
-
         <View style={styles.tabs}>
           <FilterTabs
-            counts={{
-              all: enrollments.length,
-              'in-progress': stats.inProgress,
-              completed: stats.completed,
-            }}
+            onSaved={() => navigation.navigate('Wishlist')}
             onChange={setStatus}
             testID="my-learning-filter-tabs"
             value={status}
@@ -245,6 +216,7 @@ export function MyLearningScreen({
           <View style={styles.section} testID="my-learning-list">
             {filtered.map((enrollment) => (
               <CourseCard
+                compact
                 actionLabel={
                   enrollment.status === 'completed'
                     ? 'Review course'
@@ -258,6 +230,65 @@ export function MyLearningScreen({
             ))}
           </View>
         ) : null}
+
+        <Pressable accessibilityRole="button" onPress={() => setStatus('all')} style={styles.headerAction} testID="my-learning-filter-tabs-all"><Text style={styles.headerActionLabel}>All my courses ({enrollments.length})</Text></Pressable>
+        <View style={styles.statsRow} testID="my-learning-stats">
+          <View style={styles.statCard}>
+            <Text style={styles.statValue} testID="my-learning-stat-enrolled">
+              {enrollments.length}
+            </Text>
+            <Text style={styles.statLabel}>Enrolled</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue} testID="my-learning-stat-lessons">
+              {stats.lessons}
+            </Text>
+            <Text style={styles.statLabel}>Lessons done</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue} testID="my-learning-stat-completed">
+              {stats.completed}
+            </Text>
+            <Text style={styles.statLabel}>Completed</Text>
+          </View>
+        </View>
+
+        <Pressable
+          accessibilityLabel="Open Community Forum"
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('ForumHome')}
+          style={({ pressed }) => [styles.communityCard, pressed && styles.communityPressed]}
+          testID="my-learning-community-forum">
+          <View style={styles.communityIcon}>
+            <Text style={styles.communityIconText}>C</Text>
+          </View>
+          <View style={styles.communityCopy}>
+            <Text style={styles.communityTitle}>Community Forum</Text>
+            <Text style={styles.communitySubtitle}>
+              Ask questions, share ideas, and learn together
+            </Text>
+          </View>
+          <Text accessibilityElementsHidden style={styles.communityArrow}>
+            ›
+          </Text>
+        </Pressable>
+
+        <SearchBar
+          onChangeText={setQuery}
+          onClear={() => setQuery('')}
+          placeholder="Search your courses…"
+          testID="my-learning-search"
+          value={query}
+        />
+
+        <View style={styles.categories}>
+          <CategoryChips
+            counts={categoryCounts}
+            onChange={setCategory}
+            testID="my-learning-category-chips"
+            value={category}
+          />
+        </View>
 
         {isRefreshing ? (
           <Text style={styles.refreshing} testID="my-learning-refreshing">
@@ -273,7 +304,7 @@ export function MyLearningScreen({
 const createStyles = (palette: Palette) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.background,
+    backgroundColor: palette.background === '#0B1020' ? '#171822' : '#FCFCFF',
   },
   content: {
     paddingBottom: spacing.xxl,
@@ -309,6 +340,52 @@ const createStyles = (palette: Palette) => StyleSheet.create({
   statLabel: {
     ...typography.caption,
     color: palette.textMuted,
+  },
+  communityCard: {
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    minHeight: 76,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  communityPressed: {
+    opacity: 0.78,
+  },
+  communityIcon: {
+    alignItems: 'center',
+    backgroundColor: palette.brandAlt,
+    borderRadius: 14,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  communityIconText: {
+    ...typography.title,
+    color: palette.textInverse,
+    fontWeight: '700',
+  },
+  communityCopy: {
+    flex: 1,
+    gap: spacing.xxs,
+  },
+  communityTitle: {
+    ...typography.label,
+    color: palette.textPrimary,
+  },
+  communitySubtitle: {
+    ...typography.caption,
+    color: palette.textSecondary,
+  },
+  communityArrow: {
+    ...typography.title,
+    color: palette.brand,
   },
   categories: {
     marginTop: spacing.sm,

@@ -25,6 +25,25 @@ progress, resume links, app-wide light/dark themes, and the community forum.
    allow inbound backend traffic on port 5000. Set `EXPO_PUBLIC_API_URL` for a
    custom API host; production Android releases must use HTTPS.
 
+### Sign in locally
+
+Seed the demo accounts from `backend/` with a password of your choice (at least
+8 characters):
+
+```powershell
+$env:DEMO_ACCOUNT_PASSWORD='<your-local-password>'
+node scripts/seedDemoAccounts.js
+Remove-Item Env:DEMO_ACCOUNT_PASSWORD
+```
+
+Available accounts include `learner@example.com` (Learner),
+`admin@thinkzai.com` (Admin), `instructordemo@gmail.com` (Instructor), and
+`tademo@gmail.com` (TA).
+
+Remote push notifications require a development/standalone build. Expo Go on
+Android cannot register for remote push since SDK 53, so the app skips push
+registration there and on web instead of printing unsupported-module warnings.
+
 `npm run seed:community` imports only the client-provided category, thread,
 reply, tag, bookmark, and notification preference seed data. It is idempotent
 and leaves existing community content and user preferences in place.
@@ -32,6 +51,10 @@ and leaves existing community content and user preferences in place.
 ## Verification
 
 Current test and export results are recorded in [TEST_REPORT.md](TEST_REPORT.md).
+The current website-to-Android inventory and remaining parity blockers are in
+[mobile/FEATURE_PARITY_REPORT.md](mobile/FEATURE_PARITY_REPORT.md).
+The deeper Android, API, persistence, security, polling-loop, and release-readiness
+findings are in [mobile/TECHNICAL_AUDIT_REPORT.md](mobile/TECHNICAL_AUDIT_REPORT.md).
 The mobile app exports with `npx expo export --platform android` from `mobile/`.
 
 The production checkout endpoints remain fail-closed until a payment provider

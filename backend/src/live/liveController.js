@@ -14,11 +14,17 @@ function isValidationError(error) {
 }
 
 function handleError(res, error, defaultMessage) {
-    if (error && error.code === "OPTION_NOT_FOUND") {
-        return res.status(404).json({ success: false, message: "Poll option not found" });
+    if (error && (error.code === "OPTION_NOT_FOUND" || error.code === "NOT_FOUND")) {
+        return res.status(404).json({
+            success: false,
+            message: error.message || "Live session not found"
+        });
     }
     if (error && error.code === "VALIDATION") {
         return res.status(400).json({ success: false, message: error.message });
+    }
+    if (error && error.code === "CONFLICT") {
+        return res.status(409).json({ success: false, message: error.message });
     }
     if (error && error.code === "FORBIDDEN") {
         return res.status(403).json({ success: false, message: error.message });
@@ -29,15 +35,48 @@ function handleError(res, error, defaultMessage) {
 
 function getSession(req, res) {
     return service
-        .ensureSession(req.params.id)
-        .then((session) => res.status(200).json({ success: true, data: session }))
+        .getSession(req.params.id)
+        .then((session) => {
+            if (!session) return res.status(404).json({ success: false, message: "Live session not found" });
+            return res.status(200).json({ success: true, data: session });
+        })
         .catch((error) => handleError(res, error, "Failed to load session"));
+}
+
+function listSessions(req, res) {
+    return service
+        .listSessions()
+        .then((sessions) => res.status(200).json({ success: true, data: sessions }))
+        .catch((error) => handleError(res, error, "Failed to load live sessions"));
+}
+
+function createSession(req, res) {
+    if (!canManageSession(req.user)) {
+        const error = new Error("Only an Instructor or Admin can create a live class");
+        error.code = "FORBIDDEN";
+        return handleError(res, error, "Failed to create live session");
+    }
+    const id = String(
+        (req.body && req.body.id) ||
+        `live-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    );
+    return service
+        .createSession(id, req.user, {
+            title: req.body && req.body.title,
+            scheduledAt: req.body && req.body.scheduledAt,
+            status: req.body && req.body.status,
+        })
+        .then((session) => res.status(201).json({ success: true, data: session }))
+        .catch((error) => handleError(res, error, "Failed to create live session"));
 }
 
 function joinSession(req, res) {
     return service
         .joinSession(req.params.id, req.user)
-        .then((session) => res.status(200).json({ success: true, data: session }))
+        .then((session) => {
+            if (!session) return res.status(404).json({ success: false, message: "Live session not found" });
+            return res.status(200).json({ success: true, data: session });
+        })
         .catch((error) => handleError(res, error, "Failed to join session"));
 }
 
@@ -72,12 +111,23 @@ function createJitsiToken(req, res) {
     if (!secret || !appId || !domain) {
         return res.status(503).json({ success: false, message: "Jitsi is not configured for this environment" });
     }
-    const room = `thinkz-${String(req.params.id).replace(/[^a-z0-9_-]/gi, "-")}`;
-    const token = jwt.sign({
-        aud: "jitsi", iss: appId, sub: domain, room,
-        context: { user: { id: String(req.user.id), name: req.user.name || "Participant" } },
-    }, secret, { expiresIn: "10m" });
-    return res.status(200).json({ success: true, data: { room, token, expiresInSeconds: 600 } });
+    return service
+        .getSession(req.params.id)
+        .then((session) => {
+            if (!session) {
+                return res.status(404).json({ success: false, message: "Live session not found" });
+            }
+            const room = `thinkz-${String(req.params.id).replace(/[^a-z0-9_-]/gi, "-")}`;
+            const token = jwt.sign({
+                aud: "jitsi", iss: appId, sub: domain, room,
+                context: { user: { id: String(req.user.id), name: req.user.name || "Participant" } },
+            }, secret, { expiresIn: "10m" });
+            return res.status(200).json({
+                success: true,
+                data: { room, token, domain, appId, expiresInSeconds: 600 }
+            });
+        })
+        .catch((error) => handleError(res, error, "Failed to create video room token"));
 }
 
 function getMessages(req, res) {
@@ -102,6 +152,11 @@ function deleteMessage(req, res) {
 }
 
 function createPoll(req, res) {
+    if (!canManageSession(req.user)) {
+        const error = new Error("Only an Instructor or Admin can create a poll");
+        error.code = "FORBIDDEN";
+        return handleError(res, error, "Failed to create poll");
+    }
     return service
         .createPoll(req.params.id, req.user, req.body || {})
         .then((poll) => res.status(201).json({ success: true, data: poll }))
@@ -126,6 +181,11 @@ function getBreakoutRooms(req, res) {
 }
 
 function createBreakoutRoom(req, res) {
+    if (!canManageSession(req.user)) {
+        const error = new Error("Only an Instructor or Admin can create a breakout room");
+        error.code = "FORBIDDEN";
+        return handleError(res, error, "Failed to create breakout room");
+    }
     return service
         .createBreakoutRoom(req.params.id, req.body && req.body.name)
         .then((room) => res.status(201).json({ success: true, data: room }))
@@ -151,6 +211,8 @@ function leaveBreakoutRoom(req, res) {
 
 module.exports = {
     getSession,
+    listSessions,
+    createSession,
     joinSession,
     updateSessionStatus,
     createJitsiToken,

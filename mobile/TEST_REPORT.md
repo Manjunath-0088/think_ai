@@ -1,14 +1,28 @@
-# Current mobile verification update — 2026-11-03
+# Current mobile verification update — 2026-11-08
 
-- TypeScript passes with 0 errors. ESLint passes with 0 errors and 52 warnings.
-- Jest passes: 72 suites and 670 tests, including 375px/390px responsive,
-  accessibility, theme, deep-link, progress/resume, wishlist, and search checks.
-- Android Expo export succeeds: Metro bundled 1,172 modules and emitted a 3 MB
-  Hermes Android bundle.
-- Physical device screenshot verification is pending because ADB could not
-  start its local server and Java is not installed.
-- See the repository-level [TEST_REPORT.md](../TEST_REPORT.md) for backend,
-  PostgreSQL, payment, migration-history, and dependency-audit results.
+- TypeScript passes with 0 errors.
+- Jest passes: 77 suites and 709 tests, including role-aware navigation,
+  authentication/deep links, LMS API contracts, community routes, responsive
+  layouts, accessibility, themes, progress/resume, wishlist, and search.
+- ESLint passes with 0 errors and 56 warnings.
+- Expo config resolves; production EAS URL validation and cleartext-off behavior
+  were checked with a valid HTTPS configuration. `npx expo export --platform android` succeeds; Metro/Hermes bundled 1,188
+  modules into an approximately 3 MB Android bundle. This is not an APK/AAB.
+- The API base normalizes host-only URLs to `/api`; Wishlist saves are scoped
+  per signed-in account and available from Explore. LMS/staff/onboarding styles
+  now follow the selected theme.
+- The community shortcut from My Learning opens the integrated forum screens.
+  Android uses the existing backend routes; the root website forum still uses
+  browser storage, so the two surfaces do not currently share forum data.
+- ADB starts outside the sandbox but sees no attached device. Java/Gradle and a
+  native Android project are unavailable, so APK/AAB and physical screenshot
+  verification remain pending.
+- See [FEATURE_PARITY_REPORT.md](FEATURE_PARITY_REPORT.md) for the complete
+  comparison, backend/database status, failures, and remaining blockers. See
+  [TECHNICAL_AUDIT_REPORT.md](TECHNICAL_AUDIT_REPORT.md) for detailed source
+  findings and recommended fixes, and the repository-level
+  [TEST_REPORT.md](../TEST_REPORT.md) for the consolidated verification summary
+  and historical backend notes.
 
 # Mobile app (React Native) — module test report
 

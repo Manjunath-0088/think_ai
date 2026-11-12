@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import * as notificationsApi from '../../api/preferencesApi'; 
+import * as notificationApi from '../../api/preferencesApi';
 
 export const fetchPreferences = createAsyncThunk(
   'notifications/fetchPreferences',
@@ -78,7 +78,7 @@ const notificationSlice = createSlice({
         state.unreadCount = Math.max(0, state.unreadCount - 1);
       }
     },
-    loadNotifications: (state) => {
+    loadNotifications: () => {
       // Local sync trigger if needed
     }
   },

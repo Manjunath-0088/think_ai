@@ -12,6 +12,7 @@ export interface ReplyRowProps {
   vote: VoteDirection;
   onVote: (direction: VoteDirection) => void;
   onReplyTo?: (reply: ThreadReply) => void;
+  onFlag?: (reply: ThreadReply) => void;
   isActiveTarget?: boolean;
   testID: string;
 }
@@ -46,6 +47,7 @@ export function ReplyRow({
   vote,
   onVote,
   onReplyTo,
+  onFlag,
   isActiveTarget = false,
   testID
 }: ReplyRowProps) {
@@ -74,6 +76,9 @@ export function ReplyRow({
         pressed
       }) => [styles.replyAction, pressed && styles.pressed]} testID={`${testID}-reply-to`}>
             <Text style={styles.replyActionLabel}>Reply</Text>
+          </Pressable> : null}
+        {onFlag ? <Pressable accessibilityLabel={`Report reply by ${reply.author.name}`} accessibilityRole="button" hitSlop={hitSlop} onPress={() => onFlag(reply)} style={styles.flagAction} testID={`${testID}-report`}>
+            <Text style={styles.flagActionLabel}>Report</Text>
           </Pressable> : null}
       </View>
     </View>;
@@ -169,6 +174,15 @@ const createStyles = (palette: Palette) => StyleSheet.create({
   replyActionLabel: {
     ...typography.label,
     color: palette.brand
+  },
+  flagAction: {
+    justifyContent: 'center',
+    minHeight: 36,
+    paddingHorizontal: spacing.xs
+  },
+  flagActionLabel: {
+    ...typography.caption,
+    color: palette.textMuted
   },
   pressed: {
     opacity: 0.7

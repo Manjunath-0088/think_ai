@@ -1,32 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext } from 'react';
 
-const ThemeContext = createContext();
+export const ThemeContext = createContext();
 
-export function ThemeProvider({ children }) {
-  // One preference is shared by Admin, TA, Instructor, and Learner portals.
-  // This prevents a user seeing different colour themes after changing portal.
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('thinkz-theme') === 'dark');
-
-  // Sync with HTML root class for Tailwind `dark:` classes
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDarkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('thinkz-theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
-
-  const toggleTheme = () => setIsDarkMode((prev) => !prev);
-
-  return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
-
+/**
+ * Hook to access the theme context.
+ * Must be used within a ThemeProvider.
+ */
 export function useTheme() {
-  return useContext(ThemeContext);
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
 }

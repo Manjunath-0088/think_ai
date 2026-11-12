@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton, ErrorState, ScreenHeader } from '@/components/common';
@@ -8,6 +8,9 @@ import { RichTextEditor } from '@/components/forum/RichTextEditor';
 import { ThreadDetailSkeleton } from '@/components/forum/ThreadDetailSkeleton';
 import { ThreadHeader } from '@/components/forum/ThreadHeader';
 import { useReplyVotes } from '@/hooks/useReplyVotes';
+import { useApiClient } from '@/hooks/useApiClient';
+import { useBookmarks } from '@/hooks/useBookmarks';
+import { useOptionalSafeAreaInsets } from '@/hooks/useOptionalSafeAreaInsets';
 import { useSession } from '@/hooks/useSession';
 import { useThreadDetail } from '@/hooks/useThreadDetail';
 import type { ScreenProps } from '@/navigation/types';
@@ -24,6 +27,9 @@ import { useThemedStyles } from '@/theme/useThemedStyles';
  */
 export function ForumThreadDetailScreen({ route }: ScreenProps<'ForumThread'>) {
   const styles = useThemedStyles(createStyles);
+  const insets = useOptionalSafeAreaInsets();
+  const client = useApiClient();
+  const { bookmarks, addBookmark, removeBookmark, refresh: refreshBookmarks } = useBookmarks();
   const { threadId } = route.params;
   const session = useSession();
   const {
@@ -49,6 +55,9 @@ export function ForumThreadDetailScreen({ route }: ScreenProps<'ForumThread'>) {
   const [replyBody, setReplyBody] = useState('');
   const [replyError, setReplyError] = useState<string | null>(null);
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
+  const [isSavedOverride, setIsSavedOverride] = useState<boolean | null>(null);
+  const [communityActionError, setCommunityActionError] = useState<string | null>(null);
 
   const activeReply = replies.find((reply) => reply.id === activeReplyId) ?? null;
 
@@ -70,6 +79,55 @@ export function ForumThreadDetailScreen({ route }: ScreenProps<'ForumThread'>) {
   }, [activeReplyId, replyBody, submitReply]);
 
   const isAuthor = thread !== null && thread.authorId === session.userId;
+  const isSaved = isSavedOverride ?? bookmarks.some((item) => item.discussionId === threadId);
+
+  const toggleBookmark = async () => {
+    setBookmarkBusy(true);
+    setCommunityActionError(null);
+    const succeeded = isSaved ? await removeBookmark(threadId) : await addBookmark(threadId);
+    if (succeeded) {
+      setIsSavedOverride(!isSaved);
+      refreshBookmarks();
+    } else {
+      setCommunityActionError('Could not update your saved threads.');
+    }
+    setBookmarkBusy(false);
+  };
+
+  const flagDiscussion = async (reason: string) => {
+    setCommunityActionError(null);
+    try {
+      await client.reportDiscussion(threadId, reason);
+    } catch (cause) {
+      setCommunityActionError(cause instanceof Error ? cause.message : 'Could not report this discussion.');
+    }
+  };
+
+  const flagReply = (replyId: string) => {
+    const report = async (reason: string) => {
+      setCommunityActionError(null);
+      try {
+        await client.reportComment(replyId, reason);
+      } catch (cause) {
+        setCommunityActionError(cause instanceof Error ? cause.message : 'Could not report this reply.');
+      }
+    };
+    Alert.alert('Report reply', 'Choose a reason to send to the community moderators.', [
+      { text: 'Spam', onPress: () => { void report('spam'); } },
+      { text: 'Harassment', onPress: () => { void report('harassment'); } },
+      { text: 'Other', onPress: () => { void report('other'); } },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const askToFlagDiscussion = () => {
+    Alert.alert('Report discussion', 'Choose a reason to send to the community moderators.', [
+      { text: 'Spam', onPress: () => { void flagDiscussion('spam'); } },
+      { text: 'Harassment', onPress: () => { void flagDiscussion('harassment'); } },
+      { text: 'Other', onPress: () => { void flagDiscussion('other'); } },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   const renderContent = () => {
     if (isLoading && thread === null) {
@@ -139,18 +197,45 @@ export function ForumThreadDetailScreen({ route }: ScreenProps<'ForumThread'>) {
                 {actionError}
               </Text>
             ) : null}
+            {communityActionError ? (
+              <Text accessibilityLiveRegion="assertive" style={styles.actionError}>
+                {communityActionError}
+              </Text>
+            ) : null}
 
             {thread ? (
-              <ThreadHeader
-                categories={categories}
-                isAuthor={isAuthor}
-                isUpdatingSolved={isUpdatingSolved}
-                isVoting={isVoting}
-                onToggleSolved={(solved) => void setSolved(solved)}
-                onVote={(direction) => void vote(direction)}
-                thread={thread}
-                userVote={thread.userVote}
-              />
+              <>
+                <ThreadHeader
+                  categories={categories}
+                  isAuthor={isAuthor}
+                  isUpdatingSolved={isUpdatingSolved}
+                  isVoting={isVoting}
+                  onToggleSolved={(solved) => void setSolved(solved)}
+                  onVote={(direction) => void vote(direction)}
+                  thread={thread}
+                  userVote={thread.userVote}
+                />
+                <View style={styles.communityActions}>
+                  <Pressable
+                    accessibilityLabel={isSaved ? 'Remove thread from saved' : 'Save thread'}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSaved, disabled: bookmarkBusy }}
+                    disabled={bookmarkBusy}
+                    onPress={() => void toggleBookmark()}
+                    style={styles.communityActionButton}>
+                    <Text style={styles.communityActionLabel}>
+                      {bookmarkBusy ? 'Saving…' : isSaved ? 'Saved' : 'Save thread'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel="Report discussion"
+                    accessibilityRole="button"
+                    onPress={askToFlagDiscussion}
+                    style={styles.communityActionButton}>
+                    <Text style={styles.reportActionLabel}>Report</Text>
+                  </Pressable>
+                </View>
+              </>
             ) : null}
 
             <Text style={styles.repliesTitle} testID="replies-title">
@@ -159,6 +244,7 @@ export function ForumThreadDetailScreen({ route }: ScreenProps<'ForumThread'>) {
           </View>
         }
         onRefresh={refresh}
+        onFlagReply={(reply) => flagReply(reply.id)}
         onReplyTo={(reply) => setActiveReplyId(reply.id)}
         onRetry={() => void load('initial')}
         onVoteReply={(replyId, direction) => void voteReply(replyId, direction)}
@@ -181,7 +267,9 @@ export function ForumThreadDetailScreen({ route }: ScreenProps<'ForumThread'>) {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}>
-        {renderContent()}
+        <View style={[styles.flex, { paddingBottom: insets.bottom }]}>
+          {renderContent()}
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -207,6 +295,29 @@ const createStyles = (palette: Palette) => StyleSheet.create({
     borderWidth: 1,
     color: palette.danger,
     padding: spacing.sm,
+  },
+  communityActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  communityActionButton: {
+    alignItems: 'center',
+    backgroundColor: palette.surfaceMuted,
+    borderColor: palette.border,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+  },
+  communityActionLabel: {
+    ...typography.label,
+    color: palette.brand,
+  },
+  reportActionLabel: {
+    ...typography.label,
+    color: palette.textSecondary,
   },
   repliesTitle: {
     ...typography.subtitle,

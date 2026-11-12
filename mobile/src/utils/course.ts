@@ -143,6 +143,10 @@ export function getResumeLesson(
     return null;
   }
   const completed = new Set(enrollment?.completedLessonIds ?? []);
+  const lastUnfinished = enrollment?.resumeLessonId
+    ? lessons.find((lesson) => lesson.id === enrollment.resumeLessonId)
+    : undefined;
+  if (lastUnfinished && !completed.has(lastUnfinished.id)) return lastUnfinished;
   return lessons.find((lesson) => !completed.has(lesson.id)) ?? lessons[0]!;
 }
 

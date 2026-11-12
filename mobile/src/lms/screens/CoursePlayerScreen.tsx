@@ -9,7 +9,7 @@ import { lmsApi } from "../api";
 import { useCoursePlayer } from "@/hooks/useCoursePlayer";
 import { useLms } from "../LmsProvider";
 import { read, storageKey } from "../storage";
-import { Card, Field, LoadState, Message, Screen, styles } from "../ui";
+import { Card, Field, LoadState, Message, Screen, useLmsStyles } from "../ui";
 export function Notes({
   enrollmentId,
   lessonId,
@@ -17,6 +17,7 @@ export function Notes({
   enrollmentId: number;
   lessonId: number;
 }) {
+  const styles = useLmsStyles();
   const { session, online } = useLms();
   const [text, setText] = useState(""),
     [status, setStatus] = useState("");
@@ -121,6 +122,7 @@ export function CoursePlayerScreen({
   route,
   navigation,
 }: ScreenProps<"CoursePlayer">) {
+  const styles = useLmsStyles();
   const { resource, lesson, lessons, uri, message, download,
     initialPosition, completed, online, playback, downloadCurrent, setSelected } =
     useCoursePlayer(route.params.courseId, route.params.lessonId);

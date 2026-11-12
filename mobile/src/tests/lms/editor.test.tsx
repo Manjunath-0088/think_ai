@@ -15,6 +15,7 @@ jest.mock("react-native-webview", () => {
 });
 jest.mock("@/lms/ui", () => ({
   styles: { muted: {} },
+  useLmsStyles: () => ({ muted: {} }),
   Field: ({ label, ...props }: any) => require("react").createElement(require("react-native").TextInput, { accessibilityLabel: label, ...props }),
 }));
 

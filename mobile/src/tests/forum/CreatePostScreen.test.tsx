@@ -1,6 +1,6 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
-import { TITLE_MIN_LENGTH } from '@/components/forum/CreatePostModal';
+import { BODY_MIN_LENGTH, TITLE_MIN_LENGTH } from '@/components/forum/CreatePostModal';
 import { MAX_TAGS } from '@/components/forum/TagMultiSelect';
 import { CreatePostScreen } from '@/screens/forum/CreatePostScreen';
 import { createCommunityTestClient } from '@/tests/communityClientStub';
@@ -100,7 +100,7 @@ describe('CreatePostScreen', () => {
       fireEvent.press(screen.getByTestId('create-post-submit'));
     });
     expect(screen.getByTestId('create-post-validation-error')).toHaveTextContent(
-      'Add a body before posting.'
+      `Add a body of at least ${BODY_MIN_LENGTH} characters.`
     );
     // The dialog never opens for an invalid form.
     expect(screen.queryByTestId('create-post-confirm')).toBeNull();

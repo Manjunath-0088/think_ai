@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
-  getModules,
   getModuleById,
   getModulesByCourseId,
 } from '../../api/moduleApi';

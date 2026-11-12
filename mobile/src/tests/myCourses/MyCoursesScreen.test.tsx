@@ -43,6 +43,20 @@ describe('MyCoursesScreen', () => {
     expect(screen.getAllByTestId(/^course-grid-card-/).length).toBeGreaterThan(0);
   });
 
+  it('saves an Explore course to the Wishlist and updates the selected state', async () => {
+    const { client } = buildClient();
+    renderScreen(MyCoursesScreen, { client, name: 'MyCourses' });
+
+    await waitFor(() => expect(screen.getByTestId('my-courses-results')).toBeTruthy());
+    const saveButton = screen.getByTestId('course-grid-save-course-1');
+    fireEvent.press(saveButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('course-grid-save-course-1').props.accessibilityState).toEqual({ selected: true });
+      expect(screen.getByTestId('tab-wishlist').props.accessibilityLabel).toMatch(/1 saved course/);
+    });
+  });
+
   it('applies a filter when a tab is pressed', async () => {
     const { client, searchCourses } = buildClient();
     renderScreen(MyCoursesScreen, { client, name: 'MyCourses' });

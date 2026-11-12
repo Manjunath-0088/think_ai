@@ -9,7 +9,7 @@ import { CodeEditor } from "../CodeEditor";
 import { useLms } from "../LmsProvider";
 import { clearHistory, loadHistory } from "../storage";
 import type { HistoryEntry, Language } from "../types";
-import { Card, Field, Message, Screen, styles } from "../ui";
+import { Card, Field, Message, Screen, useLmsStyles } from "../ui";
 const inputGuidance: Record<Language, string> = {
   python: "Uses input()? Enter all values in Test input (stdin) before Run code, one line per input() call.",
   javascript: "Uses fs.readFileSync(0, \"utf8\") or process.stdin? Enter all values in Test input (stdin) before Run code.",
@@ -20,6 +20,7 @@ export function CodePlaygroundScreen({
   route,
   navigation,
 }: ScreenProps<"CodePlayground">) {
+  const styles = useLmsStyles();
   const { language, code, input, expected, output, busy, message, online, run,
     updateDraft, setLanguage, setOutput, setMessage } = useCodeExecution({ route, navigation });
   return (
@@ -84,6 +85,7 @@ export function CodePlaygroundScreen({
 export function PlaygroundHistoryScreen({
   navigation,
 }: ScreenProps<"PlaygroundHistory">) {
+  const styles = useLmsStyles();
   const { session } = useLms();
   const focused = useIsFocused();
   const [entries, setEntries] = useState<HistoryEntry[]>([]),

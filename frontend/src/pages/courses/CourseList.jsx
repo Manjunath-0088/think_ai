@@ -7,10 +7,6 @@ function CourseList() {
   const [courses, setCourses] = useState([]);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetchCourses(search);
-  }, [search]);
-
   const fetchCourses = async (searchText = "") => {
     try {
       const response = await getCourses(searchText);
@@ -20,6 +16,11 @@ function CourseList() {
       toast.error("Failed to load courses");
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCourses(search);
+  }, [search]);
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(

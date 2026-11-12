@@ -9,7 +9,7 @@ import { PropsWithChildren } from 'react';
 
 import { createMockApiClient } from '@/api/mockClient';
 import { CategoryChips } from '@/components/forum/CategoryChips';
-import { CreatePostModal, TITLE_MIN_LENGTH } from '@/components/forum/CreatePostModal';
+import { CreatePostModal, BODY_MIN_LENGTH, TITLE_MIN_LENGTH } from '@/components/forum/CreatePostModal';
 import { FloatingActionButton } from '@/components/forum/FloatingActionButton';
 import { SortDropdown, SORT_LABELS } from '@/components/forum/SortDropdown';
 import { TagFilter } from '@/components/forum/TagFilter';
@@ -514,14 +514,38 @@ describe('CreatePostModal', () => {
       screen.getByTestId('create-post-modal-title'),
       'A perfectly valid thread title'
     );
+    fireEvent.changeText(
+      screen.getByTestId('create-post-modal-body-input'),
+      'Enough body copy here'
+    );
     fireEvent.press(screen.getByTestId('create-post-modal-submit'));
 
     expect(onSubmit).toHaveBeenCalledWith({
       title: 'A perfectly valid thread title',
-      body: '',
+      body: 'Enough body copy here',
       categoryId: categories[0]!.id,
       tags: [],
     });
+  });
+
+  it('blocks submit until the body is long enough', () => {
+    const onSubmit = jest.fn();
+    renderModal({ onSubmit });
+
+    fireEvent.changeText(
+      screen.getByTestId('create-post-modal-title'),
+      'A perfectly valid thread title'
+    );
+    fireEvent.changeText(
+      screen.getByTestId('create-post-modal-body-input'),
+      'short'
+    );
+    fireEvent.press(screen.getByTestId('create-post-modal-submit'));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByTestId('create-post-modal-validation-error')).toHaveTextContent(
+      `Add a body of at least ${BODY_MIN_LENGTH} characters.`
+    );
   });
 
   it('submits the trimmed title, body, category and tags', () => {
@@ -556,6 +580,10 @@ describe('CreatePostModal', () => {
     fireEvent.changeText(
       screen.getByTestId('create-post-modal-title'),
       'A perfectly valid thread title'
+    );
+    fireEvent.changeText(
+      screen.getByTestId('create-post-modal-body-input'),
+      'Enough body copy here'
     );
     fireEvent.press(screen.getByTestId('create-post-modal-tag-testing'));
     fireEvent.press(screen.getByTestId('create-post-modal-tag-testing'));

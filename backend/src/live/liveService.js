@@ -90,6 +90,12 @@ function assertStringId(value, message) {
     return value.trim();
 }
 
+function notFound(message) {
+    const error = new Error(message || "Live session not found");
+    error.code = "NOT_FOUND";
+    return error;
+}
+
 function getSession(sessionId) {
     const id = assertStringId(sessionId, "Session id is required");
     return repository.getSession(id).then(serializeSession);
@@ -100,15 +106,71 @@ function getSessionRecord(sessionId) {
     return repository.getSession(id);
 }
 
+async function requireSession(sessionId) {
+    const id = assertStringId(sessionId, "Session id is required");
+    const session = await repository.getSession(id);
+    if (!session) throw notFound("Live session not found");
+    return session;
+}
+
+function listSessions() {
+    return repository.listSessions().then((sessions) => sessions.map(serializeSession));
+}
+
 /**
- * Return the default seed session when present, otherwise materialize it.
- * Keeps the existing demo session ("s1") available on first run.
+ * Explicitly creates a live session. Reads and joins never create rows, so an
+ * unknown/deep-linked id can no longer materialize a synthetic demo session.
+ */
+async function createSession(sessionId, user, { title, scheduledAt, status } = {}) {
+    const id = assertStringId(sessionId, "Session id is required");
+    const cleanTitle = String(title || "").trim();
+    if (!cleanTitle) {
+        const error = new Error("Session title is required");
+        error.code = "VALIDATION";
+        throw error;
+    }
+    let parsedSchedule;
+    if (scheduledAt !== undefined && scheduledAt !== null && scheduledAt !== "") {
+        if (!/^\d{4}-\d{2}-\d{2}T/.test(String(scheduledAt))) {
+            const error = new Error("Use a four-digit year in the session date and time");
+            error.code = "VALIDATION";
+            throw error;
+        }
+        parsedSchedule = new Date(scheduledAt);
+        if (Number.isNaN(parsedSchedule.getTime())) {
+            const error = new Error("Choose a valid session date and time");
+            error.code = "VALIDATION";
+            throw error;
+        }
+    }
+    const nextStatus = ["scheduled", "live", "ended"].includes(String(status || "").toLowerCase())
+        ? String(status).toLowerCase()
+        : "scheduled";
+    const existing = await repository.getSession(id);
+    if (existing) {
+        const error = new Error("A live session with this id already exists");
+        error.code = "CONFLICT";
+        throw error;
+    }
+    const created = await repository.createSession({
+        id,
+        title: cleanTitle,
+        hostId: String((user && user.id) || "system"),
+        status: nextStatus,
+        scheduledAt: parsedSchedule,
+    });
+    return serializeSession(await repository.getSession(created.id));
+}
+
+/**
+ * Explicit development/test seed helper. Never called by production reads.
+ * Keeps the historical "s1" fixture available when a caller opts in.
  */
 async function ensureSession(sessionId) {
     const id = assertStringId(sessionId, "Session id is required");
-    let session = await repository.getSession(id);
-    if (!session) {
-        session = await repository.upsertSession({
+    const existing = await repository.getSession(id);
+    if (!existing) {
+        await repository.createSession({
             id,
             title: "React Hooks Deep Dive — Live Class",
             hostId: "u1",
@@ -118,14 +180,13 @@ async function ensureSession(sessionId) {
     return serializeSession(await repository.getSession(id));
 }
 
-function joinSession(sessionId, user) {
+async function joinSession(sessionId, user) {
     const id = assertStringId(sessionId, "Session id is required");
+    await requireSession(id);
     const userId = String((user && user.id) || "guest");
     const userName = (user && user.name) || "Guest";
-    return ensureSession(id)
-        .then(() => repository.upsertAttendee(id, { userId, userName, online: true }))
-        .then(() => repository.getSession(id))
-        .then(serializeSession);
+    await repository.upsertAttendee(id, { userId, userName, online: true });
+    return serializeSession(await repository.getSession(id));
 }
 
 async function updateSessionStatus(sessionId, status, scheduledAt) {
@@ -156,13 +217,15 @@ async function updateSessionStatus(sessionId, status, scheduledAt) {
         throw error;
     }
 
-    await ensureSession(id);
+    await requireSession(id);
     return serializeSession(await repository.updateSessionStatus(id, nextStatus, parsedSchedule));
 }
 
 function getMessages(sessionId) {
     const id = assertStringId(sessionId, "Session id is required");
-    return ensureSession(id).then(() => repository.listMessages(id)).then((messages) => messages.map(serializeMessage));
+    return requireSession(id)
+        .then(() => repository.listMessages(id))
+        .then((messages) => messages.map(serializeMessage));
 }
 
 function updateSessionPresence(sessionId, userId, patch) {
@@ -187,7 +250,7 @@ function sendMessage(sessionId, user, text) {
     }
     const userId = String((user && user.id) || "guest");
     const userName = (user && user.name) || "Guest";
-    return ensureSession(id)
+    return requireSession(id)
         .then(() => repository.createMessage(id, { userId, userName, text: cleanText }))
         .then(serializeMessage);
 }
@@ -200,7 +263,21 @@ function deleteMessage(sessionId, user, messageId) {
         error.code = "VALIDATION";
         throw error;
     }
-    return repository.softDeleteMessage(id, message);
+    return repository.getMessage(id, message).then((existing) => {
+        if (!existing) {
+            const error = new Error("Message not found");
+            error.code = "NOT_FOUND";
+            throw error;
+        }
+        const role = String((user && user.role) || "").toUpperCase();
+        const canModerate = role === "INSTRUCTOR" || role === "ADMIN";
+        if (!canModerate && String(existing.userId) !== String(user && user.id)) {
+            const error = new Error("You can only delete your own messages");
+            error.code = "FORBIDDEN";
+            throw error;
+        }
+        return repository.softDeleteMessage(id, message);
+    });
 }
 
 function createPoll(sessionId, user, { question, options }) {
@@ -219,7 +296,7 @@ function createPoll(sessionId, user, { question, options }) {
         error.code = "VALIDATION";
         throw error;
     }
-    return ensureSession(id)
+    return requireSession(id)
         .then(() => repository.createPoll(id, { question: cleanQuestion, options: cleanOptions }))
         .then(serializePoll);
 }
@@ -242,10 +319,12 @@ function votePoll(pollId, userId, optionId) {
 
 function listBreakoutRooms(sessionId) {
     const id = assertStringId(sessionId, "Session id is required");
-    return ensureSession(id).then(() => repository.listBreakoutRooms(id)).then(serializeBreakoutRooms);
+    return requireSession(id)
+        .then(() => repository.listBreakoutRooms(id))
+        .then(serializeBreakoutRooms);
 }
 
-function createBreakoutRoom(sessionId, name) {
+async function createBreakoutRoom(sessionId, name) {
     const id = assertStringId(sessionId, "Session id is required");
     const cleanName = String(name || "").trim();
     if (!cleanName) {
@@ -253,9 +332,9 @@ function createBreakoutRoom(sessionId, name) {
         error.code = "VALIDATION";
         throw error;
     }
-    return repository.createBreakoutRoom(id, cleanName).then((room) =>
-        serializeBreakoutRooms([room])[0]
-    );
+    await requireSession(id);
+    const room = await repository.createBreakoutRoom(id, cleanName);
+    return serializeBreakoutRooms([room])[0];
 }
 
 function joinBreakoutRoom(roomId, user) {
@@ -290,6 +369,8 @@ module.exports = {
     serializePoll,
     getSession,
     getSessionRecord,
+    listSessions,
+    createSession,
     ensureSession,
     joinSession,
     updateSessionStatus,

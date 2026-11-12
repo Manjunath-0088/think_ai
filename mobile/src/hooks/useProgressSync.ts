@@ -28,13 +28,18 @@ export function useProgressSync(session: SessionState, online: boolean, role: st
       let queue = await loadQueue(userId);
       if (queue.length) setSyncStatus(`Syncing ${queue.length} update(s)...`);
       let conflicts = 0;
+      let batches = 0;
+      let stalled = false;
       while (
         queue.length &&
+        batches < 10 &&
         getSession().userId === userId &&
         getSession().token === token &&
         accountRole.current !== null &&
         !isAdministrator(accountRole.current)
       ) {
+        batches += 1;
+        const beforeBatch = JSON.stringify(queue);
         const sent = queue.slice(0, 100);
         const result = await lmsApi.sync(sent, token);
         if (getSession().userId !== userId) break;
@@ -47,10 +52,22 @@ export function useProgressSync(session: SessionState, online: boolean, role: st
         }));
         await acknowledgeProgress(userId, sent, result);
         queue = await loadQueue(userId);
+        if (JSON.stringify(queue) === beforeBatch) {
+          // The queue did not change even though the batch completed. Stop
+          // instead of retrying the same records in a tight loop.
+          stalled = true;
+          break;
+        }
       }
       if (getSession().userId === userId)
         setSyncStatus(
-          conflicts ? "Synced; newer server progress kept." : "Up to date",
+          stalled
+            ? "Some progress could not be confirmed; sync will retry."
+            : queue.length
+              ? "Progress synced; remaining updates will send shortly."
+              : conflicts
+                ? "Synced; newer server progress kept."
+                : "Up to date",
         );
     } catch (e) {
       if (getSession().userId === userId)

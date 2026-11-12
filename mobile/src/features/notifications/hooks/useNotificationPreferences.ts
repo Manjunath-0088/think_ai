@@ -13,9 +13,9 @@ import type {
 /**
  * Notification preferences data source.
  *
- * Reads `GET /users/:id/notification-preferences` on mount (prefetching the
- * server state before the learner toggles anything) and persists the full
- * matrix with `PATCH`. Both calls go through the injected API client so tests
+ * Reads `GET /notifications/preferences/:userId` on mount (prefetching the
+ * shared website preference record before the learner toggles anything) and
+ * persists the full matrix with `PUT`. Both calls go through the injected API client so tests
  * never touch `fetch` and the a11y/lint rules see no raw transport here.
  */
 export function useNotificationPreferences() {

@@ -1,16 +1,20 @@
 import { Component, type PropsWithChildren } from "react";
 import { Text, View } from "react-native";
 import { AppButton } from "@/components/common/AppButton";
-import { styles } from "./ui";
+import { ThemeContext } from "@/theme/ThemeProvider";
+import { createLmsStyles } from "./ui";
 export class LmsErrorBoundary extends Component<
   PropsWithChildren,
   { failed: boolean }
 > {
+  static override contextType = ThemeContext;
   override state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
   }
   override render() {
+    const theme = this.context as React.ContextType<typeof ThemeContext>;
+    const styles = createLmsStyles(theme.palette);
     return this.state.failed ? (
       <View
         style={[

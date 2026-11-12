@@ -130,8 +130,16 @@ async function listDiscussions(query, viewerId) {
       { body: { contains: term, mode: 'insensitive' } },
     ];
   }
-  if (query.tag) {
-    where.tags = { some: { tag: { name: { equals: String(query.tag).replace(/^#/, ''), mode: 'insensitive' } } } };
+  // Accept `tags=jest,react`, `tags=jest&tags=react` and the legacy single `tag`.
+  // Multiple tags are ANDed: a thread must carry every selected tag.
+  const rawTags = query.tags ?? query.tag;
+  const tagList = (Array.isArray(rawTags) ? rawTags : String(rawTags ?? '').split(','))
+    .map((tag) => String(tag).trim().replace(/^#/, ''))
+    .filter(Boolean);
+  if (tagList.length) {
+    where.AND = tagList.map((name) => ({
+      tags: { some: { tag: { name: { equals: name, mode: 'insensitive' } } } },
+    }));
   }
   if (query.author) {
     where.author = { OR: [
@@ -146,19 +154,26 @@ async function listDiscussions(query, viewerId) {
     if (query.dateTo) where.createdAt.lte = new Date(`${query.dateTo}T23:59:59.999Z`);
   }
 
+  const isVoteSort = query.sort === 'votes' || query.sort === 'most-voted';
+  // `recently-active` sorts by the last reply; the reply writer bumps `updatedAt`.
+  const isRecentlyActive = query.sort === 'recently-active' || query.sort === 'recent';
+  const orderBy = isRecentlyActive
+    ? [{ pinned: 'desc' }, { updatedAt: 'desc' }]
+    : [{ pinned: 'desc' }, { createdAt: 'desc' }];
+
   const [total, rows] = await Promise.all([
     prisma.forumDiscussion.count({ where }),
     prisma.forumDiscussion.findMany({
       where,
       include: DISCUSSION_INCLUDE,
-      orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
+      orderBy,
       // Vote sorting is applied after the DB filter; cap prevents unbounded scans.
-      take: query.sort === 'votes' || query.sort === 'most-voted' ? 5000 : pageSize,
-      skip: query.sort === 'votes' || query.sort === 'most-voted' ? 0 : (page - 1) * pageSize,
+      take: isVoteSort ? 5000 : pageSize,
+      skip: isVoteSort ? 0 : (page - 1) * pageSize,
     }),
   ]);
   let ordered = rows;
-  if (query.sort === 'votes' || query.sort === 'most-voted') {
+  if (isVoteSort) {
     ordered = [...rows].sort((left, right) => {
       const score = (row) => (row.seedUpvotes || 0) - (row.seedDownvotes || 0) + row.votes.reduce((sum, vote) => sum + (vote.direction === 'up' ? 1 : -1), 0);
       return Number(right.pinned) - Number(left.pinned) || score(right) - score(left) || right.createdAt - left.createdAt;
@@ -259,6 +274,8 @@ async function createReply({ discussionId, parentId, body, authorId }) {
     data: { discussionId, parentId: parentId ? String(parentId) : null, authorId, body: cleanBody },
     include: { author: true },
   });
+  // Keep `recently-active` ordering meaningful: a reply is activity on the thread.
+  await prisma.forumDiscussion.update({ where: { id: discussionId }, data: { updatedAt: new Date() } });
   const serialized = serializeComment(reply);
   if (discussion.authorId !== authorId) {
     await createNotification({ userId: discussion.authorId, actorId: authorId, type: 'reply', message: `${reply.author.name} replied to "${discussion.title}"`, link: `/forum/${discussionId}` });

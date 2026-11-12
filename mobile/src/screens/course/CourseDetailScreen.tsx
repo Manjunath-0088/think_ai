@@ -16,6 +16,7 @@ import {
 } from '@/components/course';
 import { useCourseDetail } from '@/hooks/useCourseDetail';
 import { useEnrollments } from '@/hooks/useEnrollments';
+import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus';
 import { toErrorMessage } from '@/hooks/useAsyncResource';
 import type { ScreenProps } from '@/navigation/types';
 import {radii, spacing, typography} from '@/theme/tokens';
@@ -50,6 +51,7 @@ export function CourseDetailScreen({
   } = useCourseDetail(courseId, moduleId);
 
   const { getEnrollment, enrollCourse } = useEnrollments();
+  useRefreshOnFocus(navigation, refresh);
   const enrollment = getEnrollment(courseId);
 
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -90,6 +92,7 @@ export function CourseDetailScreen({
         setLocalEnrollment(pendingEnrollment.current);
         setJustEnrolled(true);
         setIsEnrolling(false);
+        void refresh();
       }, ENROLL_TRANSITION_MS);
     } catch (enrollFailure) {
       setEnrollError(toErrorMessage(enrollFailure));
@@ -107,15 +110,25 @@ export function CourseDetailScreen({
     [course, effectiveEnrollment]
   );
 
-  const openLesson = useCallback(
-    (lesson: Lesson) => {
-      navigation.navigate('VideoPlayer', {
-        courseId,
-        lessonId: lesson.id,
-      });
+  const openLearningPlayer = useCallback(
+    (lessonId?: string) => {
+      const numericCourseId = Number(courseId);
+      const numericLessonId = lessonId === undefined ? undefined : Number(lessonId);
+      if (Number.isSafeInteger(numericCourseId) && numericCourseId > 0) {
+        navigation.navigate('CoursePlayer', {
+          courseId: numericCourseId,
+          ...(Number.isSafeInteger(numericLessonId) && numericLessonId! > 0
+            ? { lessonId: numericLessonId }
+            : {}),
+        });
+      } else {
+        navigation.navigate('VideoPlayer', { courseId, ...(lessonId ? { lessonId } : {}) });
+      }
     },
     [courseId, navigation]
   );
+
+  const openLesson = useCallback((lesson: Lesson) => openLearningPlayer(lesson.id), [openLearningPlayer]);
 
   const progressPercent = effectiveEnrollment?.progressPercent ?? 0;
   const completedLessons = effectiveEnrollment?.completedLessons ?? 0;
@@ -213,13 +226,19 @@ export function CourseDetailScreen({
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Curriculum</Text>
-          <ModuleAccordion
-            completedLessonIds={effectiveEnrollment?.completedLessonIds ?? []}
-            initiallyExpandedId={initialModuleId}
-            modules={course.modules}
-            onSelectLesson={openLesson}
-            onToggle={(id) => setInitialModuleId(id)}
-          />
+          {course.modules.length > 0 ? (
+            <ModuleAccordion
+              completedLessonIds={effectiveEnrollment?.completedLessonIds ?? []}
+              initiallyExpandedId={initialModuleId}
+              modules={course.modules}
+              onSelectLesson={openLesson}
+              onToggle={(id) => setInitialModuleId(id)}
+            />
+          ) : (
+            <Text style={styles.about} testID="course-curriculum-locked">
+              Enroll in this course to open its lessons and curriculum.
+            </Text>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -257,10 +276,7 @@ export function CourseDetailScreen({
               }
               accessibilityRole="button"
               onPress={() =>
-                navigation.navigate('VideoPlayer', {
-                  courseId: course.id,
-                  lessonId: resumeLesson?.id,
-                })
+                openLearningPlayer(resumeLesson?.id)
               }
               style={styles.continueButton}
               testID="continue-learning">
@@ -268,9 +284,7 @@ export function CourseDetailScreen({
             </Pressable>
             <Text
               accessibilityRole="button"
-              onPress={() =>
-                navigation.navigate('VideoPlayer', { courseId: course.id })
-              }
+              onPress={() => openLearningPlayer()}
               style={styles.learningLink}
               testID="play-video">
               Play first lesson
@@ -282,7 +296,7 @@ export function CourseDetailScreen({
               }
               style={styles.learningLink}
               testID="take-assessment">
-              Take assessment
+              Lessons & assessments
             </Text>
           </View>
         ) : null}

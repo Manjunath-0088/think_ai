@@ -6,10 +6,6 @@ function BatchDetails() {
   const { id } = useParams();
   const [batch, setBatch] = useState(null);
 
-  useEffect(() => {
-    loadBatch();
-  }, []);
-
   const loadBatch = async () => {
     try {
       const response = await getBatchById(id);
@@ -18,6 +14,11 @@ function BatchDetails() {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadBatch();
+  }, []);
 
   if (!batch) {
     return (
@@ -68,17 +69,12 @@ function BatchDetails() {
 
         <div>
           <strong>Status</strong>
+          <p>{batch.status}</p>
+        </div>
 
-          <span
-            className={`ml-2 px-3 py-1 rounded-full text-white ${
-              batch.status === "ACTIVE"
-                ? "bg-green-500"
-                : "bg-red-500"
-            }`}
-          >
-            {batch.status}
-          </span>
-
+        <div>
+          <strong>Enrolled Count</strong>
+          <p>{batch.enrolledCount}</p>
         </div>
 
       </div>

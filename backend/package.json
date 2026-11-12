@@ -12,7 +12,7 @@
     "verify:ta-demo": "node scripts/verifyTaDemo.js",
     "lint": "node --check server.js && node --check app.js",
     "build": "node --check server.js && node --check app.js",
-    "test": "node --test auditLogService.test.js authFlow.test.js communityModeration.test.js discountCheckout.test.js discussionPerformance.test.js emailIntegration.test.js notificationPreferenceService.test.js realForumSeeding.test.js roleHierarchy.test.js roleMatrix.test.js",
+    "test": "node --test auditLogService.test.js authFlow.test.js communityModeration.test.js discountCheckout.test.js discussionPerformance.test.js emailIntegration.test.js liveStudioService.test.js notificationPreferenceService.test.js realForumSeeding.test.js roleHierarchy.test.js roleMatrix.test.js",
     "test:ci": "node --test auditLogService.test.js emailIntegration.test.js notificationPreferenceService.test.js roleHierarchy.test.js roleMatrix.test.js",
     "test:patan": "node --test lms/tests/*.test.js",
     "test:patan:db": "node --test lms/tests/database.integration.js lms/tests/desktop-database.integration.js",

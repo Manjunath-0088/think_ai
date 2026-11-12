@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import InputField from '../common/InputField';
 import Button from '../common/Button';
+
+/* eslint-disable react-hooks/set-state-in-effect */
 
 const EMPTY_BATCH = {
   batchName: '',

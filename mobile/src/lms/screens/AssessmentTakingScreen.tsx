@@ -5,11 +5,12 @@ import type { ScreenProps } from "@/navigation/types";
 import { CodeEditor } from "../CodeEditor";
 import type { Language } from "../types";
 import { useAssessment } from "../useAssessment";
-import { Card, LoadState, Message, Screen, styles } from "../ui";
+import { Card, LoadState, Message, Screen, useLmsStyles } from "../ui";
 export function AssessmentTakingScreen({
   route,
   navigation,
 }: ScreenProps<"AssessmentTaking">) {
+  const styles = useLmsStyles();
   const onSubmitted = useCallback(
     (attemptId: number) =>
       navigation.replace("AssessmentResults", {

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { BarChart3, TrendingUp, CheckCircle, Award, Loader2, Filter } from 'lucide-react';
+import { TrendingUp, Award, Filter } from 'lucide-react';
 
 import {
   fetchEnrollmentTrends,
@@ -8,7 +8,6 @@ import {
   fetchCourseCompletionRates,
   fetchAssessmentAnalytics,
   selectEnrollmentTrends,
-  selectCourseEnrollments,
   selectCourseCompletionRates,
   selectAssessmentAnalyticsData
 } from '../../features/analytics/analyticsSlice';
@@ -16,7 +15,6 @@ import {
 export default function AnalyticsPage() {
   const dispatch = useDispatch();
   const trends = useSelector(selectEnrollmentTrends);
-  const courseEnrollments = useSelector(selectCourseEnrollments);
   const completionRates = useSelector(selectCourseCompletionRates);
   const assessmentData = useSelector(selectAssessmentAnalyticsData);
 

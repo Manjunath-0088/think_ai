@@ -15,6 +15,7 @@ export const COURSE_STATUS_FILTERS: readonly {
 ];
 
 export interface FilterTabsProps {
+  onSaved?: () => void;
   value: CourseStatusFilter;
   onChange: (next: CourseStatusFilter) => void;
   /** Optional per-tab result counts rendered in parentheses. */
@@ -24,6 +25,7 @@ export interface FilterTabsProps {
 
 export function FilterTabs({
   value,
+  onSaved,
   onChange,
   counts,
   testID = 'filter-tabs',
@@ -35,7 +37,7 @@ export function FilterTabs({
       horizontal
       showsHorizontalScrollIndicator={false}
       testID={testID}>
-      {COURSE_STATUS_FILTERS.map((filter) => {
+      {(onSaved ? COURSE_STATUS_FILTERS.filter(filter => filter.key !== 'all') : COURSE_STATUS_FILTERS).map((filter) => {
         const isSelected = value === filter.key;
         const count = counts?.[filter.key];
         const label = count === undefined ? filter.label : `${filter.label} (${count})`;
@@ -56,6 +58,7 @@ export function FilterTabs({
           </Pressable>
         );
       })}
+      {onSaved ? <Pressable accessibilityRole="button" accessibilityLabel="Saved courses" onPress={onSaved} style={styles.tab}><Text style={styles.label}>Saved</Text></Pressable> : null}
     </ScrollView>
   );
 }
@@ -76,15 +79,15 @@ const createStyles = (palette: Palette) =>
     marginRight: spacing.xs,
   },
   tabSelected: {
-    backgroundColor: palette.brand,
-    borderColor: palette.brand,
+    backgroundColor: '#A435F0',
+    borderColor: '#A435F0',
   },
   label: {
     ...typography.label,
     color: palette.textSecondary,
   },
   labelSelected: {
-    color: palette.textInverse,
+    color: '#FFFFFF',
   },
 });
 

@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { editorHtml, type CodeEditorProps } from "./editorHtml";
-import { Field, styles } from "./ui";
+import { Field, useLmsStyles } from "./ui";
 export function CodeEditor({ code, language, onChange, editable = true }: CodeEditorProps) {
+  const styles = useLmsStyles();
   const ref = useRef<WebView<{}>>(null);
   const latest = useRef({ code, language, editable });
   latest.current = { code, language, editable };

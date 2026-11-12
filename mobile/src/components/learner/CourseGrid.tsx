@@ -107,7 +107,7 @@ export function CourseGrid({
                       accessibilityState={{ selected: saved }}
                       hitSlop={hitSlop}
                       onPress={(event) => {
-                        event.stopPropagation();
+                        event?.stopPropagation?.();
                         onToggleSave(course);
                       }}
                       style={[

@@ -4,7 +4,7 @@ export const checkSystemHealth = async () => {
   try {
     const response = await api.get('/health');
     return response.data;
-  } catch (error) {
+  } catch {
     return {
       status: 'failed',
       dependencies: { db: 'failed', redis: 'failed' },

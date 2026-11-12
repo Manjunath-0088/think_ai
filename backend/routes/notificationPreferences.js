@@ -85,4 +85,26 @@ router.put("/device-token", requireRole(["Admin", "Instructor", "TA", "Learner"]
   }
 });
 
+/**
+ * Removes the caller's push registration for this device.
+ *
+ * Called before clearing the local session so a signed-out device cannot keep
+ * receiving another account's notifications. The `userId` filter means a
+ * caller can only revoke their own registration.
+ */
+router.delete("/device-token", requireRole(["Admin", "Instructor", "TA", "Learner"]), async (req, res) => {
+  const expoPushToken = String(req.body?.expoPushToken || req.query?.expoPushToken || "").trim();
+  if (!/^ExponentPushToken\[.+\]$|^ExpoPushToken\[.+\]$/.test(expoPushToken)) {
+    return res.status(400).json({ success: false, message: "A valid Expo push token is required." });
+  }
+  try {
+    const result = await prisma.devicePushToken.deleteMany({
+      where: { expoPushToken, userId: String(req.user.id) },
+    });
+    return res.json({ success: true, data: { removed: result.count } });
+  } catch {
+    return res.status(500).json({ success: false, message: "Could not unregister this device." });
+  }
+});
+
 module.exports = router;

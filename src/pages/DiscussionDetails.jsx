@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ForumApi, getUserVote } from '../services/forumApi.js';
+import { ForumApi } from '../services/backendApi.js';
 import VoteButtons from '../components/VoteButtons.jsx';
 import UserProfile from '../components/UserProfile.jsx';
 
@@ -42,9 +42,14 @@ export default function DiscussionDetails({ postId }) {
     Promise.all([ForumApi.getPostById(postId), ForumApi.getComments(postId)])
       .then(([postData, commentsData]) => {
         if (!mounted.current) return;
+        if (!postData) {
+          setNotFound(true);
+          return;
+        }
         setPost(postData);
         setComments(commentsData);
-        setUserVote(getUserVote(postId));
+        // userVote will be in postData.userVote from backend
+        setUserVote(postData.userVote || 'none');
         return postData.authorId ? ForumApi.getUserById(postData.authorId) : null;
       })
       .then((user) => {
@@ -71,7 +76,7 @@ export default function DiscussionDetails({ postId }) {
       try {
         const updated = await ForumApi.votePost(postId, direction);
         setPost(updated);
-        setUserVote(getUserVote(postId));
+        setUserVote(updated.userVote || direction);
       } catch (err) {
         setError(err.message ?? 'Could not record your vote');
       } finally {

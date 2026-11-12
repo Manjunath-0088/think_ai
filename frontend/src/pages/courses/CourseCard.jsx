@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 const TECH_IMAGES = [
   { keywords: ['typescript', 'type script', 'ts'], img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg' },
