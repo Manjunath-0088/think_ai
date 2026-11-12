@@ -51,33 +51,34 @@ function loadNotifications(): NotificationsModule | null {
 
 /** Requests permission and stores the physical-device token on the LMS API. */
 export async function registerPushNotifications(): Promise<string | null> {
-  if (!canUseRemotePush() || !Device.isDevice) return null;
+  try {
+    if (!canUseRemotePush() || !Device.isDevice) return null;
 
-  const Notifications = loadNotifications();
-  if (!Notifications) return null;
+    const Notifications = loadNotifications();
+    if (!Notifications) return null;
 
-  const current = await Notifications.getPermissionsAsync();
-  const final = current.status === 'granted' ? current : await Notifications.requestPermissionsAsync();
-  if (final.status !== 'granted') return null;
+    const current = await Notifications.getPermissionsAsync();
+    const final = current.status === 'granted' ? current : await Notifications.requestPermissionsAsync();
+    if (final.status !== 'granted') return null;
 
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Default',
-      importance: Notifications.AndroidImportance.DEFAULT,
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.DEFAULT,
+      });
+    }
+
+    const token = await getDevicePushToken(Notifications);
+
+    await apiData('/notifications/device-token', {
+      method: 'PUT',
+      body: { expoPushToken: token, platform: Platform.OS },
     });
+    await AsyncStorage.setItem(PUSH_TOKEN_KEY, token).catch(() => undefined);
+    return token;
+  } catch {
+    return null;
   }
-
-  const token = await getDevicePushToken(Notifications);
-
-  await apiData('/notifications/device-token', {
-    method: 'PUT',
-    body: { expoPushToken: token, platform: Platform.OS },
-  });
-  await AsyncStorage.setItem(PUSH_TOKEN_KEY, token).catch(() => undefined);
-  return token;
-} catch {
-  return null;
-}
 }
 
 async function getDevicePushToken(
