@@ -3,10 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 export function EmailConfirmationNote({ email }: { email: string }) {
   return (
     <View style={styles.container}>
-      <Text
-        accessibilityLiveRegion="polite"
-        style={styles.text}
-        testID="email-confirmation-note">
+      <Text style={styles.text} accessibilityLabel="email-confirmation-note">
         Receipt sent to {email}
       </Text>
     </View>

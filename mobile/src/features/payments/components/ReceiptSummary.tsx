@@ -6,7 +6,7 @@ export function ReceiptSummary({ p }: { p: PaymentDetails }) {
   const dateStr = new Date(p.paidAt).toLocaleString();
   const amountStr = new Intl.NumberFormat('en-US', { style: 'currency', currency: p.currency || 'USD' }).format(p.amount);
   return (
-    <View style={styles.card} testID="receipt-summary">
+    <View style={styles.card} accessibilityLabel="receipt-summary">
       <Row label="Plan" value={p.planName} />
       <Row label="Amount" value={amountStr} />
       <Row label="Transaction ID" value={p.transactionId} />

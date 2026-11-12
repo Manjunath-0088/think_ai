@@ -21,9 +21,7 @@ export function PreferenceGroup({
 }) {
   return (
     <View style={styles.card} testID={`pref-group-${group}`}>
-      <Text accessibilityRole="header" style={styles.title}>
-        {TITLES[group]}
-      </Text>
+      <Text style={styles.title}>{TITLES[group]}</Text>
       <ChannelToggles value={value} onChange={onChannelChange} />
     </View>
   );

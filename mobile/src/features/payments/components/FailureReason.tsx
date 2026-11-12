@@ -5,11 +5,8 @@ import { FailureReasonKey, failureMessages } from '../failure';
 export function FailureReason({ type }: { type: FailureReasonKey }) {
   const m = failureMessages[type] || failureMessages.unknown;
   return (
-    <View accessibilityLiveRegion="polite" style={styles.wrap}>
-      <Text
-        accessibilityRole="header"
-        style={styles.title}
-        testID={`failure-title-${type}`}>
+    <View style={styles.wrap}>
+      <Text style={styles.title} testID={`failure-title-${type}`}>
         {m.title}
       </Text>
       <Text style={styles.body} testID={`failure-body-${type}`}>

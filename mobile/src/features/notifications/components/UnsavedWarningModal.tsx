@@ -12,13 +12,8 @@ export function UnsavedWarningModal({
   return (
     <Modal visible={visible} transparent animationType="fade" testID="unsaved-warning-modal">
       <View style={styles.backdrop}>
-        <View
-          accessibilityViewIsModal
-          style={styles.card}
-          testID="unsaved-warning-card">
-          <Text accessibilityRole="header" style={styles.title}>
-            Unsaved changes
-          </Text>
+        <View style={styles.card}>
+          <Text style={styles.title}>Unsaved changes</Text>
           <Text>You have unsaved changes. Discard them?</Text>
           <View style={styles.actions}>
             <Button title="Cancel" onPress={onCancel} testID="unsaved-cancel" />

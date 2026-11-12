@@ -1,15 +1,16 @@
 import { useMemo } from 'react';
+import { useRoute } from '@react-navigation/native';
 
-import type { RootStackParamList } from '@/navigation/types';
 import { FailureReasonKey } from '../failure';
 
-export function usePaymentFailure(params?: RootStackParamList['PaymentFailed']) {
-  const p = params ?? {};
-  const reason: FailureReasonKey = p.reason || 'unknown';
-  const errorCode = p.errorCode;
-  const message = p.message;
+export function usePaymentFailure() {
+  const route = useRoute<any>();
+  const p = route.params || {};
+  const reason: FailureReasonKey = (p.reason as FailureReasonKey) || 'unknown';
+  const errorCode = p.errorCode as string | undefined;
+  const message = p.message as string | undefined;
   const preserve = !!p.preserve;
-  const formValues = p.formValues ?? {};
+  const formValues = p.formValues || {};
 
   return useMemo(
     () => ({

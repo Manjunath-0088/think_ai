@@ -1,7 +1,6 @@
 import { Button } from 'react-native';
 
 export function AccessCourseButton({
-  courseTitle,
   onPress,
 }: {
   courseId: string;
@@ -12,11 +11,7 @@ export function AccessCourseButton({
     <Button
       title="Open Enrolled Course"
       onPress={onPress}
-      accessibilityLabel={
-        courseTitle
-          ? `Open enrolled course, ${courseTitle}`
-          : 'Open enrolled course'
-      }
+      accessibilityLabel="access-enrolled-course"
     />
   );
 }

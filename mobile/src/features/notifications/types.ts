@@ -1,13 +1,7 @@
-import type {
-  NotificationChannel,
-  NotificationEventGroup,
-  NotificationGroupPrefs,
-  NotificationPreferences,
-} from '@/types/community';
+export type EventGroup = 'replies' | 'mentions' | 'sessions' | 'payments';
+export type Channel = 'email' | 'inApp' | 'sms';
+export type GroupPrefs = Record<Channel, boolean>;
+export type NotificationPrefs = Record<EventGroup, GroupPrefs>;
 
-export type EventGroup = NotificationEventGroup;
-export type Channel = NotificationChannel;
-export type GroupPrefs = NotificationGroupPrefs;
-export type NotificationPrefs = NotificationPreferences;
-export type NotificationPrefsResponse = NotificationPreferences;
-export type SaveNotificationPrefsPayload = NotificationPreferences;
+export interface NotificationPrefsResponse extends NotificationPrefs {}
+export interface SaveNotificationPrefsPayload extends NotificationPrefs {}

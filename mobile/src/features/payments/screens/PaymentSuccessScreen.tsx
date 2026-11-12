@@ -1,54 +1,37 @@
 import { useEffect, useRef } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-import type { ScreenProps } from '@/navigation/types';
-import type { PaymentDetails } from '../types';
+import { PaymentDetails } from '../types';
 import { usePaymentStatus } from '../hooks/usePaymentStatus';
-import { failureReasonFromCode } from '../failure';
 import { SuccessCheckmark } from '../components/SuccessCheckmark';
 import { ConfettiBurst } from '../components/ConfettiBurst';
 import { ReceiptSummary } from '../components/ReceiptSummary';
 import { AccessCourseButton } from '../components/AccessCourseButton';
 import { EmailConfirmationNote } from '../components/EmailConfirmationNote';
 
-export function PaymentSuccessScreen({
-  route,
-  navigation,
-}: ScreenProps<'PaymentSuccess'>) {
-  const {
-    paymentId,
-    payment: initialPayment,
-    formValues,
-  } = route.params ?? {};
-  const initial = initialPayment as PaymentDetails | undefined;
-  const effectiveId = paymentId ?? initial?.id ?? null;
-  const { payment, failureCode, status } = usePaymentStatus(effectiveId);
+export function PaymentSuccessScreen() {
+  const route = useRoute<any>();
+  const nav = useNavigation<any>();
+  const { paymentId, payment: initialPayment } = route.params || {};
+  const { payment, status } = usePaymentStatus(paymentId ?? null) as {
+    payment?: PaymentDetails;
+    status: 'idle' | 'polling' | 'success' | 'timeout' | 'error';
+  };
 
-  const p: PaymentDetails | undefined = payment || initial;
+  const p: PaymentDetails | undefined = payment || initialPayment;
   const redirected = useRef(false);
 
   useEffect(() => {
-    if (redirected.current) return;
-    if (status === 'timeout') {
+    if (status === 'timeout' && !redirected.current) {
       redirected.current = true;
-      navigation.replace('PaymentFailed', {
-        reason: 'network',
-        preserve: true,
-        formValues,
-      });
-      return;
+      nav.replace('PaymentFailed', { reason: 'network', preserve: true });
     }
-    if (status === 'error') {
+    if (status === 'error' && p?.failureReason && !redirected.current) {
       redirected.current = true;
-      navigation.replace('PaymentFailed', {
-        reason: failureReasonFromCode(failureCode ?? p?.failureReason),
-        errorCode: failureCode ?? undefined,
-        preserve: true,
-        message: p?.failureReason,
-        formValues,
-      });
+      nav.replace('PaymentFailed', { reason: p.failureReason, preserve: true });
     }
-  }, [status, p, failureCode, formValues, navigation]);
+  }, [status, p, nav]);
 
   return (
     <ScrollView
@@ -56,10 +39,7 @@ export function PaymentSuccessScreen({
       testID="payment-success-screen">
       <SuccessCheckmark />
       <ConfettiBurst />
-      <Text
-        accessibilityRole="header"
-        style={styles.title}
-        testID="payment-success-title">
+      <Text style={styles.title} testID="payment-success-title">
         Payment successful
       </Text>
       {p && <ReceiptSummary p={p} />}
@@ -67,17 +47,12 @@ export function PaymentSuccessScreen({
         <AccessCourseButton
           courseId={p.courseId}
           courseTitle={p.courseTitle}
-          onPress={() =>
-            navigation.navigate('CourseDetail', { courseId: p.courseId })
-          }
+          onPress={() => nav.navigate('CourseDetail', { courseId: p.courseId })}
         />
       ) : null}
       {p?.receiptEmail ? <EmailConfirmationNote email={p.receiptEmail} /> : null}
       {status === 'polling' ? (
-        <Text
-          accessibilityLiveRegion="polite"
-          style={styles.polling}
-          testID="payment-status-polling">
+        <Text style={styles.polling} testID="payment-status-polling">
           Confirming payment...
         </Text>
       ) : null}

@@ -40,17 +40,8 @@ export function ThreadListOptimized({
       windowSize={21}
       updateCellsBatchingPeriod={50}
       initialNumToRender={10}
-      ListFooterComponent={
-        isLoadingMore ? (
-          <Text
-            accessibilityLiveRegion="polite"
-            style={styles.footer}
-            testID="forum-thread-list-loading-more">
-            Loading...
-          </Text>
-        ) : undefined
-      }
-      ListEmptyComponent={!loading ? <Text style={styles.empty}>No threads</Text> : undefined}
+      ListFooterComponent={isLoadingMore ? <Text style={styles.footer}>Loading...</Text> : null}
+      ListEmptyComponent={!loading ? <Text style={styles.empty}>No threads</Text> : null}
       contentContainerStyle={styles.content}
       testID="forum-thread-list-optimized"
     />

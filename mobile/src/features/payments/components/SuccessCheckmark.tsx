@@ -15,10 +15,8 @@ export function SuccessCheckmark() {
   return (
     <View style={styles.container}>
       <Animated.View
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
+        accessibilityLabel="success-checkmark"
         style={[styles.circle, { transform: [{ scale }], opacity }]}
-        testID="success-checkmark"
       >
         <Text style={styles.check}>?</Text>
       </Animated.View>

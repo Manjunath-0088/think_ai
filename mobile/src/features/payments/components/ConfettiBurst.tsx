@@ -16,13 +16,11 @@ export function ConfettiBurst() {
 
   return (
     <Animated.View
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
       style={[
         styles.container,
         { opacity, transform: [{ scale }] },
       ]}
-      testID="confetti-burst"
+      accessibilityLabel="confetti-burst"
     >
       <View style={styles.particle1} />
       <View style={styles.particle2} />

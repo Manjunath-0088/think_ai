@@ -17,12 +17,7 @@ export function ChannelToggles({
       {channels.map((c) => (
         <View key={c} style={styles.toggle} testID={`channel-toggle-${c}`}>
           <Text>{LABELS[c]}</Text>
-          <Switch
-            accessibilityLabel={`${LABELS[c]} notifications`}
-            accessibilityRole="switch"
-            onValueChange={(v) => onChange(c, v)}
-            value={value[c]}
-          />
+          <Switch value={value[c]} onValueChange={(v) => onChange(c, v)} />
         </View>
       ))}
     </View>

@@ -1,4 +1,4 @@
-## Forum Performance - [Date]
+## Forum Performance — [Date]
 - Device: [e.g. Pixel 6a / mid-range, Android 14, 6GB RAM]
 - Threads: 500+
 - Baseline FPS: avg __, min __, max __ (measured via Flipper/Performance tools)

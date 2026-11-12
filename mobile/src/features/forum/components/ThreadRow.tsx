@@ -8,7 +8,7 @@ export const ThreadRow = memo(function ThreadRow({ thread }: { thread: Thread })
   return (
     <View
       style={styles.row}
-      accessibilityLabel={`${thread.title}. ${thread.replies} replies by ${thread.author}`}
+      accessibilityLabel={`thread-${thread.id}`}
       testID={`thread-row-${thread.id}`}>
       {thread.thumbnailUrl ? (
         <LazyThumbnail uri={thread.thumbnailUrl} />

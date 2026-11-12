@@ -4,17 +4,9 @@ export function SaveButton({ saving, onPress }: { saving: boolean; onPress: () =
   return (
     <View>
       {saving ? (
-        <ActivityIndicator
-          accessibilityLabel="Saving notification preferences"
-          accessibilityLiveRegion="polite"
-          testID="save-preferences-saving"
-        />
+        <ActivityIndicator />
       ) : (
-        <Button
-          title="Save Preferences"
-          onPress={onPress}
-          accessibilityLabel="Save notification preferences"
-        />
+        <Button title="Save Preferences" onPress={onPress} accessibilityLabel="save-preferences" />
       )}
     </View>
   );

@@ -1,26 +1,13 @@
 import { useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 
-export function LazyThumbnail({
-  uri,
-  accessibilityLabel,
-}: {
-  uri: string;
-  /** When provided the image is announced; otherwise it is treated as decorative. */
-  accessibilityLabel?: string;
-}) {
+export function LazyThumbnail({ uri }: { uri: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const isDecorative = accessibilityLabel === undefined;
-
   return (
     <View style={styles.wrap} testID="lazy-thumbnail">
       {!error && (
         <Image
-          accessibilityElementsHidden={isDecorative}
-          accessibilityLabel={accessibilityLabel}
-          accessible={!isDecorative}
-          importantForAccessibility={isDecorative ? 'no-hide-descendants' : 'auto'}
           source={{ uri }}
           style={styles.img}
           resizeMode="cover"
@@ -31,20 +18,8 @@ export function LazyThumbnail({
           }}
         />
       )}
-      {error && (
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          style={[styles.img, styles.error]}
-          testID="lazy-thumbnail-error"
-        />
-      )}
-      {loading && (
-        <ActivityIndicator
-          accessibilityLabel="Loading thumbnail"
-          style={styles.loader}
-        />
-      )}
+      {error && <View style={[styles.img, styles.error]} testID="lazy-thumbnail-error" />}
+      {loading && <ActivityIndicator style={styles.loader} />}
     </View>
   );
 }
